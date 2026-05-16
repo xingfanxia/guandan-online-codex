@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-1. **Realtime stack: two viable paths.** Vercel Functions cannot host WebSockets (confirmed Jan 2026), but the Vercel-native SSE+POST+Redis pub/sub pattern meets Guandan's 200ms latency budget when bot logic runs inline in the move handler. Two co-equal options: (a) **Vercel SSE+POST** (platform unity, ~200 lines of glue, ~$0 marginal cost) or (b) **Colyseus on Fly.io** (framework-enforced hidden state + reconnect, ~$10/mo, no glue). Decision deferred to plan phase — see `architecture-options.md` § "Update 2026-05-16". A dedicated deep-dive on realtime sync patterns from production card games (poker.online, chess.com, etc.) is queued as a follow-up.
+1. **Realtime stack: Vercel-native SSE+POST + Upstash Redis pub/sub** (decision 2026-05-16). Vercel Functions cannot host WebSockets, but the SSE+POST pattern meets Guandan's 200ms latency budget when bot logic runs inline in the move handler. Decision is platform unity over framework convenience — accept ~200 lines of hidden-state + reconnect glue rather than add a second hosting target (Fly.io). Colyseus on Fly.io remains as an "if-SSE-hits-a-wall" backup, but is NOT in the v1 plan. A deep-dive on sync mechanism best practices (still framework-agnostic) is queued as follow-up.
 2. **AI is shippable in v1 with multi-tier difficulty**, but the top-tier neural engine (DanLM) is deferred to v1.1 due to macOS-only binaries. Easy / Medium / Hard tiers ship via TypeScript rule-based bots + WASM solver + LLM (DeepSeek) — total ~3-4 weeks of AI work.
 3. **Rules engine is half-built.** `hash-panda/guandan-guide` provides a tested TypeScript trick / hand-recognition engine to port. The sibling `guandan-scorer` already has scoring / progression / A-level logic. Eight items remain to write from scratch (deal/shuffle, trick orchestration, 接风, tribute, 报牌, etc.).
 4. **Landscape mobile: force-landscape via CSS rotate, Majsoul-style.** No commercial Guandan app ships landscape, but Majsoul / 4399 / WeChat H5 games widely use the CSS `transform: rotate(90deg)` pattern on iOS Safari where `screen.orientation.lock()` is not supported. The "three hard problems" the agent flagged are real for general web apps but tractable for a static-layout card game. Rotate-prompt overlay drops from "primary iOS path" to "emergency fallback." See `mobile-landscape-ux.md` § "Update 2026-05-16".
@@ -18,9 +18,8 @@
 | State on client | Reactive store (Zustand) + transport-specific sync layer | Final shape depends on realtime transport decision below. |
 | Rendering | **CSS `transform` / `opacity`** | Per mobile UX research: < 100 nodes, easy theming, accessible. Reject Pixi/Phaser. |
 | Orientation lock | **CSS `transform: rotate(90deg)`** (Majsoul-style) + native lock on Android | Force-landscape works on iOS Safari via CSS rotate. Rotate-prompt is fallback only. |
-| Realtime transport (option A) | **Vercel SSE+POST + Upstash Redis pub/sub** | Stays on Vercel. ~$0 marginal cost. ~200 lines of glue for hidden-state + reconnect. Inline bots in move handler. |
-| Realtime transport (option B) | **Colyseus on Fly.io** | Framework solves hidden state (`@view`) + reconnect (`allowReconnection`) + inline bots. ~$10/mo. ~0 lines of glue. |
-| Backup if both fail | PartyKit on own Cloudflare account | Durable Object per room. WS native. Manual hidden-state filter. |
+| Realtime transport | **Vercel SSE+POST + Upstash Redis pub/sub** | Decision: stay on Vercel for platform unity (no Fly.io / extra dependency). ~$0 marginal cost. ~200 lines of glue for hidden-state filtering + reconnect. Inline bots in POST handler. |
+| Backup if SSE hits a wall | Colyseus on Fly.io | Not in v1 plan. Escape hatch if SSE+POST proves inadequate at production scale or against specific edge cases. |
 | Persistence (room history) | Upstash Redis (Vercel Marketplace) | Same as sibling scorer. Game-state-per-round persisted for reconnect + replay. |
 | Frontend host | Vercel | Already where the sibling lives, easy preview URLs, AI Gateway / shadcn integrations available. |
 | Auth | Anonymous handle (`@handle`) | Same model as sibling scorer. No accounts in v1. |
@@ -93,7 +92,7 @@ Visual style is open. Sibling project has 5 production themes (Broadcast / Linea
 
 ## Key risks (ranked)
 
-1. **Realtime stack decision pending**. Two co-equal options (Vercel SSE+POST vs Colyseus on Fly.io) — neither is wrong, but they shape the codebase differently. Decision is queued for the realtime sync deep-dive follow-up + plan phase. Mitigation in either case: keep the realtime layer thin and well-abstracted via a `RealtimeAdapter` interface, so swapping is mechanical not architectural.
+1. **Hidden-state glue is hand-written**. The Vercel SSE+POST path needs ~50 lines of careful per-message filtering to ensure private hand state never leaks to other players. Unlike Colyseus's framework-enforced `@view`, this is server-code-reviewer-must-catch-it discipline. Mitigation: centralize all outgoing-message construction in one `buildClientPayload(playerId, eventType, payload)` function, audit it once, then never hand-construct outgoing messages elsewhere. Add a unit test that grep-asserts no `res.write(JSON.stringify(roomState))` exists outside that function.
 
 2. **AI quality at "Hard" tier**. LLM-based bots are unproven in adversarial partner-card play. Risk: they make obviously dumb plays that ruin the game for human partners. Mitigation: candidate-mode prompts (engine generates legal moves, LLM only picks among them) prevents catastrophic errors but caps ceiling. If quality is unacceptable, fall back to Medium tier with more compute (deeper rule-based search) until DanLM ships in v1.1.
 
@@ -109,11 +108,14 @@ Visual style is open. Sibling project has 5 production themes (Broadcast / Linea
 
 8. **License check**. Before adopting code from `hash-panda/guandan-guide`, `zdhgg/Guandan-training`, `Bobgy/poker-guandan-strategy`: verify each license allows our use. Three of four references have stated licenses (MIT, Apache-2.0); `shuilongzhu/ai-guandan` has none → cannot reuse.
 
+## Decisions made (2026-05-16)
+
+- **Realtime transport**: Vercel SSE+POST + Upstash Redis pub/sub. No Fly.io / extra dependency. Colyseus retained as backup only.
+- **Mobile orientation**: CSS `transform: rotate(90deg)` (Majsoul-style) as primary on iOS, native lock on Android, rotate-prompt as emergency fallback only.
+
 ## Open questions (resolve before plan phase)
 
-1. **Realtime transport: Vercel SSE+POST vs Colyseus on Fly.io**. Both are within latency + complexity budgets. Trade-off: platform unity + ~200 lines of glue (Vercel) vs framework-enforced safety + Fly.io ops surface (Colyseus). **Resolve after realtime sync deep-dive lands** — see queued task #8.
-
-2. **Frontend framework**: React confirmed, but TypeScript-only without React (lightweight, Hyperapp-style) is on the table given that game UI is mostly imperative animation. **Default to React** unless someone argues otherwise.
+1. **Frontend framework**: React confirmed, but TypeScript-only without React (lightweight, Hyperapp-style) is on the table given that game UI is mostly imperative animation. **Default to React** unless someone argues otherwise.
 
 2. **Card visual style**: classic poker face vs minimalist tech vs editorial illustration. The sibling scorer's Atelier and Tea-Table themes already have card visual languages we could borrow. **Punt to design phase.**
 

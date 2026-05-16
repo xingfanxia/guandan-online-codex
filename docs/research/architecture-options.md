@@ -359,3 +359,13 @@ These were not in the original analysis because they don't address the realtime-
 ### Follow-up research (queued)
 
 A dedicated deep-dive on realtime sync mechanisms for production card games (poker.online, chess.com, real-money mahjong apps, WebTransport, WebRTC data channels) is queued — see [`realtime-sync-deep-dive.md`](realtime-sync-deep-dive.md) when written.
+
+---
+
+## Decision — 2026-05-16: Vercel SSE+POST chosen
+
+Framework decision made before the deep-dive lands. **Vercel-native SSE+POST + Upstash Redis pub/sub is the v1 realtime stack.** Rationale: platform unity matters more than ~200 lines of hidden-state + reconnect glue. The sibling `guandan-scorer` already deploys on Vercel + Upstash; reusing that footprint avoids a second hosting target (Fly.io) and a second deploy pipeline.
+
+**Colyseus on Fly.io status**: documented as backup-only. Will be invoked only if SSE+POST proves inadequate at production scale or against specific edge cases (e.g., persistent multi-region sync race conditions that Lua scripts can't resolve). Not in v1 plan.
+
+The follow-up `realtime-sync-deep-dive.md` will inform HOW to implement SSE+POST well — message types, idempotency keys, hidden-state filtering pattern, reconnection semantics, anti-cheat baseline — not WHETHER to use it.
