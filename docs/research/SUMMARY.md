@@ -1,171 +1,216 @@
 # Research Synthesis — Guandan Online
 
-**Status**: Research phase complete (2026-05-16). Five investigation streams ran in parallel; this document is the cross-cutting synthesis. Read this first; the per-stream files are the deep references.
+**Status**: Research phase complete (2026-05-16). 13 investigation streams ran across two phases; this document is the cross-cutting synthesis. Read this first; per-stream files are the deep references.
 
-## TL;DR
+## TL;DR (7 headlines)
 
-1. **Realtime stack: Vercel-native SSE+POST + Upstash Redis pub/sub** (decision 2026-05-16). Vercel Functions cannot host WebSockets, but the SSE+POST pattern meets Guandan's 200ms latency budget when bot logic runs inline in the move handler. Decision is platform unity over framework convenience — accept ~200 lines of hidden-state + reconnect glue rather than add a second hosting target (Fly.io). Colyseus on Fly.io remains as an "if-SSE-hits-a-wall" backup, but is NOT in the v1 plan. A deep-dive on sync mechanism best practices (still framework-agnostic) is queued as follow-up.
-2. **AI is shippable in v1 with multi-tier difficulty**, but the top-tier neural engine (DanLM) is deferred to v1.1 due to macOS-only binaries. Easy / Medium / Hard tiers ship via TypeScript rule-based bots + WASM solver + LLM (DeepSeek) — total ~3-4 weeks of AI work.
-3. **Rules engine is half-built.** `hash-panda/guandan-guide` provides a tested TypeScript trick / hand-recognition engine to port. The sibling `guandan-scorer` already has scoring / progression / A-level logic. Eight items remain to write from scratch (deal/shuffle, trick orchestration, 接风, tribute, 报牌, etc.).
-4. **Landscape mobile: force-landscape via CSS rotate, Majsoul-style.** No commercial Guandan app ships landscape, but Majsoul / 4399 / WeChat H5 games widely use the CSS `transform: rotate(90deg)` pattern on iOS Safari where `screen.orientation.lock()` is not supported. The "three hard problems" the agent flagged are real for general web apps but tractable for a static-layout card game. Rotate-prompt overlay drops from "primary iOS path" to "emergency fallback." See `mobile-landscape-ux.md` § "Update 2026-05-16".
-5. **Rendering: CSS DOM, not Canvas.** A Guandan table has < 100 visible card nodes. CSS `transform` + `opacity` is faster to build, easier to theme, more accessible, and meets the 60 fps budget on a 2-year-old Android. PixiJS / Phaser are over-spec'd.
+1. **Realtime stack: Vercel-native SSE+POST + Upstash Redis pub/sub** — locked. No Fly.io / Colyseus / extra dependency. ~200 lines of glue (hidden-state filtering + reconnect) replaces the framework convenience. Latency budget 50-165ms end-to-end, within Guandan's 200ms target. Lichess's `lila-ws` is the closest production analog.
+
+2. **AI is v1-shippable in 3 tiers** — Easy (rule-based + 30% noise), Medium (rule-based + WASM solver + partner awareness), Hard (DeepSeek LLM with candidate pre-filter + Chinese prompt). Master tier (DanLM neural net) deferred to v1.1 due to macOS-only binaries. Per-tier algorithm pseudocode + GameState/PlayerView types + Elo bench harness all specified in `ai-implementation-plan.md`. Cost: ~$30/month with $50 soft-limit Hard→Medium degradation.
+
+3. **Mobile landscape via CSS rotate** (Majsoul-style) — iOS Safari does not implement `screen.orientation.lock()`; the production fix is CSS `transform: rotate(90deg)` on root + JS-set logical viewport CSS vars. Native lock on Android. Rotate-prompt overlay is emergency fallback only.
+
+4. **Cards: zero external assets needed for v1** — Unicode suits (♥♦♣♠) + Geist 700 with `tabular-nums` + `letter-spacing: -0.03em` on `.card__rank` beats every external SVG deck on weight, license cleanliness, and aesthetic fit for our 28px landscape layout. Card backs are `repeating-linear-gradient` CSS, 0 KB. Heart-suit wildcard (红心级牌) treatment: gold edge + ★ corner badge (Option A confirmed).
+
+5. **PRC delivery is viable but requires care** — `*.vercel.app` is DNS-poisoned in mainland China; **custom domain required day 1**. Realistic Vercel POP latency from Tier-1 PRC cities is 80-180ms p50, 300-500ms p95 under GFW throttle. Turn-based gameplay tolerates this. Ship Vercel-only with client-side latency beacons; deploy Tencent Cloud Shenzhen mirror only if p95 > 350ms observed.
+
+6. **Tribute mechanic fully specified** — Cross-referenced 4 Chinese tournament PDFs (NUIST / SEU / CUP / 中国掼蛋研究院). All prior open questions resolved: 双下 both 3rd+4th tribute; 抗贡 needs 2 大王 (not mixed jokers); tribute card auto-pick in tournament, player-pick in casual; 还贡 always winner's choice with ≤10 cap fallback; "贡左还右" canonical. 6/8 modes get a 3-mode room selector.
+
+7. **Cross-project integration**: Option B — shared @handle namespace with sibling scorer, deferred cross-app stats sync. ~2 days total work, zero user friction. Scorer's bare `player:{handle}` keys migrate to `gs:player:{handle}` prefix; online uses `go:*` prefix in same Upstash instance. Online copies sibling's 10-line `validateOwnershipToken` for auth.
 
 ## Recommended stack
 
-| Layer | Choice | Why |
+| Layer | Choice | Rationale |
 |---|---|---|
-| Frontend framework | **Vite + TypeScript + React** | Vite for fast HMR + ESM-native builds. React because every reference impl converged on it. SSR not needed for a game. |
-| State on client | Reactive store (Zustand) + transport-specific sync layer | Final shape depends on realtime transport decision below. |
-| Rendering | **CSS `transform` / `opacity`** | Per mobile UX research: < 100 nodes, easy theming, accessible. Reject Pixi/Phaser. |
-| Orientation lock | **CSS `transform: rotate(90deg)`** (Majsoul-style) + native lock on Android | Force-landscape works on iOS Safari via CSS rotate. Rotate-prompt is fallback only. |
-| Realtime transport | **Vercel SSE+POST + Upstash Redis pub/sub** | Decision: stay on Vercel for platform unity (no Fly.io / extra dependency). ~$0 marginal cost. ~200 lines of glue for hidden-state filtering + reconnect. Inline bots in POST handler. |
-| Backup if SSE hits a wall | Colyseus on Fly.io | Not in v1 plan. Escape hatch if SSE+POST proves inadequate at production scale or against specific edge cases. |
-| Persistence (room history) | Upstash Redis (Vercel Marketplace) | Same as sibling scorer. Game-state-per-round persisted for reconnect + replay. |
-| Frontend host | Vercel | Already where the sibling lives, easy preview URLs, AI Gateway / shadcn integrations available. |
-| Auth | Anonymous handle (`@handle`) | Same model as sibling scorer. No accounts in v1. |
-| Rules engine | **Port `hash-panda/guandan-guide`** (TypeScript) | The most rigorous open-source trick engine. Add scorer's progression layer on top. |
-| AI v1 (Easy / Medium) | TS bots from `zdhgg/Guandan-training` (MIT) + WASM solver from `Bobgy/poker-guandan-strategy` | Server-side, inline in room loop (Vercel POST handler or Colyseus `setSimulationInterval`). |
-| AI v1 (Hard) | LLM via DeepSeek + candidate pre-filter | Feature-flagged; ~$0.01–0.05 per game. |
-| AI v1.1 (Expert) | DanLM (deferred) | macOS .so files block Linux deployment. Open issue with author; defer until resolved. |
+| Frontend framework | **Vite + TypeScript + React** | Vite for fast HMR + ESM-native. SSR not needed for a game. |
+| State on client | Zustand + `EventSource` SDK | Reactive store + native browser SSE. |
+| Rendering | **CSS `transform` / `opacity`** | < 100 nodes, easy theming, accessible. Reject Pixi/Phaser. |
+| Card assets | **Unicode + Geist 700 + tabular-nums** | Zero external dependencies. Bundle delta = 0 KB. |
+| Orientation lock | **CSS rotate (iOS) + native lock (Android)** | Majsoul pattern. Rotate-prompt fallback. |
+| Realtime transport | **Vercel SSE+POST + Upstash Redis** | Platform unity. ~200 lines glue. ~$0 marginal. |
+| Backup if SSE hits a wall | Colyseus on Fly.io | Not in v1 plan. Documented escape. |
+| Persistence | Upstash Redis (Vercel Marketplace) | Same as sibling scorer. Per-room key + event log stream. |
+| Frontend host | Vercel with **custom domain day 1** | `*.vercel.app` DNS-poisoned in PRC. |
+| PRC mirror (deferred) | Tencent Cloud Run Shenzhen | Only if observed p95 > 350ms. Geo-route via Vercel Edge Middleware. |
+| Auth | Anonymous @handle (shared with sibling) | Option B from `cross-project-integration.md`. Copy `validateOwnershipToken`. |
+| Rules engine | Port `hash-panda/guandan-guide` (TS) | Most rigorous open-source trick engine. License: check before adopt. |
+| AI Easy / Medium | TS + WASM (zdhgg + Bobgy) | Server-side, inline in POST handler. |
+| AI Hard | DeepSeek LLM with candidate pre-filter | Feature-flagged. ~$0.01-0.05 per game. Vercel AI Gateway. |
+| AI Master (v1.1) | DanLM neural net (deferred) | macOS .so only; open issue with author. |
+| Anti-cheat v1 | Rate-limit + IP throttle + report + Vercel BotID | ~340 LOC, 5-6 days. |
+
+## Locked decisions (2026-05-16)
+
+1. **Realtime**: Vercel SSE+POST + Upstash Redis pub/sub (NOT Colyseus / NOT PartyKit for v1)
+2. **Mobile orientation**: CSS rotate (Majsoul-style) on iOS, native lock on Android, rotate-prompt as emergency fallback
+3. **Rendering**: CSS DOM + transform/opacity (NOT WebGL / PixiJS / Phaser / Canvas)
+4. **Card visual**: Unicode suits + Geist 700 + tabular-nums (NO external SVG decks for v1)
+5. **Card back**: CSS `repeating-linear-gradient` using existing tokens (NO PNG / SVG asset)
+6. **Wildcard treatment**: Gold edge stroke + ★ corner badge (Option A)
+7. **AI tier strategy**: Different engines per tier (NOT same engine + search depth)
+8. **Auth**: Anonymous @handle, **shared namespace with sibling scorer** (Option B from `cross-project-integration.md`)
+9. **PRC delivery**: Vercel-only launch with client-side latency beacons; Tencent Cloud Shenzhen mirror deferred until p95 > 350ms observed
+10. **Custom domain required day 1** — `*.vercel.app` is DNS-poisoned in mainland China
+11. **Tribute defaults**: tournament rule baseline (server auto-picks tribute card; "贡左还右" direction; 还贡 ≤10 cap with smallest-card fallback); casual variants surfaced as room rule axes
+12. **Anti-cheat v1**: Rate limiting (5s sliding window) + IP throttle (5 accounts/IP/24h) + report button + admin dashboard + Vercel BotID. ~340 LOC, ~5-6 days.
 
 ## Recommended AI strategy
 
-The user explicitly asked for "different difficulty AI." The temptation is to express this as "same engine + varying search depth." That works for chess but not for partner-card games like Guandan, where difficulty is more about **judgment** (when to play a bomb, when to hold for partner) than **lookahead**.
+Use **different engines per difficulty tier** (NOT same engine + varying search depth — partner card games are about judgment, not lookahead):
 
-We will instead use **different engines per difficulty tier**:
+| Tier | Engine | Behavior | Latency | Source |
+|---|---|---|---|---|
+| **入门 (Easy)** | Rule-based + 30% noise | Plays valid moves preferring smallest combos. Will occasionally play sub-optimal. | <20ms | `zdhgg/Guandan-training/autoGrouper.ts` |
+| **进阶 (Medium)** | Rule-based + WASM solver + partner awareness | "Rounds-to-empty-hand" optimization; defers to partner if partner is leading. | <80ms | + `Bobgy/poker-guandan-strategy` WASM |
+| **高手 (Hard)** | LLM (DeepSeek) candidate pre-filter | Engine emits 5-10 legal candidates with reasoning; LLM picks. Chinese system prompt. | <3s | Vercel AI Gateway |
+| **大师 (Master)** | DanLM neural net | Top human-amateur strength. **Deferred v1.1.** | ~3s | macOS .so → Linux unresolved |
 
-| Tier | Engine | Behavior | Source |
-|---|---|---|---|
-| **Easy** | Pure rule-based with random noise | Plays valid moves preferring smallest combos. Random temperature 0.3. Will occasionally bomb out partner. | Lifted from `zdhgg/Guandan-training/autoGrouper.ts` |
-| **Medium** | Rule-based + WASM single-hand solver | Calculates "fewest plays to clear hand" via Bobgy's solver; picks the play that minimizes hand fragmentation. | `Bobgy/poker-guandan-strategy` WASM |
-| **Hard** | LLM with candidate pre-filter | Engine generates 5-10 legal candidate plays; LLM prompted with table state + each candidate's pros/cons; LLM picks. ~3-5s per move. | DeepSeek via Vercel AI Gateway |
-| **Expert** | DanLM neural net | Top human-amateur strength | **Deferred to v1.1** |
+**6/8-player mode**: only Easy + Medium ship v1. No surveyed AI handles 6/8 partnership well.
 
-Tier name visible to player as 入门 / 进阶 / 高手 / 大师 (大师 grayed out until v1.1).
-
-**6/8-player mode**: only Easy + Medium ship. No surveyed AI handles 6/8 mode. Mark Hard as "coming soon" for those room sizes.
+**Player assistance** (auto-sort + suggested moves + endgame solver) shares the same engine — single source of truth in `lib/ai/engine.ts`. Client-side WASM for instant feedback. Disabled in ranked mode (v2).
 
 ## Recommended UX direction
 
-The mobile UX stream surfaced concrete constraints:
-
-- **Orientation**: tier 1 = native `screen.orientation.lock()` after `requestFullscreen()` (Android only); tier 2 = CSS `transform: rotate(90deg)` on root container (iOS Safari + any device where tier 1 fails); tier 3 = rotate-prompt overlay (emergency fallback). The Majsoul-style "phone held in portrait → game renders in landscape via CSS rotate" is the iPhone default — see `mobile-landscape-ux.md` § Update 2026-05-16.
+- **Orientation tier 1 (Android)**: native `screen.orientation.lock()` after `requestFullscreen()`
+- **Orientation tier 2 (iOS Safari)**: CSS `transform: rotate(90deg)` on root + JS-set `--logical-w/h` CSS vars
+- **Orientation tier 3 (last resort)**: rotate-prompt overlay (only if CSS rotate fails on specific device)
 - **Table layout** (landscape):
-  - 4-player: bottom (me) / top (partner) / left + right (opponents). Center = trick area.
-  - 6-player: bottom (me) / top-row of 3 (left-partner / top-opponent / right-partner) / left + right (remaining 2). Or stretched octagon.
-  - 8-player: bottom-row (me + my partner indicator) / top-row of 3 / left + right (1 each). Or two-row top strip.
-- **Hand display**: straight overlapping row, 28px visible width per card, ≥12px corner rank/suit font. 27 cards fits on iPhone 14 Pro landscape (390 × 844 → 797 × 335 playfield).
-- **Interaction**: tap-to-lift, then Play button to confirm. NOT single-tap-to-play, NOT drag-to-play.
-- **Auto-arrange** (理牌): persistent button, always available, doesn't auto-trigger on every deal.
+  - 4-player: bottom (me) / top (partner pill) / left + right (rivals). Center = trick area.
+  - 6-player: bottom + 1 partner indicator / top arc of 3 / 1 each side.
+  - 8-player: bottom (me) / top arc of 5 / 1 each side.
+- **Hand display**: straight overlap row, 28px visible per card, ≥12px corner rank. 27 cards fits iPhone 14 Pro landscape (390 × 844 → 797 × 335 playfield). Two-row fallback for < 5.5" screens.
+- **Interaction**: tap-to-lift → confirm via "出牌" button. NOT single-tap-to-play, NOT drag-to-play.
+- **Auto-arrange (理牌)**: persistent button, smart grouping by combo type (not by suit). Manual trigger, doesn't fire automatically.
+- **Heart-level wildcard**: always-visible gold edge + ★ badge. Substitution declared via popup when played.
+- **Tribute UI**: full-screen modal overlay, 400-600ms card-slide animation, 抗贡 banner state when applicable.
 
-Visual style is open. Sibling project has 5 production themes (Broadcast / Linear / Trading / Atelier / Tea-Table); we may transplant one as starting point, but a card game has different visual needs than a scorer. Better to design from scratch — likely something between Marvel Snap (modern card game polish) and Hearthstone mobile (cinematic).
+Visual style: technical + premium (Linear / Vercel / Bloomberg / Anthropic). 10 hi-fi wireframes in `demos/index.html` show the envisioned shape.
 
-## Reusable assets
+## Reusable assets inventory
 
 ### From sibling `../guandan-scorer/`
 - Upgrade calculation: `src/game/calculator.js`
 - A-level state machine: `src/game/rules.js`
-- 4 / 6 / 8 mode constants: `src/core/config.js`
-- Settings drawer pattern + room codes + Upstash KV usage (`api/rooms/*`)
+- 4/6/8 mode constants: `src/core/config.js`
+- Settings drawer + room codes pattern
+- `validateOwnershipToken` 10-line function (copy verbatim per cross-project plan)
+- Upstash KV patterns (`api/rooms/*` + `api/players/*`)
+- Player profile schema + achievement system (will share via Option B)
 
-### From `hash-panda/guandan-guide`
+### From `hash-panda/guandan-guide` (license check pending)
 - Card type recognition: `cards.ts`
 - Pattern matching: `patterns.ts`
-- Bomb comparison `bombPower()`
-- Note: license check required before adopting
+- Bomb comparison: `bombPower()`
 
-### From `zdhgg/Guandan-training` (MIT, brand new — active commits 2026-05-16)
-- `autoGrouper.ts` (38 KB) — hand decomposition heuristics
-- `ruleValidator.ts` (26 KB) — move legality
-- `cardEngine.ts` — game engine core
+### From `zdhgg/Guandan-training` (MIT)
+- `autoGrouper.ts` (38KB) — hand decomposition heuristics
+- `ruleValidator.ts` (26KB) — move legality
+- `cardEngine.ts` — engine core
 
 ### From `Bobgy/poker-guandan-strategy`
-- C++ → WASM solver with first-class red-heart-wildcard search
-- Already deployed as a PWA — proven runnable in browser
+- C++ → WASM solver with red-heart-wildcard search
+- Already deployed as PWA, runnable in browser
 
-### From `dengweiqh/guandan-windows` (Apache-2.0, do NOT adopt code wholesale)
-- 4-tier AI architectural pattern (Web Worker — adapt for our server)
+### From `dengweiqh/guandan-windows` (Apache-2.0, patterns only)
+- 4-tier AI Web Worker architecture (we run server-side)
 - Dealing animation choreography
 - Tribute phase UI flow
-- Rule presets (classic / tournament)
-- Voice callouts (later phase)
+- Rule presets pattern
 
 ## Key risks (ranked)
 
-1. **Hidden-state glue is hand-written**. The Vercel SSE+POST path needs ~50 lines of careful per-message filtering to ensure private hand state never leaks to other players. Unlike Colyseus's framework-enforced `@view`, this is server-code-reviewer-must-catch-it discipline. Mitigation: centralize all outgoing-message construction in one `buildClientPayload(playerId, eventType, payload)` function, audit it once, then never hand-construct outgoing messages elsewhere. Add a unit test that grep-asserts no `res.write(JSON.stringify(roomState))` exists outside that function.
+1. **Hidden-state glue is hand-written**. Vercel SSE+POST needs centralized `buildClientPayload(playerId, eventType, payload)` filter function with TypeScript exhaustiveness check + grep-test asserting no `redis.publish(` exists outside that one file. This is the most security-critical code in the codebase. Mitigation: per realtime-sync-deep-dive.md §7, treat as non-negotiable PR-review item.
 
-2. **AI quality at "Hard" tier**. LLM-based bots are unproven in adversarial partner-card play. Risk: they make obviously dumb plays that ruin the game for human partners. Mitigation: candidate-mode prompts (engine generates legal moves, LLM only picks among them) prevents catastrophic errors but caps ceiling. If quality is unacceptable, fall back to Medium tier with more compute (deeper rule-based search) until DanLM ships in v1.1.
+2. **GFW interference with SSE long-connections** (PRC users). Stateful firewall idle timeout ~60-120s closes SSE streams. Mitigation: send SSE keepalive comment every 20-30s. Long-polling fallback after 2 SSE resets within 60s.
 
-3. **Tribute mechanic is gnarly**. 进贡 / 还贡 + 抗贡 condition + direction in 6/8 mode is the most under-documented part of Guandan rules. None of the open-source projects implement this fully. Plan dedicated UX + engine work for tribute phase. Risk of "tribute bugs" that confuse new players.
+3. **AI Hard tier quality is unverified for partnership play**. LLM may make obviously dumb plays that ruin games for human partners. Mitigation: candidate-mode prompt (engine generates legal moves, LLM only picks) bounds catastrophic errors but caps ceiling. Quality bar test via Elo bench (Easy ↔ Medium ↔ Hard should show ~200 Elo gap each); if Hard < Medium, ship with Hard hidden until DanLM v1.1.
 
-4. **CSS rotate edge cases on iOS**. Android uses native orientation lock cleanly. iOS Safari uses CSS `transform: rotate(90deg)` (Majsoul pattern). Known risk surfaces: virtual keyboard appears in un-rotated coordinate space (mitigation: temporarily exit rotate on input focus); `position: fixed` and `vh`/`vw` reference un-rotated viewport (mitigation: JS-set `--logical-w/h` CSS vars); WebKit rotation bugs occasionally surface on specific device/OS combos. Budget 3-5 days mobile UX work + a test matrix across iPhone SE / 14 Pro / iPad / Pixel.
+4. **PRC GFW tail risk** — 2025-08-20 incident blanket-RST'd all port 443 for 74 minutes. No software mitigation; only path is PRC mirror on Tencent Cloud. Acceptable as a residual risk for v1 (game pauses + reconnects when GFW recovers).
 
-5. **27-card hand on small landscape phones**. iPhone SE / older Android < 5.5" may not fit 27 cards at readable size in a single row. Fallback: two-row hand at narrow widths, or horizontal scroll.
+5. **CSS rotate edge cases on iOS**. WebKit rotation bugs surface on specific device/OS combos. Mitigation: 3-5 days test matrix (iPhone SE / 14 Pro / iPad / Pixel) before launch. Rotate-prompt fallback for any device that fails.
 
-6. **8-player mode hand size policy**. 108 ÷ 8 = 13.5 — half a card. The rules research found this is regional. Mark as configurable in room creation (13 or 14 cards, with the 4 leftover cards going to leader / random / discard pile).
+6. **8-player hand size policy** (108 ÷ 8 = 13.5). Regional variation. Mitigation: room-configurable (13 or 14 cards; 4 leftover cards go to host / discard pile / random).
 
-7. **DanLM platform lock-in**. Author distributes only macOS ARM64 binaries. If we want top-tier AI in v1.1, we need either Linux binaries from author, source code, or our own re-training. **Open issue with author before v1.1 planning begins.**
+7. **27-card hand on small landscape phones** (iPhone SE / older Android < 5.5"). Mitigation: two-row hand fallback when `vw < 600px`.
 
-8. **License check**. Before adopting code from `hash-panda/guandan-guide`, `zdhgg/Guandan-training`, `Bobgy/poker-guandan-strategy`: verify each license allows our use. Three of four references have stated licenses (MIT, Apache-2.0); `shuilongzhu/ai-guandan` has none → cannot reuse.
+8. **DanLM platform lock-in**. macOS .so files only. Mitigation: open issue with author before v1.1 planning begins. Defer if unresolved.
 
-## Decisions made (2026-05-16)
+9. **License check pending** for `hash-panda/guandan-guide` (no stated license on repo). Mitigation: verify before adopting code; if license unclear, port semantics not source.
 
-- **Realtime transport**: Vercel SSE+POST + Upstash Redis pub/sub. No Fly.io / extra dependency. Colyseus retained as backup only.
-- **Mobile orientation**: CSS `transform: rotate(90deg)` (Majsoul-style) as primary on iOS, native lock on Android, rotate-prompt as emergency fallback only.
+10. **Collusion detection is intractable at personal-project scale** (anti-cheat-deep-dive.md §3). v1 logs everything passively; statistical detection only viable at 5000+ games. Accept as residual risk for casual mode.
 
-## Open questions (resolve before plan phase)
+## Remaining open questions (minor — can resolve in plan phase)
 
-1. **Frontend framework**: React confirmed, but TypeScript-only without React (lightweight, Hyperapp-style) is on the table given that game UI is mostly imperative animation. **Default to React** unless someone argues otherwise.
+1. **Frontend framework**: React confirmed. TypeScript-only is on the table but **default to React**.
+2. **Match persistence**: ephemeral rooms (game ends → state gone) + post-game stats sync to shared profile (per cross-project Option B).
+3. **Spectator mode**: yes, read-only spectators in v1 (Lichess pattern). Limited to game public state; no view into player hands.
 
-2. **Card visual style**: classic poker face vs minimalist tech vs editorial illustration. The sibling scorer's Atelier and Tea-Table themes already have card visual languages we could borrow. **Punt to design phase.**
+## v1 implementation milestones (loose-list — plan phase will sequence)
 
-3. **Account model**: anonymous handles (sibling pattern) vs Sign in with Vercel vs full auth (Clerk). **Default to anonymous handles** — same as sibling, lowest friction.
+Using `<MILESTONE>-N: description` naming convention:
 
-4. **Match persistence**: ephemeral rooms (game ends → state gone) vs persistent match history per player. Sibling already has player profile system. **Default to: room state ephemeral, post-game stats sync to player profile** (same pattern as sibling).
+**Foundation**:
+- **CORE-1**: Rules engine — port `hash-panda/guandan-guide` + add scorer's progression layer + unit tests covering tribute / wildcard / bomb hierarchy
+- **CORE-2**: Game state machine — deal → trick → tribute → round-end → game-end with all rule axes from `tribute-ux-deep-dive.md`
+- **NET-1**: Vercel SSE+POST + Upstash Redis transport layer + `MessageType` enum per realtime-sync-deep-dive.md §7
+- **NET-2**: Idempotency keys + `Last-Event-ID` resume + 270s proactive SSE rotation
+- **NET-3**: Hidden-state filter (`buildClientPayload` + grep test) — security-critical, PR-gated
 
-5. **Asset licensing**: card art, sound effects. Use openly-licensed playing card SVGs (there are several public-domain sets) for v1. Custom illustration in a polish phase.
+**UI**:
+- **UI-1**: Card primitive + hand row + trick area (already prototyped in `demos/`)
+- **UI-2**: 4-player table + landscape layout + CSS rotate mechanism
+- **UI-3**: Room creation + lobby + room browser
+- **UI-4**: Tribute phase UI (per tribute-ux-deep-dive.md UI spec)
+- **UI-5**: 6/8-player layouts
+- **UI-6**: Round-end / A-level / victory screens
 
-6. **Spectator mode**: yes/no in v1. Sibling has viewer-mode for rooms. **Default to: yes, read-only spectators allowed** (Colyseus has built-in spectator support).
+**Auth + Cross-project**:
+- **AUTH-1**: Copy `validateOwnershipToken` from scorer + shared @handle namespace setup
+- **AUTH-2**: Migrate scorer's `player:*` → `gs:player:*` keys (sibling scorer side, ~15 file changes)
 
-## Recommended next step
+**AI**:
+- **AI-1**: Easy + Medium engines inline (rule-based + WASM)
+- **AI-2**: LLM Hard tier via DeepSeek + candidate pre-filter
+- **AI-3**: Player assistance — auto-sort + suggest + wildcard substitution UI
+- **AI-4**: Mid-game DC takeover (60s grace → bot promotes)
 
-Move into **design + visual wireframes** per the user's original brief. Specifically:
+**Anti-cheat baseline**:
+- **SEC-1**: Rate limiting via `@upstash/ratelimit` (5s sliding window across all routes)
+- **SEC-2**: IP-based account creation throttle + same-room same-IP warning
+- **SEC-3**: Report button + admin dashboard (gated by ADMIN_TOKEN env)
+- **SEC-4**: Vercel BotID integration on `/api/*`
 
-1. Single-page design doc covering:
-   - Architecture (game server + frontend + KV split)
-   - Core game loop (deal → bid → trick → tribute → end)
-   - AI tier system
-   - Custom room rule axes (which rules are toggleable per room)
-   - Auth + handle system
-   - Room lifecycle (create / invite / join / disband)
-2. Visual wireframes (HTML mockups) for landscape phone, for:
-   - 4-player table at trick start
-   - 4-player table at tribute phase
-   - 6-player table (less critical, can be skipped if 4-player works)
-   - Room create screen (custom rules pickable)
-   - Lobby / room browser
-   - Mobile rotate-prompt overlay
-3. Implementation plan with `<MILESTONE>-N: description` naming (per global convention):
-   - **CORE-1**: rules engine port + unit tests
-   - **CORE-2**: Colyseus server + 4-player session lifecycle
-   - **UI-1**: card components + hand display + landscape layout
-   - **UI-2**: 4-player table + trick flow
-   - **AI-1**: Easy + Medium bots inline
-   - **NET-1**: Colyseus client integration + reconnect
-   - **ROOM-1**: room create / invite / join
-   - **TRIBUTE-1**: tribute phase end-to-end
-   - **AI-2**: LLM Hard tier
-   - **UI-3**: 6 / 8 player layouts
-   - **POLISH-1**: animations / sounds / themes
+**PRC delivery**:
+- **DEPLOY-1**: Custom domain + DNS + SSL on Vercel
+- **DEPLOY-2**: Client-side latency beacons → Upstash counter for p50/p95 monitoring
+- **DEPLOY-3** (deferred, conditional): Tencent Cloud Run Shenzhen mirror + Vercel Edge Middleware geo-routing if p95 > 350ms observed
 
-Expect milestones to overlap and reorder based on dependencies. The plan phase will work all this out properly.
+**Polish (v1.1+)**:
+- **POLISH-1**: Animations (deal cascade / trick arc / level-up celebration)
+- **POLISH-2**: Sound design (card play / shuffle / victory)
+- **POLISH-3**: Ranked mode + Elo ladder
+- **POLISH-4**: DanLM Master tier (gated on Linux deployment resolution)
+
+Estimated rough work effort for v1 (excluding polish): **6-10 weeks full-time** for a single engineer. Cross-functional milestones (auth + cross-project) front-loaded for unblocking.
 
 ---
 
 ## Per-stream references
 
-- AI engines: [`ai-strategies.md`](ai-strategies.md) (5,400 words)
-- Game rules: [`game-rules.md`](game-rules.md) (5,660 words)
-- Existing implementations: [`existing-implementations.md`](existing-implementations.md)
-- Architecture: [`architecture-options.md`](architecture-options.md)
-- Mobile UX: [`mobile-landscape-ux.md`](mobile-landscape-ux.md) (5,250 words)
+Phase 1 (foundation):
+- [`ai-strategies.md`](ai-strategies.md) — 5 AI engines compared
+- [`game-rules.md`](game-rules.md) — complete ruleset
+- [`existing-implementations.md`](existing-implementations.md) — open-source impls + commercial UX
+- [`architecture-options.md`](architecture-options.md) — realtime stacks (locked to Vercel SSE+POST)
+- [`mobile-landscape-ux.md`](mobile-landscape-ux.md) — orientation + table layouts
+
+Phase 2 (deep dives):
+- [`realtime-sync-deep-dive.md`](realtime-sync-deep-dive.md) — Lichess analog + prescriptive Vercel SSE+POST spec
+- [`ai-implementation-plan.md`](ai-implementation-plan.md) — per-tier pseudocode + player assistance + Elo bench
+- [`tribute-ux-deep-dive.md`](tribute-ux-deep-dive.md) — 进贡/还贡/抗贡 fully specified across 4/6/8 modes
+- [`card-visual-assets.md`](card-visual-assets.md) — Unicode + Geist verdict
+- [`china-network-deployment.md`](china-network-deployment.md) — PRC reachability + Tencent Cloud fallback
+- [`anti-cheat-deep-dive.md`](anti-cheat-deep-dive.md) — account-level + collusion + scripted-client
+- [`cross-project-integration.md`](cross-project-integration.md) — sibling scorer integration (Option B)
+
+Total: ~8,200 lines / ~65K words across 13 documents.
