@@ -1,22 +1,25 @@
 # Research Index
 
-This directory captures investigation done before any implementation begins. Findings will inform the design doc and implementation plan.
+This directory captures investigation done before implementation. Read [`SUMMARY.md`](SUMMARY.md) first; per-stream files are the deep references.
 
-## Research streams
+## Research streams (all complete 2026-05-16)
 
 | File | Scope | Status |
 |---|---|---|
-| [`ai-strategies.md`](ai-strategies.md) | Deep dive on 5 reference AI engines — Bobgy / Quentain / shuilongzhu / DanLM / Guandan-training. Algorithmic approaches, runtime constraints, difficulty tuning. | pending |
-| [`game-rules.md`](game-rules.md) | Comprehensive Guandan ruleset — card types, bombs hierarchy, tribute (进贡), heart-level wildcard, 4/6/8-player mode differences. Extracted from `hash-panda/guandan-guide` + sibling `guandan-scorer`. | pending |
-| [`existing-implementations.md`](existing-implementations.md) | Existing web/desktop implementations — CrazeGuandan, GuanDanInOffice, guandan-windows. Tech stacks, UX patterns, card animation approaches. | pending |
-| [`architecture-options.md`](architecture-options.md) | Real-time multiplayer architecture options — server-authoritative card game design, WebSocket vs WebRTC, Vercel-compatible stacks (Functions, Queues, Durable Objects analog). | pending |
-| [`mobile-landscape-ux.md`](mobile-landscape-ux.md) | Mobile landscape web game UX — orientation lock, safe areas, 4/6/8 player table layouts, card interactions. References to 欢乐斗地主, Hearthstone mobile, etc. | pending |
-| [`SUMMARY.md`](SUMMARY.md) | Cross-cutting synthesis — recommended tech stack, architecture, AI approach, key risks. Written after all streams complete. | pending |
+| [`SUMMARY.md`](SUMMARY.md) | **Start here.** Cross-cutting synthesis — recommended tech stack, AI approach, UX direction, key risks, open questions. | ✅ |
+| [`ai-strategies.md`](ai-strategies.md) | Deep dive on 5 reference AI engines (Bobgy / Quentain / shuilongzhu / DanLM / Guandan-training). 5,400 words. | ✅ |
+| [`game-rules.md`](game-rules.md) | Comprehensive Guandan ruleset extracted from `hash-panda/guandan-guide` + sibling `guandan-scorer`. 5,660 words. | ✅ |
+| [`existing-implementations.md`](existing-implementations.md) | Open-source repos + commercial app UX scan. | ✅ |
+| [`architecture-options.md`](architecture-options.md) | Realtime multiplayer stacks — Vercel, PartyKit, Cloudflare DO, Colyseus, Liveblocks, self-host. | ✅ |
+| [`mobile-landscape-ux.md`](mobile-landscape-ux.md) | Orientation lock + safe areas + 4/6/8 player layouts + interaction patterns. 5,250 words. | ✅ |
 
-## Decisions deferred until research complete
+## Headline conclusions
 
-- Frontend rendering: Canvas (PixiJS / Phaser) vs DOM + CSS animations
-- Realtime transport: WebSocket via Vercel Functions + KV pub/sub, or PartyKit / Cloudflare Durable Objects, or Colyseus
-- AI runtime: Client-side (WASM/JS) vs server-side (Node), per-difficulty model
-- Auth: anonymous handles only (like sibling scorer) vs accounts
-- Persistence: stateless ephemeral rooms vs persistent match history
+- **Game server**: Colyseus on Fly.io (Vercel Functions can't host WebSocket as of Jan 2026)
+- **Frontend host**: stays on Vercel
+- **Rendering**: CSS DOM + transform/opacity (NOT WebGL/PixiJS)
+- **AI in v1**: 3 tiers via different engines, not search depth; DanLM deferred to v1.1
+- **Mobile**: rotate-prompt overlay (iOS Safari doesn't implement orientation lock)
+- **Rules engine**: port `hash-panda/guandan-guide` TS engine + reuse `../guandan-scorer` progression
+
+See [`SUMMARY.md`](SUMMARY.md) for details and the rationale chain.
