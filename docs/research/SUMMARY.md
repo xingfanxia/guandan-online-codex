@@ -4,10 +4,10 @@
 
 ## TL;DR
 
-1. **Realtime stack is NOT Vercel-native.** Vercel Functions cannot host WebSockets (confirmed Jan 2026). The sibling scorer's poll-on-KV pattern works for 2s-cadence scorekeeping but cannot support 50–200ms-cadence card play. We will run the **game server on Fly.io** (Colyseus framework) and keep the **frontend on Vercel**.
+1. **Realtime stack: two viable paths.** Vercel Functions cannot host WebSockets (confirmed Jan 2026), but the Vercel-native SSE+POST+Redis pub/sub pattern meets Guandan's 200ms latency budget when bot logic runs inline in the move handler. Two co-equal options: (a) **Vercel SSE+POST** (platform unity, ~200 lines of glue, ~$0 marginal cost) or (b) **Colyseus on Fly.io** (framework-enforced hidden state + reconnect, ~$10/mo, no glue). Decision deferred to plan phase — see `architecture-options.md` § "Update 2026-05-16". A dedicated deep-dive on realtime sync patterns from production card games (poker.online, chess.com, etc.) is queued as a follow-up.
 2. **AI is shippable in v1 with multi-tier difficulty**, but the top-tier neural engine (DanLM) is deferred to v1.1 due to macOS-only binaries. Easy / Medium / Hard tiers ship via TypeScript rule-based bots + WASM solver + LLM (DeepSeek) — total ~3-4 weeks of AI work.
 3. **Rules engine is half-built.** `hash-panda/guandan-guide` provides a tested TypeScript trick / hand-recognition engine to port. The sibling `guandan-scorer` already has scoring / progression / A-level logic. Eight items remain to write from scratch (deal/shuffle, trick orchestration, 接风, tribute, 报牌, etc.).
-4. **Landscape mobile is genuinely under-explored.** No surveyed open-source or commercial app solves landscape phone layout well — commercial Chinese apps are portrait-cross. Our brief is a real differentiator, but we are designing UI without a reference. Plan extra UX iteration here.
+4. **Landscape mobile: force-landscape via CSS rotate, Majsoul-style.** No commercial Guandan app ships landscape, but Majsoul / 4399 / WeChat H5 games widely use the CSS `transform: rotate(90deg)` pattern on iOS Safari where `screen.orientation.lock()` is not supported. The "three hard problems" the agent flagged are real for general web apps but tractable for a static-layout card game. Rotate-prompt overlay drops from "primary iOS path" to "emergency fallback." See `mobile-landscape-ux.md` § "Update 2026-05-16".
 5. **Rendering: CSS DOM, not Canvas.** A Guandan table has < 100 visible card nodes. CSS `transform` + `opacity` is faster to build, easier to theme, more accessible, and meets the 60 fps budget on a 2-year-old Android. PixiJS / Phaser are over-spec'd.
 
 ## Recommended stack
@@ -15,15 +15,17 @@
 | Layer | Choice | Why |
 |---|---|---|
 | Frontend framework | **Vite + TypeScript + React** | Vite for fast HMR + ESM-native builds. React because every reference impl converged on it. SSR not needed for a game. |
-| State on client | Colyseus client SDK + Zustand for non-game UI | Colyseus client gives us reactive schema sync out of the box. |
+| State on client | Reactive store (Zustand) + transport-specific sync layer | Final shape depends on realtime transport decision below. |
 | Rendering | **CSS `transform` / `opacity`** | Per mobile UX research: < 100 nodes, easy theming, accessible. Reject Pixi/Phaser. |
-| Realtime transport | **Colyseus on Fly.io** | Top pick from architecture stream. Hidden state via `@view`, reconnect via `allowReconnection(client, 60s)`, bots run inline. ~$10/mo for 100 concurrent rooms. |
-| Backup realtime | PartyKit on own Cloudflare account | If Colyseus fails: PartyKit (DO under the hood). Slightly more boilerplate (manual hidden-state filter). |
+| Orientation lock | **CSS `transform: rotate(90deg)`** (Majsoul-style) + native lock on Android | Force-landscape works on iOS Safari via CSS rotate. Rotate-prompt is fallback only. |
+| Realtime transport (option A) | **Vercel SSE+POST + Upstash Redis pub/sub** | Stays on Vercel. ~$0 marginal cost. ~200 lines of glue for hidden-state + reconnect. Inline bots in move handler. |
+| Realtime transport (option B) | **Colyseus on Fly.io** | Framework solves hidden state (`@view`) + reconnect (`allowReconnection`) + inline bots. ~$10/mo. ~0 lines of glue. |
+| Backup if both fail | PartyKit on own Cloudflare account | Durable Object per room. WS native. Manual hidden-state filter. |
 | Persistence (room history) | Upstash Redis (Vercel Marketplace) | Same as sibling scorer. Game-state-per-round persisted for reconnect + replay. |
 | Frontend host | Vercel | Already where the sibling lives, easy preview URLs, AI Gateway / shadcn integrations available. |
 | Auth | Anonymous handle (`@handle`) | Same model as sibling scorer. No accounts in v1. |
 | Rules engine | **Port `hash-panda/guandan-guide`** (TypeScript) | The most rigorous open-source trick engine. Add scorer's progression layer on top. |
-| AI v1 (Easy / Medium) | TS bots from `zdhgg/Guandan-training` (MIT) + WASM solver from `Bobgy/poker-guandan-strategy` | Server-side, inline in Colyseus room loop. |
+| AI v1 (Easy / Medium) | TS bots from `zdhgg/Guandan-training` (MIT) + WASM solver from `Bobgy/poker-guandan-strategy` | Server-side, inline in room loop (Vercel POST handler or Colyseus `setSimulationInterval`). |
 | AI v1 (Hard) | LLM via DeepSeek + candidate pre-filter | Feature-flagged; ~$0.01–0.05 per game. |
 | AI v1.1 (Expert) | DanLM (deferred) | macOS .so files block Linux deployment. Open issue with author; defer until resolved. |
 
@@ -48,7 +50,7 @@ Tier name visible to player as 入门 / 进阶 / 高手 / 大师 (大师 grayed 
 
 The mobile UX stream surfaced concrete constraints:
 
-- **Orientation**: rotate-prompt overlay is the only universal mechanism. Don't try `screen.orientation.lock()` first — fall back gracefully.
+- **Orientation**: tier 1 = native `screen.orientation.lock()` after `requestFullscreen()` (Android only); tier 2 = CSS `transform: rotate(90deg)` on root container (iOS Safari + any device where tier 1 fails); tier 3 = rotate-prompt overlay (emergency fallback). The Majsoul-style "phone held in portrait → game renders in landscape via CSS rotate" is the iPhone default — see `mobile-landscape-ux.md` § Update 2026-05-16.
 - **Table layout** (landscape):
   - 4-player: bottom (me) / top (partner) / left + right (opponents). Center = trick area.
   - 6-player: bottom (me) / top-row of 3 (left-partner / top-opponent / right-partner) / left + right (remaining 2). Or stretched octagon.
@@ -91,13 +93,13 @@ Visual style is open. Sibling project has 5 production themes (Broadcast / Linea
 
 ## Key risks (ranked)
 
-1. **Realtime stack vendor change**. We are leaving Vercel for the server, which is a real departure from the sibling project's pattern. Mitigation: keep the realtime layer thin and well-abstracted, so swapping Colyseus → PartyKit → self-hosted Socket.IO is mechanical, not architectural.
+1. **Realtime stack decision pending**. Two co-equal options (Vercel SSE+POST vs Colyseus on Fly.io) — neither is wrong, but they shape the codebase differently. Decision is queued for the realtime sync deep-dive follow-up + plan phase. Mitigation in either case: keep the realtime layer thin and well-abstracted via a `RealtimeAdapter` interface, so swapping is mechanical not architectural.
 
 2. **AI quality at "Hard" tier**. LLM-based bots are unproven in adversarial partner-card play. Risk: they make obviously dumb plays that ruin the game for human partners. Mitigation: candidate-mode prompts (engine generates legal moves, LLM only picks among them) prevents catastrophic errors but caps ceiling. If quality is unacceptable, fall back to Medium tier with more compute (deeper rule-based search) until DanLM ships in v1.1.
 
 3. **Tribute mechanic is gnarly**. 进贡 / 还贡 + 抗贡 condition + direction in 6/8 mode is the most under-documented part of Guandan rules. None of the open-source projects implement this fully. Plan dedicated UX + engine work for tribute phase. Risk of "tribute bugs" that confuse new players.
 
-4. **Mobile orientation lock variance**. iOS Safari does nothing. Android Chrome needs fullscreen. PWA install changes behavior. We will ship the rotate-prompt overlay as primary and accept that desktop-class screen control isn't possible on iOS web. Risk: some users find it annoying. Mitigation: rotate prompt is short-lived + dismissible-once-per-session.
+4. **CSS rotate edge cases on iOS**. Android uses native orientation lock cleanly. iOS Safari uses CSS `transform: rotate(90deg)` (Majsoul pattern). Known risk surfaces: virtual keyboard appears in un-rotated coordinate space (mitigation: temporarily exit rotate on input focus); `position: fixed` and `vh`/`vw` reference un-rotated viewport (mitigation: JS-set `--logical-w/h` CSS vars); WebKit rotation bugs occasionally surface on specific device/OS combos. Budget 3-5 days mobile UX work + a test matrix across iPhone SE / 14 Pro / iPad / Pixel.
 
 5. **27-card hand on small landscape phones**. iPhone SE / older Android < 5.5" may not fit 27 cards at readable size in a single row. Fallback: two-row hand at narrow widths, or horizontal scroll.
 
@@ -109,7 +111,9 @@ Visual style is open. Sibling project has 5 production themes (Broadcast / Linea
 
 ## Open questions (resolve before plan phase)
 
-1. **Frontend framework**: React confirmed, but TypeScript-only without React (lightweight, Hyperapp-style) is on the table given that game UI is mostly imperative animation. **Default to React** unless someone argues otherwise.
+1. **Realtime transport: Vercel SSE+POST vs Colyseus on Fly.io**. Both are within latency + complexity budgets. Trade-off: platform unity + ~200 lines of glue (Vercel) vs framework-enforced safety + Fly.io ops surface (Colyseus). **Resolve after realtime sync deep-dive lands** — see queued task #8.
+
+2. **Frontend framework**: React confirmed, but TypeScript-only without React (lightweight, Hyperapp-style) is on the table given that game UI is mostly imperative animation. **Default to React** unless someone argues otherwise.
 
 2. **Card visual style**: classic poker face vs minimalist tech vs editorial illustration. The sibling scorer's Atelier and Tea-Table themes already have card visual languages we could borrow. **Punt to design phase.**
 

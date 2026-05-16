@@ -304,3 +304,58 @@ These three decisions are forced by the Colyseus choice and cannot be abstracted
 - Liveblocks limits — https://liveblocks.io/docs/platform/limits
 - Fly.io pricing — https://www.withorb.com/blog/flyio-pricing
 - Upstash Redis + Vercel SSE tutorial — https://upstash.com/blog/realtime-notifications
+
+---
+
+## Update — 2026-05-16: Re-examining the Vercel SSE+POST verdict
+
+After this document was written, an internal review challenged the "Vercel native = marginal" verdict (Option 1). On closer examination, two of the agent's downsides are softer than originally stated.
+
+### 1. Bot execution latency is not 500ms–5s
+
+The original analysis assumed bot moves require external triggers (Vercel Cron / QStash). They do not. The same Vercel Function that handles `POST /api/game/[room]/move` can:
+
+1. Validate and persist the player's move
+2. Detect "next turn is a bot"
+3. Compute the bot move inline (rule-based: ~10ms, WASM solver: ~50ms)
+4. Publish both moves to Upstash Redis pub/sub in one batch
+5. Return
+
+Bot total latency ≈ player latency ≈ 50–150ms end-to-end — within Guandan's 200ms target. Only constraint: bot AI must complete within the function's request timeout (300s on Fluid Compute — not a limiter for rule-based or single-pass LLM bots).
+
+### 2. SSE 300s reconnect is not painful for a card game
+
+The 300s SSE limit was framed as "added complexity." In a card game with a typical 15–40 minute session, the client reconnects the stream every ~5 minutes. `EventSource` has automatic reconnection built into the spec (`Last-Event-ID` header replays missed events). Client-side: one event-listener-attached-once. Server-side: the new SSE handler reads the latest room state from KV and replays from the last `lastEventId`. ~30 lines of glue.
+
+### Revised verdict on Option 1
+
+**Co-equal top pick with Colyseus.** The decision is now framed as:
+
+| | Vercel SSE+POST | Colyseus on Fly.io |
+|---|---|---|
+| Move latency | 55–165ms | 30–80ms |
+| Hosting surface | Vercel only | Vercel (FE) + Fly.io (server) |
+| Marginal cost @ 100 rooms | ~$0 (within free tiers) | ~$10/mo |
+| Hidden-state filtering | Manual, ~50 lines per handler | Declarative via `@view` decorator |
+| Reconnection | EventSource native + KV replay | `allowReconnection(client, 60s)` |
+| Concurrent-move races | Optimistic locking on KV (Lua scripts) | Free linearization (single DO) |
+| Glue code you write | ~200 lines | ~0 lines |
+| Vendor lock-in | Vercel + Upstash | Node.js (portable) |
+| Matches sibling scorer pattern | ✅ | ❌ |
+
+**Pick Vercel SSE+POST if**: you value platform unity, already deep in Vercel ecosystem, willing to write ~200 lines of careful glue once.
+
+**Pick Colyseus if**: you want framework-enforced safety on the trickiest parts (hidden state ACL, reconnection token, bot inline), and are OK adding Fly.io to your ops surface.
+
+Both are within Guandan's latency and complexity budgets. `SUMMARY.md` reflects this revision.
+
+### What does NOT work (workarounds considered in review)
+
+- **Vercel Queues** — producer/consumer durable event stream meant for background processing (e.g., post-game stat sync, leaderboard recompute). Not a pub/sub fanout. Cannot replace Redis pub/sub for the "broadcast played card to all room peers" path.
+- **Vercel Workflow DevKit (WDK)** — durable step-based workflows. Useful for crash-safe game-state authority (one workflow per round, steps = trick → tribute → score), but doesn't push to clients. Still need SSE / polling on top. Net: +complexity, no realtime-push problem solved unless durability is a hard requirement (and for an ephemeral card game, it isn't).
+
+These were not in the original analysis because they don't address the realtime-fanout problem, but they were raised in review and are recorded here for future reference.
+
+### Follow-up research (queued)
+
+A dedicated deep-dive on realtime sync mechanisms for production card games (poker.online, chess.com, real-money mahjong apps, WebTransport, WebRTC data channels) is queued — see [`realtime-sync-deep-dive.md`](realtime-sync-deep-dive.md) when written.

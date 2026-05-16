@@ -620,3 +620,66 @@ Apply `env(safe-area-inset-*)` padding on all four sides of `.game-root`. Requir
 - [Game Design UX Best Practices — UX Planet](https://uxplanet.org/game-design-ux-best-practices-guide-4a3078c32099)
 - [UX for Mobile Games — Vrunik](https://vrunik.com/ux-for-mobile-games-optimizing-user-interfaces-for-small-screens/)
 - [orientation — Web app manifest — MDN](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/orientation)
+
+---
+
+## Update — 2026-05-16: CSS rotate is the production path for forced landscape
+
+The original analysis framed CSS `transform: rotate(90deg)` as a trap ("three hard problems") and concluded that the rotate-prompt overlay is "the only universally reliable iOS fallback." This was challenged in review against the empirical reality of major Chinese mobile web games — Majsoul (雀魂), 4399 H5 games, WeChat mini-games — which ship forced landscape on iPhone Safari today without a rotate prompt.
+
+### What Majsoul actually does
+
+Majsoul is built on Cocos Creator and renders the entire game as a single WebGL canvas. On a portrait-held iPhone, the game:
+
+1. Detects orientation via `window.matchMedia('(orientation: portrait)')`
+2. Applies `transform: rotate(90deg)` to the canvas container
+3. Cocos engine internally transforms touch coordinates through the rotation matrix
+4. The user sees the game in landscape while holding the phone in portrait
+
+This works because: (a) the entire UI is one canvas (no DOM tree to manage), (b) no scrolling, (c) no virtual keyboard, (d) the game engine owns coordinate transforms.
+
+### Re-examining the "three hard problems" for our DOM-based game
+
+The original analysis listed three CSS rotate problems:
+
+1. **Touch coordinates flip** — outdated as of 2026. Modern browsers (iOS Safari 16+, Android Chrome 90+) correctly translate pointer events through CSS `transform`. Click on a rotated button delivers correct local coordinates. This concern was inherited from older browser behavior.
+
+2. **Viewport units break** — true but mitigable. `100vw` / `100vh` reference the un-rotated viewport. Fix: use JS-set CSS variables (`--logical-w`, `--logical-h`) sourced from `window.innerWidth` / `window.innerHeight`, swap dimensions when rotate is active. ~30 lines of glue, set once at orientation change. Modern `100dvw` / `100dvh` (dynamic viewport units) help on iOS but still need the swap in the rotated frame.
+
+3. **Virtual keyboard breaks** — true. The IME inserts in the un-rotated coordinate space, looks sideways relative to the rotated UI. For Guandan, text input is rare (room code entry, handle entry). Solution: exit rotate mode while a text input has focus, re-enter on blur. Well-documented pattern in Chinese mobile web ecosystems.
+
+For a static-layout card game without scrolling, all three are tractable. The "trap" framing is correct for general-purpose web apps but over-conservative for a Majsoul-shaped game UI.
+
+### Revised tier ranking
+
+| Path | When to use |
+|---|---|
+| **Native orientation lock** | Android (Chrome 46+) after `requestFullscreen()` — works reliably |
+| **CSS rotate trick** (primary on iOS) | iPhone Safari + any device where native lock fails. The Majsoul-style "just works" path: phone in portrait → game in landscape via CSS rotate. |
+| **Rotate-prompt overlay** | Emergency fallback only. Fires if CSS rotate exhibits a bug on a specific device; offers skip-to-CSS-rotate button. |
+
+This inverts the original Section 1's recommendation. Rotate-prompt drops from "iOS default" to "edge-case fallback." CSS rotate becomes the iOS default.
+
+### Implementation note for plan phase
+
+Budget ~3-5 days of mobile UX work to wire the CSS rotate path robustly. Test matrix:
+
+- Portrait held + browser auto-rotate ON → CSS rotate kicks in, game in landscape
+- Portrait held + iOS Control Center rotation lock ON → still works (orientation lock is OS-level, but our CSS detects portrait via media query regardless)
+- Landscape held → render natively, no CSS rotate
+- Mid-game rotation change → graceful transition without state loss
+- Text input focus (room code / handle entry) → temporary exit rotate
+- iOS PWA install (display: standalone) → check whether orientation differs from in-tab
+
+Reference implementations to study:
+- Majsoul mobile web (Cocos Creator)
+- 4399 mobile games (H5 game template)
+- Tencent Egret framework rotate trick
+
+### Additional sources
+
+- [How to Get Screen Orientation in JavaScript: Complete 2026 Guide](https://copyprogramming.com/howto/javascript-screen-orientation-on-safari) — confirms iOS Safari 26 still does not implement orientation.lock()
+- [ScreenOrientation.lock on Safari · Issue #19355](https://github.com/mdn/browser-compat-data/issues/19355) — long-standing WebKit non-implementation
+- [手机游戏横屏显示方案 — CSDN](https://blog.csdn.net/yerongtao/article/details/81098297) — production Chinese mobile web force-landscape pattern
+- [移动端横屏布局与自适应 — CSDN](https://blog.csdn.net/az44yao/article/details/124779467) — JS+CSS implementation strategy
+- [纯CSS（media queries）实现移动端横竖屏提示 — segmentfault](https://segmentfault.com/a/1190000003871049) — CSS-only fallback patterns
