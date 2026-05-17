@@ -938,21 +938,336 @@
 </section>
 
 <!-- ============================================ -->
-<!-- S05: 8P TABLE                                 -->
+<!-- Shared oval-table styles (used by S05/S06)    -->
 <!-- ============================================ -->
-<section class="scene s05">
+<style>
+  .table-arena--oval { display: block !important; position: relative; padding: 0 !important; overflow: hidden; }
+  .oval-felt {
+    position: absolute;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse at 50% 40%, oklch(18% 0.035 150 / 0.8), transparent 70%),
+      radial-gradient(ellipse at 50% 50%, oklch(13% 0.025 150), oklch(10% 0.015 150));
+    box-shadow:
+      inset 0 0 0 1px oklch(28% 0.030 150 / 0.6),
+      inset 0 -3px 12px oklch(0% 0 0 / 0.4),
+      0 0 24px oklch(0% 0 0 / 0.3);
+  }
+  .oval-felt-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .oval-seat {
+    position: absolute;
+    width: 88px;
+    height: 70px;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    z-index: 3;
+  }
+  .oval-seat-stack {
+    display: flex;
+    height: 14px;
+    margin-bottom: 1px;
+  }
+  .oval-seat-stack .card {
+    --card-w: 10px;
+    --card-h: 14px;
+    margin-left: -5px;
+    border-radius: 2px;
+    padding: 0;
+  }
+  .oval-seat-stack .card:first-child { margin-left: 0; }
+  .oval-seat-avatar-wrap { position: relative; }
+  .oval-seat-avatar-wrap .avatar { width: 30px; height: 30px; font-size: 10px; }
+  .oval-seat-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+  .oval-seat-ring--A { border-color: var(--team-self); }
+  .oval-seat-ring--B { border-color: var(--team-rival); }
+  .oval-seat-ring--C { border-color: var(--team-c); }
+  .oval-seat-ring--D { border-color: var(--team-d); }
+  .oval-seat-active {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 16px oklch(68% 0.20 30 / 0.7);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .oval-seat-name {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-1);
+    line-height: 1.1;
+    white-space: nowrap;
+    letter-spacing: 0;
+  }
+  .oval-seat-meta {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--ink-3);
+    letter-spacing: var(--tracking-wide);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .oval-seat-meta em { font-style: normal; color: var(--accent); }
+  .oval-seat-meta-self { color: var(--team-self); }
+  .oval-seat-bot-chip {
+    font-family: var(--font-mono);
+    font-size: 7px;
+    color: var(--info);
+    letter-spacing: 0.04em;
+    padding: 0 3px;
+    border: 1px solid var(--info-tint);
+    border-radius: 2px;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+  .oval-trick {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 2;
+    pointer-events: auto;
+  }
+  .oval-trick-meta {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .oval-trick-meta em { font-style: normal; color: var(--ink-1); }
+  .oval-trick-cards { display: flex; justify-content: center; }
+  .oval-trick-cards .card { margin-left: -14px; }
+  .oval-trick-cards .card:first-child { margin-left: 0; }
+  .oval-trick-foot { margin-top: 4px; }
+  .oval-meta-level {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    display: flex;
+    gap: 10px;
+    white-space: nowrap;
+  }
+  .oval-meta-level span { color: var(--ink-2); }
+  .oval-meta-level em { font-style: normal; }
+  .oval-meta-level .lv-A { color: var(--team-self); }
+  .oval-meta-level .lv-B { color: var(--team-rival); }
+  .oval-meta-level .lv-C { color: var(--team-c); }
+  .oval-meta-level .lv-D { color: var(--team-d); }
+</style>
+
+<!-- ============================================ -->
+<!-- S05: 6P TABLE · 6-max oval (NEW)              -->
+<!-- ============================================ -->
+<section class="scene s05-6p">
   <div class="scene-head">
     <div class="scene-num">05</div>
-    <div class="scene-title">8-Player Table · <em>四家混战</em></div>
-    <div class="scene-tag">phone · landscape · 4 teams of 2</div>
+    <div class="scene-title">6-Player Table · <em>三家轮转 · 6-max oval</em></div>
+    <div class="scene-tag">phone · landscape · 3 teams of 2 · 德扑式 oval</div>
   </div>
-  <p class="scene-note">8 人四家。topnav 下方第一行 3 个 opponent，第二行 2 个 opponent + 我的 partner，最后行是我的手牌（13 张，8P 模式手牌少）+ 操作按钮。color-coded 队号小圆点指示阵营 — 我（蓝）/ 对家（红）/ 第三家（绿）/ 第四家（金）。</p>
+  <p class="scene-note">6 人三家。参考德扑 6-max oval 布局。5 个对手分布在椭圆 perimeter（7:30 / 10:15 / 12 / 1:45 / 4:30 五个位置），我在底部 6 点钟方向。队员通过 avatar 外圈颜色环识别 — 我 + 1:45 + 10:15 是蓝色 team A，其他三家分别是 red / green 不同对家。中央 felt 显示 trick + 三家 level meter。</p>
 
   <div class="scene-stage">
     <div class="phone">
       <div class="phone__island"></div>
       <div class="phone__screen">
-        <div class="table table-8p">
+        <div class="table">
+          <div class="table-top">
+            <div class="table-top-left">
+              <span class="table-top-key mono">ROOM</span>
+              <span class="table-top-val mono">Q1R4S8</span>
+              <span class="chip chip--live mono">LIVE 12:08</span>
+              <span class="chip mono">6P · 三家</span>
+            </div>
+            <div class="table-top-right">
+              <span class="table-top-key mono">轮到</span>
+              <span class="table-top-val mono">@豆豆</span>
+              <span class="chip chip--accent mono">8s</span>
+            </div>
+          </div>
+          <div class="table-arena table-arena--oval">
+            <!-- Oval felt -->
+            <div class="oval-felt" style="left: 116px; top: 30px; width: 600px; height: 180px;"></div>
+
+            <!-- Trick area (center) -->
+            <div class="oval-trick">
+              <div class="oval-trick-meta"><span>上一手 · @饭团 · </span><em>三连对 7-7-8-8-9-9</em></div>
+              <div class="oval-trick-cards">
+                <div class="card"><span class="card__rank">7</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">7</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">8</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--red"><span class="card__rank">8</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">9</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">9</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              </div>
+              <div class="oval-trick-foot">
+                <span class="chip mono" style="font-size:9px">需 同种型同点压 / 炸弹</span>
+              </div>
+            </div>
+
+            <!-- Team level meter (bottom center, just above hand strip) -->
+            <div class="oval-meta-level mono">
+              <span class="lv-A">我方 · LV <em>5</em></span>
+              <span class="lv-B">B · LV 4</span>
+              <span class="lv-C">C · LV 5</span>
+            </div>
+
+            <!-- 5 opponent seats on upper arc + partners by team color -->
+            <!-- 7:30 — opponent team B (@饭团) -->
+            <div class="oval-seat" style="left: 218px; top: 175px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--B"></div>
+                <div class="avatar avatar--rival-1">FT</div>
+              </div>
+              <span class="oval-seat-name">@饭团</span>
+              <span class="oval-seat-meta">B · 18 张</span>
+            </div>
+            <!-- 10:15 — partner team A (@小李 BOT) -->
+            <div class="oval-seat" style="left: 157px; top: 110px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--A"></div>
+                <div class="avatar avatar--partner">XL</div>
+              </div>
+              <span class="oval-seat-name">@小李 <span class="oval-seat-bot-chip">BOT 进阶</span></span>
+              <span class="oval-seat-meta-self">A · 16 张</span>
+            </div>
+            <!-- 12 — opponent team C (@老郭) -->
+            <div class="oval-seat" style="left: 416px; top: 64px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--C"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, oklch(50% 0.14 130), oklch(40% 0.12 130));">LG</div>
+              </div>
+              <span class="oval-seat-name">@老郭</span>
+              <span class="oval-seat-meta">C · 14 张</span>
+            </div>
+            <!-- 1:45 — partner team A (@泉酱) -->
+            <div class="oval-seat" style="left: 675px; top: 110px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--A"></div>
+                <div class="avatar avatar--partner">QQ</div>
+              </div>
+              <span class="oval-seat-name">@泉酱</span>
+              <span class="oval-seat-meta-self">A · 15 张</span>
+            </div>
+            <!-- 4:30 — opponent team C (@豆豆 BOT) — ACTIVE -->
+            <div class="oval-seat" style="left: 614px; top: 175px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--C"></div>
+                <div class="oval-seat-active"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, oklch(52% 0.13 70), oklch(42% 0.11 70));">DD</div>
+              </div>
+              <span class="oval-seat-name">@豆豆 <span class="oval-seat-bot-chip">BOT 高手</span></span>
+              <span class="oval-seat-meta">C · <em>行动 8s</em></span>
+            </div>
+          </div>
+          <div class="table-bot">
+            <div class="my-hand-wrap">
+              <div class="my-hand-meta mono">
+                <span>我 · <em>@阿祥</em> · 17 张 · 队 A · 搭档 <em>@小李 / @泉酱</em></span>
+                <span>红心通配 ★</span>
+              </div>
+              <div class="my-hand-row">
+                <div class="card card--red"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">4</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--red"><span class="card__rank">5</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card card--wild card--red"><span class="card__rank">5</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">7</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card"><span class="card__rank">8</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">9</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card card--red"><span class="card__rank">10</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">10</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--lifted"><span class="card__rank">J</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--lifted card--red"><span class="card__rank">J</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card card--red"><span class="card__rank">Q</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">K</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card"><span class="card__rank">A</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--red"><span class="card__rank">A</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">2</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card" style="background:linear-gradient(135deg, oklch(94% 0.02 80), oklch(90% 0.03 50));color:var(--suit-red)"><span class="card__rank">B</span><span class="card__suit">★</span><span class="card__center">★</span></div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn--ghost" disabled style="opacity:0.4">出牌</button>
+              <button class="btn btn--ghost">不出（等@豆豆）</button>
+              <button class="btn btn--ghost">理牌</button>
+              <button class="btn btn--accent-soft">提示</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>6-max oval geometry</dt><dd>5 个对手按 7:30 / 10:15 / 12 / 1:45 / 4:30 五个椭圆位分布（cx=416, cy=121, rx=300, ry=85）。每个 seat 是绝对定位，center 是 elliptical felt。直接参考德扑 6-max 桌型。</dd></div>
+    <div><dt>team color rings</dt><dd>avatar 外圈 2px 色环识别阵营 — blue=A（我 + 1:45 + 10:15）/ red=B（7:30）/ green=C（12 + 4:30）。比小色点更明显，不用读 metadata 就能扫出阵营。</dd></div>
+    <div><dt>分布逻辑</dt><dd>3 teams of 2 时队员 alternating 排列（123 vs 456 → 13/35/51 各家分散在桌上不连续）—— 这是 Guandan / Bridge / Tractor 共有的 seating 公约。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S06: 8P TABLE · 9-max oval (REPLACED)         -->
+<!-- ============================================ -->
+<section class="scene s06-8p">
+  <div class="scene-head">
+    <div class="scene-num">06</div>
+    <div class="scene-title">8-Player Table · <em>四家混战 · 9-max oval</em></div>
+    <div class="scene-tag">phone · landscape · 4 teams of 2 · 德扑 9-max 减一</div>
+  </div>
+  <p class="scene-note">8 人四家。<strong>这是按德扑 9-max 桌型的真正 oval 布局重做</strong>（之前那版 "5 人挤顶部" 是错的）。7 个对手按 7:30 / 9 / 10:30 / 12 / 1:30 / 3 / 4:30 七个位置环绕分布，我在 6 点钟方向（底部 hand 区）。partner @泉酱 在 12 点钟正对面 — 体感"桌对面就是搭档"。四家用 4 种 ring 颜色区分。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table">
           <div class="table-top">
             <div class="table-top-left">
               <span class="table-top-key mono">ROOM</span>
@@ -961,65 +1276,141 @@
               <span class="chip mono">8P · 含 3 AI</span>
             </div>
             <div class="table-top-right">
-              <span class="table-top-key mono">我方</span><span class="table-top-val tnum mono">LV <em>3</em></span>
-              <span class="table-top-key mono" style="color:var(--rule-3)">·</span>
-              <span class="table-top-key mono">B</span><span class="table-top-val tnum mono">LV 4</span>
-              <span class="table-top-key mono" style="color:var(--rule-3)">·</span>
-              <span class="table-top-key mono">C</span><span class="table-top-val tnum mono">LV 5</span>
-              <span class="table-top-key mono" style="color:var(--rule-3)">·</span>
-              <span class="table-top-key mono">D</span><span class="table-top-val tnum mono">LV 4</span>
+              <span class="table-top-key mono">轮到</span>
+              <span class="table-top-val mono">@豆豆</span>
+              <span class="chip chip--accent mono">11s</span>
             </div>
           </div>
-          <div class="table-arena" style="grid-template-columns: 78px 1fr 78px; padding: 6px 10px;">
-            <div class="seats-top">
-              <div class="seat seat--mini">
-                <div class="avatar avatar--sm" style="background:linear-gradient(135deg,oklch(48% 0.18 25),oklch(38% 0.16 25))">FT</div>
-                <span class="seat-name mono">@饭团</span>
-                <span class="seat-lvl mono"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--team-rival);margin-right:3px"></span>B · 11 张</span>
+          <div class="table-arena table-arena--oval">
+            <!-- Oval felt (slightly larger than 6P) -->
+            <div class="oval-felt" style="left: 96px; top: 26px; width: 640px; height: 192px;"></div>
+
+            <!-- Center trick + 4-team level meter -->
+            <div class="oval-trick">
+              <div class="oval-trick-meta"><span>上一手 · @豆豆 · </span><em>炸 4 张 9</em></div>
+              <div class="oval-trick-cards">
+                <div class="card"><span class="card__rank">9</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">9</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card card--red"><span class="card__rank">9</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">9</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
               </div>
-              <div class="seat seat--mini">
-                <div class="avatar avatar--sm" style="background:linear-gradient(135deg,oklch(50% 0.14 130),oklch(40% 0.12 130))">XL</div>
-                <span class="seat-name mono">@小李 <span class="chip" style="font-size:8px;padding:0 3px;color:var(--info);border-color:transparent;background:transparent">BOT 进阶</span></span>
-                <span class="seat-lvl mono"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--team-c);margin-right:3px"></span>C · 12 张</span>
-              </div>
-              <div class="seat seat--mini">
-                <div class="avatar avatar--sm avatar--active" style="background:linear-gradient(135deg,oklch(52% 0.13 70),oklch(42% 0.11 70))">DD</div>
-                <span class="seat-name mono">@豆豆 <span class="chip" style="font-size:8px;padding:0 3px;color:var(--info);border-color:transparent;background:transparent">BOT 高手</span></span>
-                <span class="seat-lvl mono"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--team-d);margin-right:3px"></span>D · 9 张 · <em style="color:var(--accent);font-style:normal">行动中</em></span>
-              </div>
-              <div class="seat seat--mini">
-                <div class="avatar avatar--sm avatar--rival-2">LG</div>
-                <span class="seat-name mono">@老郭</span>
-                <span class="seat-lvl mono"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--team-rival);margin-right:3px"></span>B · 10 张</span>
-              </div>
-              <div class="seat seat--mini">
-                <div class="avatar avatar--sm" style="background:linear-gradient(135deg,oklch(48% 0.13 130),oklch(38% 0.11 130))">MM</div>
-                <span class="seat-name mono">@毛毛 <span class="chip" style="font-size:8px;padding:0 3px;color:var(--info);border-color:transparent;background:transparent">BOT 入门</span></span>
-                <span class="seat-lvl mono"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--team-c);margin-right:3px"></span>C · 13 张</span>
+              <div class="oval-trick-foot">
+                <span class="chip chip--danger mono" style="font-size:9px">炸弹 · 需 ≥ 5 张 / 同花顺压</span>
               </div>
             </div>
-            <div></div>
-            <div class="trick" style="margin-top:36px;">
-              <div class="trick-meta mono"><span>上一手</span><span>·</span><span class="trick-played-by">@豆豆 BOT</span><span>·</span><em>炸 4 张 9</em></div>
-              <div class="trick-cards">
-                <div class="card card--md"><span class="card__rank">9</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
-                <div class="card card--md card--red"><span class="card__rank">9</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
-                <div class="card card--md card--red"><span class="card__rank">9</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
-                <div class="card card--md"><span class="card__rank">9</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
-              </div>
-              <div class="trick-meta mono" style="margin-top:4px;">
-                <span class="chip chip--danger mono" style="font-size:9px">炸弹 · 4 张</span>
-                <span>·</span>
-                <span>需 ≥ 5 张同点炸 / 同花顺压</span>
-              </div>
+
+            <!-- 4-team level meter (bottom center) -->
+            <div class="oval-meta-level mono">
+              <span class="lv-A">A · LV <em>3</em></span>
+              <span class="lv-B">B · LV 4</span>
+              <span class="lv-C">C · LV 5</span>
+              <span class="lv-D">D · LV 4</span>
             </div>
-            <div></div>
+
+            <!-- 7 opponent seats clockwise from 7:30 -->
+
+            <!-- 7:30 — opp team B -->
+            <div class="oval-seat" style="left: 204px; top: 181px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--B"></div>
+                <div class="avatar avatar--rival-1">FT</div>
+              </div>
+              <span class="oval-seat-name">@饭团</span>
+              <span class="oval-seat-meta">B · 11 张</span>
+            </div>
+            <!-- 9 — opp team C BOT -->
+            <div class="oval-seat" style="left: 116px; top: 121px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--C"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, oklch(50% 0.14 130), oklch(40% 0.12 130));">XL</div>
+              </div>
+              <span class="oval-seat-name">@小李 <span class="oval-seat-bot-chip">BOT 进阶</span></span>
+              <span class="oval-seat-meta">C · 12 张</span>
+            </div>
+            <!-- 10:30 — opp team D -->
+            <div class="oval-seat" style="left: 204px; top: 61px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--D"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, oklch(52% 0.13 70), oklch(42% 0.11 70));">MM</div>
+              </div>
+              <span class="oval-seat-name">@毛毛 <span class="oval-seat-bot-chip">BOT 入门</span></span>
+              <span class="oval-seat-meta">D · 13 张</span>
+            </div>
+            <!-- 12 — PARTNER team A (across the table, distinguishing) -->
+            <div class="oval-seat" style="left: 416px; top: 47px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--A"></div>
+                <div class="avatar avatar--partner">QQ</div>
+              </div>
+              <span class="oval-seat-name">@泉酱 · <span style="color: var(--team-self);">队友</span></span>
+              <span class="oval-seat-meta-self">A · 10 张</span>
+            </div>
+            <!-- 1:30 — opp team D -->
+            <div class="oval-seat" style="left: 628px; top: 61px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--D"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, oklch(48% 0.13 70), oklch(38% 0.11 70));">WW</div>
+              </div>
+              <span class="oval-seat-name">@王王</span>
+              <span class="oval-seat-meta">D · 9 张</span>
+            </div>
+            <!-- 3 — opp team C BOT ACTIVE -->
+            <div class="oval-seat" style="left: 716px; top: 121px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--C"></div>
+                <div class="oval-seat-active"></div>
+                <div class="avatar" style="background: linear-gradient(135deg, oklch(52% 0.13 70), oklch(42% 0.11 70));">DD</div>
+              </div>
+              <span class="oval-seat-name">@豆豆 <span class="oval-seat-bot-chip">BOT 高手</span></span>
+              <span class="oval-seat-meta">C · <em>行动 11s</em></span>
+            </div>
+            <!-- 4:30 — opp team B -->
+            <div class="oval-seat" style="left: 628px; top: 181px;">
+              <div class="oval-seat-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--B"></div>
+                <div class="avatar avatar--rival-2">LG</div>
+              </div>
+              <span class="oval-seat-name">@老郭</span>
+              <span class="oval-seat-meta">B · 10 张</span>
+            </div>
           </div>
           <div class="table-bot">
             <div class="my-hand-wrap">
               <div class="my-hand-meta mono">
-                <span>我 · <em>@阿祥</em> · 13 张 · 阵营 A · 搭档 <em>@泉酱</em></span>
-                <span>炸弹层级: 4&lt;5&lt;同花顺&lt;6&lt;7</span>
+                <span>我 · <em>@阿祥</em> · 13 张 · <span style="color: var(--team-self);">队 A</span> · 搭档 <em>@泉酱</em>（对面）</span>
+                <span>炸弹: 4&lt;5&lt;同花顺&lt;6&lt;7</span>
               </div>
               <div class="my-hand-row">
                 <div class="card card--red"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
@@ -1038,10 +1429,10 @@
               </div>
             </div>
             <div class="actions">
-              <button class="btn btn--ghost">不出（等待）</button>
-              <button class="btn btn--accent-soft">提示</button>
-              <button class="btn btn--ghost">理牌</button>
               <button class="btn btn--ghost" disabled style="opacity:0.4">出牌</button>
+              <button class="btn btn--ghost">不出（等待）</button>
+              <button class="btn btn--ghost">理牌</button>
+              <button class="btn btn--accent-soft">提示</button>
             </div>
           </div>
         </div>
@@ -1049,9 +1440,9 @@
     </div>
   </div>
   <dl class="scene-annot">
-    <div><dt>5 顶 + 1 我 + 1 partner</dt><dd>8P 在 horizontal 340px 高度里塞不下完整方位关系。简化为 5 在顶部一行 + me 在底。partner @泉酱 信息整合到 my-hand-meta 行。</dd></div>
-    <div><dt>队号小色点</dt><dd>每个 avatar 下面的级数前有一个 6px 圆点表示队号（A/B/C/D）。同色 = 同队，不需要箭头连线。</dd></div>
-    <div><dt>BOT 标识</dt><dd>handle 旁边一个 9px 的"BOT 难度"chip，用低饱和 ink，不抢镜。让人一眼分清谁是 AI。</dd></div>
+    <div><dt>9-max oval geometry</dt><dd>7 个对手按 7:30 / 9 / 10:30 / 12 / 1:30 / 3 / 4:30 绝对定位在椭圆 perimeter（cx=416, cy=121, rx=300, ry=85）。这是 PokerStars / GG Poker / Zynga / WSOP 全部共用的 9-max 公约。</dd></div>
+    <div><dt>partner across</dt><dd>队友 @泉酱 固定在 12 点钟方向（桌正对面），不管实际座位号怎么轮转。spatial contract "桌对面就是搭档"，直觉一眼识别。</dd></div>
+    <div><dt>4-team ring 色</dt><dd>A=blue / B=red / C=green / D=gold 四个 2px 外环。比小色点显眼，瞄一眼就知道阵营关系。</dd></div>
   </dl>
 </section>
 
@@ -1060,7 +1451,7 @@
 <!-- ============================================ -->
 <section class="scene s06">
   <div class="scene-head">
-    <div class="scene-num">06</div>
+    <div class="scene-num">07</div>
     <div class="scene-title">Round End · <em>双下 +3 升级</em></div>
     <div class="scene-tag">phone · landscape · result</div>
   </div>
@@ -1125,7 +1516,7 @@
 <!-- ============================================ -->
 <section class="scene s07">
   <div class="scene-head">
-    <div class="scene-num">07</div>
+    <div class="scene-num">08</div>
     <div class="scene-title">A-Level Final · <em>决胜局</em></div>
     <div class="scene-tag">phone · landscape · tension</div>
   </div>
@@ -1240,7 +1631,7 @@
 <!-- ============================================ -->
 <section class="scene s08">
   <div class="scene-head">
-    <div class="scene-num">08</div>
+    <div class="scene-num">09</div>
     <div class="scene-title">Desktop · <em>4 人对家</em></div>
     <div class="scene-tag">desktop · 1280 × 760 · wider rails</div>
   </div>
@@ -1442,7 +1833,7 @@
 <!-- ============================================ -->
 <section class="scene s09">
   <div class="scene-head">
-    <div class="scene-num">09</div>
+    <div class="scene-num">10</div>
     <div class="scene-title">CSS Rotate · <em>Majsoul 式强制横屏</em></div>
     <div class="scene-tag">iOS Safari fallback · 同一份 DOM 双向呈现</div>
   </div>
@@ -1601,7 +1992,7 @@
 <!-- ============================================ -->
 <section class="scene s10">
   <div class="scene-head">
-    <div class="scene-num">10</div>
+    <div class="scene-num">11</div>
     <div class="scene-title">Waiting · <em>AI 即将填位</em></div>
     <div class="scene-tag">phone · landscape · pre-game</div>
   </div>
@@ -1697,7 +2088,7 @@
 <!-- ============================================ -->
 <section class="scene s11">
   <div class="scene-head">
-    <div class="scene-num">11</div>
+    <div class="scene-num">12</div>
     <div class="scene-title">Tribute · <em>败方手选阶段</em></div>
     <div class="scene-tag">phone · landscape · player-pick mode</div>
   </div>
@@ -1756,7 +2147,7 @@
 <!-- ============================================ -->
 <section class="scene s12">
   <div class="scene-head">
-    <div class="scene-num">12</div>
+    <div class="scene-num">13</div>
     <div class="scene-title">Tribute · <em>抗贡 跳过</em></div>
     <div class="scene-tag">phone · landscape · anti-tribute</div>
   </div>
@@ -1816,7 +2207,7 @@
 <!-- ============================================ -->
 <section class="scene s13">
   <div class="scene-head">
-    <div class="scene-num">13</div>
+    <div class="scene-num">14</div>
     <div class="scene-title">Tribute · <em>还贡 阶段</em></div>
     <div class="scene-tag">phone · landscape · winner picks return</div>
   </div>
@@ -1881,7 +2272,7 @@
 <!-- ============================================ -->
 <section class="scene s14">
   <div class="scene-head">
-    <div class="scene-num">14</div>
+    <div class="scene-num">15</div>
     <div class="scene-title">报警 · <em>最后一张</em></div>
     <div class="scene-tag">phone · landscape · last-card declare</div>
   </div>
@@ -1975,7 +2366,7 @@
 <!-- ============================================ -->
 <section class="scene s15">
   <div class="scene-head">
-    <div class="scene-num">15</div>
+    <div class="scene-num">16</div>
     <div class="scene-title">Wildcard · <em>红心通配声明</em></div>
     <div class="scene-tag">phone · landscape · combo using ★</div>
   </div>
@@ -2035,7 +2426,7 @@
 <!-- ============================================ -->
 <section class="scene s16">
   <div class="scene-head">
-    <div class="scene-num">16</div>
+    <div class="scene-num">17</div>
     <div class="scene-title">Ranked Lobby · <em>排位</em></div>
     <div class="scene-tag">phone · landscape · v2 preview</div>
   </div>
@@ -2123,7 +2514,7 @@
 <!-- ============================================ -->
 <section class="scene s17">
   <div class="scene-head">
-    <div class="scene-num">17</div>
+    <div class="scene-num">18</div>
     <div class="scene-title">Admin Dashboard · <em>后台 · moderation</em></div>
     <div class="scene-tag">desktop · 1280 × 760 · ADMIN_TOKEN gated</div>
   </div>
@@ -2266,7 +2657,7 @@
 <!-- ============================================ -->
 <section class="scene s18">
   <div class="scene-head">
-    <div class="scene-num">18</div>
+    <div class="scene-num">19</div>
     <div class="scene-title">DC + 接管 · <em>断线 60s</em></div>
     <div class="scene-tag">phone · landscape · mid-game</div>
   </div>
