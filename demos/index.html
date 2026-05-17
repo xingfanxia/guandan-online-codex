@@ -1207,6 +1207,15 @@
               <span class="oval-seat-name">@豆豆 <span class="oval-seat-bot-chip">BOT 高手</span></span>
               <span class="oval-seat-meta">C · <em>行动 8s</em></span>
             </div>
+            <!-- 6 o'clock — HERO (me) at bottom of oval edge -->
+            <div class="oval-seat" style="left: 416px; top: 235px;">
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--A"></div>
+                <div class="avatar avatar--self">XX</div>
+              </div>
+              <span class="oval-seat-name" style="color: var(--ink-1); font-weight: 600;">@阿祥 · <span style="color: var(--team-self);">我</span></span>
+              <span class="oval-seat-meta-self">A · 17 张 · 房主</span>
+            </div>
           </div>
           <div class="table-bot">
             <div class="my-hand-wrap">
@@ -1404,6 +1413,15 @@
               </div>
               <span class="oval-seat-name">@老郭</span>
               <span class="oval-seat-meta">B · 10 张</span>
+            </div>
+            <!-- 6 o'clock — HERO (me) at bottom of oval edge -->
+            <div class="oval-seat" style="left: 416px; top: 240px;">
+              <div class="oval-seat-avatar-wrap">
+                <div class="oval-seat-ring oval-seat-ring--A"></div>
+                <div class="avatar avatar--self">XX</div>
+              </div>
+              <span class="oval-seat-name" style="color: var(--ink-1); font-weight: 600;">@阿祥 · <span style="color: var(--team-self);">我</span></span>
+              <span class="oval-seat-meta-self">A · 13 张 · 房主</span>
             </div>
           </div>
           <div class="table-bot">
@@ -1996,7 +2014,7 @@
     <div class="scene-title">Waiting · <em>AI 即将填位</em></div>
     <div class="scene-tag">phone · landscape · pre-game</div>
   </div>
-  <p class="scene-note">房间未满状态。左半屏说明当前状态 + 30s 倒计时（之后空位由设定难度的 AI 自动填充）；右半屏是 4 个 / 6 个 / 8 个座位的状态卡，已加入的玩家显示真实 @handle，空位是虚线 border + "等待..." 文案。host 可以主动 cancel countdown 邀请更多人，也可以 skip 直接 AI 填。</p>
+  <p class="scene-note">房间未满状态。<strong>无 AI 自动填位倒计时</strong> —— 队伍分配和 AI 配置全部由房主主动决定。左半屏房间信息 + start 按钮（仅在所有座位就绪后激活）；右半屏每个座位卡都是房主可控的：空位有下拉切换"等真人 / AI 入门 / AI 进阶 / AI 高手"，每个 slot 的队伍归属也可调。</p>
 
   <div class="scene-stage">
     <div class="phone">
@@ -2008,28 +2026,32 @@
               <span class="table-top-key mono">ROOM</span>
               <span class="table-top-val mono">B3F8N1</span>
               <span class="chip mono">4P · 宽松 A</span>
-              <span class="chip chip--info mono">WAITING</span>
+              <span class="chip chip--info mono">CONFIGURING</span>
             </div>
             <div class="table-top-right">
+              <span class="table-top-key mono">房主</span>
+              <span class="table-top-val mono">@阿祥</span>
               <span class="table-top-key mono">建于</span>
               <span class="table-top-val tnum mono">2m 11s 前</span>
             </div>
           </div>
           <div class="waiting-body">
             <div class="waiting-left">
-              <div class="waiting-eyebrow">等位中</div>
-              <h2 class="waiting-title">等 <em>1</em> 人加入 · 共 4 人局</h2>
-              <p class="scene-note" style="margin:0;">分享房间码 <span class="mono" style="color:var(--accent);font-weight:600;">B3F8N1</span> 给好友，或等 30 秒后 AI 自动填补空位。</p>
-              <div class="waiting-cd">
-                <div>
-                  <div class="waiting-cd-label">AI 填位倒计时</div>
-                  <div style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-2);margin-top:2px;">将以「<span style="color:var(--accent);">进阶</span>」难度填入</div>
+              <div class="waiting-eyebrow">房主配置中</div>
+              <h2 class="waiting-title">配置桌位 · <em>3</em>/4 已就绪</h2>
+              <p class="scene-note" style="margin:0;">每个座位由房主指派：等真人加入 / 填一个 AI（含难度选择）。队伍归属也由房主自由调整。</p>
+              <div style="padding: 12px 14px; background: var(--surface-1); border: 1px solid var(--rule-1); border-radius: var(--r-2); display: flex; align-items: center; gap: 10px;">
+                <div style="flex:1;">
+                  <div class="waiting-cd-label">邀请链接 · 微信 / IM 分享</div>
+                  <div class="mono tnum" style="font-size: var(--t-xs); color: var(--accent); margin-top: 4px; font-weight: 600;">gd.ax0x.ai/r/B3F8N1</div>
                 </div>
-                <div class="waiting-cd-time tnum mono">0:28</div>
+                <button class="btn btn--ghost btn--sm">复制</button>
               </div>
               <div style="display:flex;gap:8px;margin-top:auto;">
-                <button class="btn btn--ghost btn--sm">复制邀请链接</button>
-                <button class="btn btn--primary btn--sm" style="flex:1;">立即填 AI · 开始</button>
+                <button class="btn btn--ghost btn--sm" style="font-size:var(--t-xs);">解散房间</button>
+                <button class="btn btn--primary btn--sm" style="flex:1;" disabled title="座位 4 待房主指派">
+                  开始游戏 · 等 1 座位
+                </button>
               </div>
             </div>
             <div class="waiting-slots">
@@ -2037,28 +2059,33 @@
                 <div class="avatar avatar--md avatar--self">XX</div>
                 <div class="waiting-slot-info">
                   <span class="waiting-slot-name">@阿祥 <span class="chip mono" style="font-size:9px;padding:1px 5px;">房主</span></span>
-                  <span class="waiting-slot-meta"><span class="waiting-slot-team a"></span> 队 A · 南 · LV 7</span>
+                  <span class="waiting-slot-meta"><span class="waiting-slot-team a"></span> 座 1 · 南 · 队 A · LV 7</span>
                 </div>
               </div>
               <div class="waiting-slot">
                 <div class="avatar avatar--md avatar--rival-1">FT</div>
                 <div class="waiting-slot-info">
-                  <span class="waiting-slot-name">@饭团</span>
-                  <span class="waiting-slot-meta"><span class="waiting-slot-team b"></span> 队 B · 东 · LV 5</span>
+                  <span class="waiting-slot-name">@饭团 <span style="font-family:var(--font-mono);font-size:9px;color:var(--ink-3);letter-spacing:0.04em;text-transform:uppercase;">↻ 房主可改队</span></span>
+                  <span class="waiting-slot-meta"><span class="waiting-slot-team b"></span> 座 2 · 东 · 队 B · LV 5</span>
                 </div>
               </div>
               <div class="waiting-slot">
                 <div class="avatar avatar--md avatar--partner">QQ</div>
                 <div class="waiting-slot-info">
                   <span class="waiting-slot-name">@泉酱</span>
-                  <span class="waiting-slot-meta"><span class="waiting-slot-team a"></span> 队 A · 北 · LV 6</span>
+                  <span class="waiting-slot-meta"><span class="waiting-slot-team a"></span> 座 3 · 北 · 队 A · LV 6</span>
                 </div>
               </div>
-              <div class="waiting-slot empty">
-                <div class="avatar avatar--md" style="opacity:0.4;background:transparent;border-style:dashed;">？</div>
-                <div class="waiting-slot-info">
-                  <span class="waiting-slot-name">等待 / AI · 进阶</span>
-                  <span class="waiting-slot-meta"><span class="waiting-slot-team b"></span> 队 B · 西</span>
+              <div class="waiting-slot empty" style="border-color: var(--accent-border); background: var(--accent-tint);">
+                <div class="avatar avatar--md" style="opacity:0.6;background:transparent;border-style:dashed;border-color:var(--accent);">？</div>
+                <div class="waiting-slot-info" style="font-style:normal;">
+                  <span class="waiting-slot-name" style="color: var(--ink-1);">座 4 · 西 · 队 B</span>
+                  <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">
+                    <span class="chip mono" style="font-size:8px;padding:1px 4px;">等真人</span>
+                    <span class="chip mono" style="font-size:8px;padding:1px 4px;">AI 入门</span>
+                    <span class="chip mono chip--accent" style="font-size:8px;padding:1px 4px;">AI 进阶 ✓</span>
+                    <span class="chip mono" style="font-size:8px;padding:1px 4px;">AI 高手</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2068,9 +2095,10 @@
     </div>
   </div>
   <dl class="scene-annot">
-    <div><dt>双路径</dt><dd>等人 + 等 AI 同时呈现。30s 倒计时是软上限，玩家可以「立即开始」跳过等待，或继续等真人。</dd></div>
-    <div><dt>方位 + 队号</dt><dd>每个 slot 标注东/南/西/北 + 队号小色点 + 等级，让玩家在开局前对桌局态势有清晰感知。</dd></div>
-    <div><dt>邀请链接</dt><dd>不强制走房间码输入流程，复制可点击短链给 IM 分享。这是和 sibling scorer 一致的房间分享模式。</dd></div>
+    <div><dt>无倒计时</dt><dd>之前那版的 30s AI 自动填位 timer 是错的——房间从「等位」变成「房主主动配置」。空位不会自动填，等房主点 chip 选难度。无 ticking 压力，方便房主慢慢分配。</dd></div>
+    <div><dt>per-slot chip 选择</dt><dd>空位卡里 4 个 chip（等真人 / AI 入门 / 进阶 / 高手），tap 切换。每个 slot 独立配置，可以全部 AI，也可以全等真人，也可以混合。</dd></div>
+    <div><dt>队伍可调</dt><dd>填位玩家旁的"↻ 房主可改队"标识告诉房主可以拖动 / tap 调整队伍归属。Guandan 6/8P 多队制下，房主对桌位 architect 有完全控制权。</dd></div>
+    <div><dt>start 按钮 gated</dt><dd>"开始游戏" 仅在所有 slot 都已就绪（人 or AI 已指派）后激活。当前显示「等 1 座位」disabled 态。无意外开局风险。</dd></div>
   </dl>
 </section>
 
