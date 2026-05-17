@@ -694,6 +694,7 @@
                 <div class="s02-rule active"><span class="s02-rule-check"></span><span class="s02-rule-label">钢板可出</span></div>
                 <div class="s02-rule"><span class="s02-rule-check"></span><span class="s02-rule-label">三连对可出</span></div>
                 <div class="s02-rule active"><span class="s02-rule-check"></span><span class="s02-rule-label">同花顺 &gt; 5 炸</span></div>
+                <div class="s02-rule" style="grid-column: 1 / -1;"><span class="s02-rule-check"></span><span class="s02-rule-label">换牌机制 · <span style="color:var(--ink-3);font-size:9px;font-family:var(--font-mono);">输方投票 &gt;50% 触发 · 每人换 3 张 · 随机方向</span></span></div>
               </div>
             </div>
           </div>
@@ -2788,12 +2789,356 @@
 </section>
 
 <!-- ============================================ -->
+<!-- PART 3 · MULTI-PLAYER TRIBUTE + EXCHANGE       -->
+<!-- ============================================ -->
+<section style="margin: 120px 0 0; padding-bottom: 32px; border-bottom: 1px solid var(--rule-1);">
+  <div class="doc-eyebrow">part 3 · 6/8 人多家进贡 + 换牌机制 · <span>v0.6 envisioning</span></div>
+  <h2 class="doc-title" style="font-size: var(--t-2xl);">多家进贡 + 换牌可选规则</h2>
+  <p class="doc-lede" style="font-size: var(--t-md);">第三部分覆盖 6/8 人模式下的进贡分歧（普通 vs 一队全胜双下）、加可选的"换牌"趣味规则（输方投票 &gt;50% 触发 → 进贡完成后每人选 3 张牌按随机方向传给邻座）。新增 4 屏（S20-23）。</p>
+</section>
+
+<!-- ============================================ -->
+<!-- S20: Tribute · 6P/8P 普通进贡（末游→头游）     -->
+<!-- ============================================ -->
+<section class="scene s20">
+  <div class="scene-head">
+    <div class="scene-num">20</div>
+    <div class="scene-title">6/8P Tribute · <em>普通进贡（末游→头游）</em></div>
+    <div class="scene-tag">phone · landscape · oval context</div>
+  </div>
+  <p class="scene-note">6/8 人模式下，若 <strong>不是一队全胜</strong>（即 1-2-3-4 不全在同一队），进贡逻辑与 4 人一样：仅末游交一张大牌给头游，其他名次不参与。8P 末游 @毛毛 → 头游 @阿祥（队 A），单向单笔，3s 后还贡阶段。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.4)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">ROOM</span><span class="table-top-val mono">P3R8K1</span><span class="chip mono">8P</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil">
+          <div class="tribute-panel" style="width: 560px;">
+            <div class="tribute-head">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--accent);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:4px;">8 人 · 第 6 局 · 进贡阶段</div>
+                <div class="tribute-title">@毛毛 进贡 <em>一张大牌</em> 给 @阿祥</div>
+              </div>
+              <span class="chip chip--accent mono">3s</span>
+            </div>
+            <div class="tribute-anim">
+              <div class="tribute-side">
+                <div class="avatar avatar--md avatar--team-D">MM</div>
+                <span class="tribute-side-label">@毛毛 · 末游 · 队 D</span>
+                <div class="card card--md"><span class="card__rank">A</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              </div>
+              <div class="tribute-arrow">→</div>
+              <div class="tribute-side">
+                <div class="avatar avatar--md avatar--team-A">XX</div>
+                <span class="tribute-side-label">@阿祥 · 头游 · 队 A</span>
+                <div class="card card--md tribute-flyer"><span class="card__rank">A</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              </div>
+            </div>
+            <div class="tribute-rule">
+              <em>规则:</em> 8 人模式下，因 1-2-3-4 名次跨队（A/B/C/D 各拿一名），按 4 人模式简化规则 ——
+              <strong>仅末游单笔进贡头游</strong>。如果 1-4 全在同一队（双下情境），改走 S21 多笔进贡。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>触发条件</dt><dd>1-4 名次不在同一队 → 单笔末→头进贡。这是 6P/8P 最常见的常规情境。</dd></div>
+    <div><dt>与 4P 区别</dt><dd>面板顶部多了"8 人"标签 + rule strip 明示规则推导（"因 1-2-3-4 跨队 → 走 4P 简化"）。背景的 oval table 隐约可见，与 4P 的 cross 背景区分。</dd></div>
+    <div><dt>跨队识别</dt><dd>双方 avatar 用各自 team 色 ring + fill（D 金 → A 蓝），玩家一眼看清进贡跨阵营关系。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S21: Tribute · 6P/8P 一队全胜 ranked 进贡      -->
+<!-- ============================================ -->
+<section class="scene s21">
+  <div class="scene-head">
+    <div class="scene-num">21</div>
+    <div class="scene-title">6/8P Tribute · <em>一队全胜 · 按名次进贡</em></div>
+    <div class="scene-tag">phone · landscape · multi-arrow sweep</div>
+  </div>
+  <p class="scene-note">6/8 人 <strong>一队全胜双下情境 · 仅 2-teams-of-N 模式触发</strong>：8 人 2 队 4 人模式下，若队 A 4 人全占 1-2-3-4 名，队 B 4 人 (5-8) 按名次依次配对进贡（5→4, 6→3, 7→2, 8→1）。注：这与 S06 的 4-teams-of-2 模式不同 — 那种 mode 单队最多占 1+2 两个位置，达不到"全胜"。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.3)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">ROOM</span><span class="table-top-val mono">P3R8K1</span><span class="chip mono">8P</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil">
+          <div class="tribute-panel" style="width: 660px; padding: 18px 22px;">
+            <div class="tribute-head">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--gold);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:4px;">8 人 · 第 6 局 · 队 A 横扫双下</div>
+                <div class="tribute-title">输方 4 人 <em>按名次</em> 进贡赢方</div>
+              </div>
+              <span class="chip chip--gold mono">5s</span>
+            </div>
+            <p style="font-size:var(--t-xs);color:var(--ink-2);margin:6px 0 12px;line-height:1.5;">1-2-3-4 全是队 A（@阿祥 头 · @泉酱 二 · @队员X 三 · @队员Y 四）。5-8 名分别来自 B/C/D 队，按名次顺序对应进贡。</p>
+            <!-- Tribute pairing matrix: 4 rows of (loser → winner) -->
+            <div style="display:grid;grid-template-columns: 1fr auto 1fr auto;gap:6px 10px;align-items:center;padding:10px 14px;background:var(--surface-2);border-radius:var(--r-2);">
+              <!-- Row 1: 末游 (8th) → 头游 (1st) -->
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--surface-3);padding:2px 5px;">末游 8</span>
+                <div class="avatar avatar--sm avatar--team-B">MM</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@毛毛</span>
+              </div>
+              <span class="mono" style="color:var(--accent);font-size:var(--t-sm);">→</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--accent-tint);color:var(--accent);padding:2px 5px;">头游 1</span>
+                <div class="avatar avatar--sm avatar--team-A">XX</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@阿祥</span>
+              </div>
+              <span class="card" style="--card-w: 22px; --card-h: 30px; color: var(--suit-red);"><span class="card__rank" style="font-size:8px;">A</span><span class="card__suit" style="font-size:7px;">♥</span></span>
+
+              <!-- Row 2: 7 → 2 -->
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--surface-3);padding:2px 5px;">倒二 7</span>
+                <div class="avatar avatar--sm avatar--team-B">WW</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@王王</span>
+              </div>
+              <span class="mono" style="color:var(--accent);font-size:var(--t-sm);">→</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--accent-tint);color:var(--accent);padding:2px 5px;">二游 2</span>
+                <div class="avatar avatar--sm avatar--team-A">QQ</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@泉酱</span>
+              </div>
+              <span class="card" style="--card-w: 22px; --card-h: 30px;"><span class="card__rank" style="font-size:8px;">A</span><span class="card__suit" style="font-size:7px;">♠</span></span>
+
+              <!-- Row 3: 6 → 3 -->
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--surface-3);padding:2px 5px;">倒三 6</span>
+                <div class="avatar avatar--sm avatar--team-B">XL</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@小李</span>
+              </div>
+              <span class="mono" style="color:var(--accent);font-size:var(--t-sm);">→</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--accent-tint);color:var(--accent);padding:2px 5px;">三游 3</span>
+                <div class="avatar avatar--sm avatar--team-A">A3</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@队员3</span>
+              </div>
+              <span class="card" style="--card-w: 22px; --card-h: 30px;"><span class="card__rank" style="font-size:8px;">K</span><span class="card__suit" style="font-size:7px;">♣</span></span>
+
+              <!-- Row 4: 5 → 4 -->
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--surface-3);padding:2px 5px;">倒四 5</span>
+                <div class="avatar avatar--sm avatar--team-B">FT</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@饭团</span>
+              </div>
+              <span class="mono" style="color:var(--accent);font-size:var(--t-sm);">→</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="chip mono" style="font-size:9px;background:var(--accent-tint);color:var(--accent);padding:2px 5px;">四游 4</span>
+                <div class="avatar avatar--sm avatar--team-A">A4</div>
+                <span class="mono" style="font-size:var(--t-xs);color:var(--ink-1);">@队员4</span>
+              </div>
+              <span class="card" style="--card-w: 22px; --card-h: 30px; color: var(--suit-red);"><span class="card__rank" style="font-size:8px;">K</span><span class="card__suit" style="font-size:7px;">♥</span></span>
+            </div>
+            <div class="tribute-rule" style="border-left-color:var(--gold);background:var(--gold-tint);">
+              <em>规则:</em> 8 人横扫时按名次依次配对进贡（8→1, 7→2, 6→3, 5→4）。6 人横扫同理（6→1, 5→2, 4→3 if 1-2-3 同队）。
+              4 笔进贡同时呈现，3s 后并行执行，5s 后进入 4 笔还贡。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>触发条件</dt><dd>1-2-3-4 全在同队（2-teams-of-N 模式下唯一可能） → 多笔按名次配对进贡。赢方升级 +4 (8P sweep) / +3 (6P sweep)。</dd></div>
+    <div><dt>matrix UI</dt><dd>4 行（输→赢）+ 牌缩略图，一眼看清谁交什么给谁。比 4 个独立动画更经济。</dd></div>
+    <div><dt>双队色</dt><dd>2-teams-of-4 模式下双方阵营各 1 色 — 队 A 蓝 4 人 / 队 B 红 4 人。颜色越简练越突出"全胜"的 dramatic 对比。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S22: 换牌 · 输方投票                            -->
+<!-- ============================================ -->
+<section class="scene s22">
+  <div class="scene-head">
+    <div class="scene-num">22</div>
+    <div class="scene-title">换牌投票 · <em>输方决定</em></div>
+    <div class="scene-tag">phone · landscape · optional rule</div>
+  </div>
+  <p class="scene-note"><strong>换牌机制（可选规则）</strong>：每局结束后，输方玩家可以投票"换牌"。&gt;50% 同意则在进贡完成后进入换牌阶段。本屏：8P 第 6 局，输方 4 人投票（@毛毛 / @王王 / @小李 / @饭团），3 票同意 1 票反对，10s 倒计时。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.35)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">ROOM</span><span class="table-top-val mono">P3R8K1</span><span class="chip mono">换牌 ON</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil">
+          <div class="tribute-panel" style="width: 580px;">
+            <div class="tribute-head">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--info);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:4px;">第 6 局 · 输方投票</div>
+                <div class="tribute-title">是否要 <em style="color:var(--info);">换牌</em>？输方决定</div>
+              </div>
+              <span class="chip chip--info mono">10s</span>
+            </div>
+            <p style="font-size:var(--t-xs);color:var(--ink-2);margin:6px 0 14px;line-height:1.5;">超过半数同意（≥ 3/4）则触发换牌：进贡完成后，每人选 3 张牌按随机方向传给邻座。</p>
+
+            <!-- Vote tally bar -->
+            <div style="display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--surface-2);border-radius:var(--r-2);margin-bottom:10px;">
+              <span class="mono" style="font-size:var(--t-sm);color:var(--info);font-weight:600;">3 / 4 投了换牌</span>
+              <div style="flex:1;height:8px;background:var(--surface-3);border-radius:var(--r-pill);overflow:hidden;display:flex;">
+                <div style="width:75%;background:var(--info);height:100%;"></div>
+              </div>
+              <span class="mono" style="font-size:var(--t-2xs);color:var(--info);">已达阈值 ✓</span>
+            </div>
+
+            <!-- 4 voters with vote state -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;background:var(--info-tint);border:1px solid oklch(70% 0.13 230 / 0.4);border-radius:var(--r-2);">
+                <div class="avatar avatar--md avatar--team-D">MM</div>
+                <span class="mono" style="font-size:var(--t-2xs);color:var(--ink-1);">@毛毛 末游</span>
+                <span class="chip chip--info mono" style="font-size:9px;padding:2px 6px;">✓ 换牌</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;background:var(--info-tint);border:1px solid oklch(70% 0.13 230 / 0.4);border-radius:var(--r-2);">
+                <div class="avatar avatar--md avatar--team-D">WW</div>
+                <span class="mono" style="font-size:var(--t-2xs);color:var(--ink-1);">@王王 倒二</span>
+                <span class="chip chip--info mono" style="font-size:9px;padding:2px 6px;">✓ 换牌</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;background:var(--surface-2);border:1px solid var(--rule-1);border-radius:var(--r-2);opacity:0.7;">
+                <div class="avatar avatar--md avatar--team-C">XL</div>
+                <span class="mono" style="font-size:var(--t-2xs);color:var(--ink-1);">@小李 倒三</span>
+                <span class="chip mono" style="font-size:9px;padding:2px 6px;color:var(--ink-3);">✗ 不换</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;background:var(--info-tint);border:1px solid oklch(70% 0.13 230 / 0.4);border-radius:var(--r-2);">
+                <div class="avatar avatar--md avatar--team-B">FT</div>
+                <span class="mono" style="font-size:var(--t-2xs);color:var(--ink-1);">@饭团 倒四</span>
+                <span class="chip chip--info mono" style="font-size:9px;padding:2px 6px;">✓ 换牌</span>
+              </div>
+            </div>
+
+            <div class="tribute-rule" style="border-left-color:var(--info);background:var(--info-tint);margin-top:10px;">
+              <em>说明:</em> 仅输方有投票权（赢方不参与，自动接收换牌结果）。3/4 已超阈值，本局将触发换牌；
+              即使最后一人反对也无法翻转。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>投票权范围</dt><dd>仅输方 4 人可投票（赢方自动接收结果）。这避免了"赢方拒绝换牌"反向破坏机制的可能。</dd></div>
+    <div><dt>阈值显式</dt><dd>"3/4 已超阈值 ✓" 明示已经触发——用户不需要等到 10s 结束才知道结果。</dd></div>
+    <div><dt>投票后流程</dt><dd>10s 计时结束后：若超阈值 → 进入 S23 换牌选牌；否则正常进入下一局起手。投票动作完整可逆（10s 内可改）。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S23: 换牌 · 每人选 3 张 + 随机方向              -->
+<!-- ============================================ -->
+<section class="scene s23">
+  <div class="scene-head">
+    <div class="scene-num">23</div>
+    <div class="scene-title">换牌 · <em>每人选 3 张 · 系统决定方向</em></div>
+    <div class="scene-tag">phone · landscape · post-tribute</div>
+  </div>
+  <p class="scene-note">投票通过 + 进贡完成后的换牌选牌阶段。每位玩家选 3 张牌（lifted 状态 + 蓝色 marker），系统随机选定方向（本屏：<strong>顺时针</strong> — 我的 3 张给左手玩家 @饭团），15s 内确认。所有玩家选完后，cards 同步飞向邻座完成交换。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table">
+          <div class="table-top">
+            <div class="table-top-left">
+              <span class="table-top-key mono">ROOM</span>
+              <span class="table-top-val mono">P3R8K1</span>
+              <span class="chip chip--info mono">换牌阶段</span>
+              <span class="chip mono">方向: <span style="color:var(--info);font-weight:600;">↻ 顺时针</span></span>
+            </div>
+            <div class="table-top-right">
+              <span class="table-top-key mono">已选</span>
+              <span class="table-top-val mono"><em>3</em>/3</span>
+              <span class="chip chip--info mono">5 / 8 玩家已确认 · 12s</span>
+            </div>
+          </div>
+          <div class="table-arena" style="display:flex;align-items:center;justify-content:center;padding:0 30px;">
+            <div style="text-align:center;max-width:680px;">
+              <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--info);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:8px;">系统随机抽签结果</div>
+              <div style="font-size:var(--t-2xl);font-weight:600;letter-spacing:var(--tracking-tight);margin-bottom:6px;color:var(--info);">↻ 顺时针传递</div>
+              <p style="font-size:var(--t-xs);color:var(--ink-2);line-height:1.5;margin-bottom:18px;">
+                你的 3 张牌将传给左手 <strong style="color:var(--ink-1);">@饭团</strong>·
+                右手 <strong style="color:var(--ink-1);">@王王</strong> 的 3 张牌将传给你
+              </p>
+              <!-- Mini table diagram with arrows -->
+              <div style="display:inline-grid;grid-template-columns:repeat(3,76px);grid-template-rows:repeat(3,52px);gap:8px;margin-bottom:14px;">
+                <div></div>
+                <div style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-3);">@泉酱</div>
+                <div></div>
+                <div style="display:flex;align-items:center;justify-content:flex-end;font-family:var(--font-mono);font-size:var(--t-md);color:var(--info);">↑</div>
+                <div style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--info);text-align:center;">CW · 顺<br>时针</div>
+                <div style="display:flex;align-items:center;justify-content:flex-start;font-family:var(--font-mono);font-size:var(--t-md);color:var(--info);">→</div>
+                <div style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-1);font-weight:600;">@饭团 ←</div>
+                <div style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--t-2xs);background:var(--info-tint);border:1px solid oklch(70% 0.13 230 / 0.4);border-radius:var(--r-1);color:var(--ink-1);">我</div>
+                <div style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-1);font-weight:600;">→ @王王</div>
+              </div>
+              <span class="chip chip--info mono" style="font-size:var(--t-xs);">8 人桌 ↻ 8 笔交换同时进行</span>
+            </div>
+          </div>
+          <div class="table-bot">
+            <div class="my-hand-wrap">
+              <div class="my-hand-meta mono">
+                <span>选 <em>3</em> 张交换 · 已选 <em style="color:var(--info);">3</em>/3</span>
+                <span style="color:var(--info);">将传给左手 @饭团</span>
+              </div>
+              <div class="my-hand-row">
+                <div class="card card--red"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">5</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--lifted" style="box-shadow: var(--shadow-lifted), 0 0 16px oklch(70% 0.13 230 / 0.5); outline: 1px solid var(--info);"><span class="card__rank">7</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">7</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">9</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card"><span class="card__rank">10</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">J</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card card--lifted card--red" style="box-shadow: var(--shadow-lifted), 0 0 16px oklch(70% 0.13 230 / 0.5); outline: 1px solid var(--info);"><span class="card__rank">Q</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">K</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card"><span class="card__rank">K</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card"><span class="card__rank">K</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--lifted card--red" style="box-shadow: var(--shadow-lifted), 0 0 16px oklch(70% 0.13 230 / 0.5); outline: 1px solid var(--info);"><span class="card__rank">A</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card" style="background:linear-gradient(135deg, oklch(94% 0.02 80), oklch(90% 0.03 50));color:var(--suit-red)"><span class="card__rank">B</span><span class="card__suit">★</span><span class="card__center">★</span></div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn--primary" style="background:var(--info);color:oklch(15% 0.04 230);">确认换牌 →</button>
+              <button class="btn btn--ghost">清除</button>
+              <button class="btn btn--ghost">理牌</button>
+              <button class="btn btn--accent-soft">提示</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>方向 = 系统抽签</dt><dd>顺时针 / 逆时针由服务端 random 决定，在投票通过后就显示，不可玩家干预。这保证公平性 + 增加随机变量。</dd></div>
+    <div><dt>选 3 蓝标识</dt><dd>已选的 3 张牌用 info 蓝色 outline + glow 区分（与日常 lifted 红色 accent 区分），明确"这不是出牌，是换牌"。</dd></div>
+    <div><dt>方向预览</dt><dd>中央 3×3 mini diagram 显示我的 3 张去向（左手 @饭团）+ 来源（右手 @王王 的 3 张会到我）。一图说清"交换"的双向流。</dd></div>
+    <div><dt>策略意味</dt><dd>输方选 3 张大牌发出去（牺牲 / 换运气），赢方也得交 3 张（被动接受冲击）。可玩性显著，但因输方主动发起 + 顶 majority 通过，平衡机制存在。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
 <!-- FOOTER                                         -->
 <!-- ============================================ -->
 <footer style="margin-top:120px;padding-top:32px;border-top:1px solid var(--rule-1);font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);">
   <div style="display:flex;justify-content:space-between;align-items:baseline;">
-    <span>guandan-online · hi-fi wireframes · v0.2 · 18 scenes</span>
-    <span>made with huashu-design · <span style="color:var(--accent);">2026-05-16</span></span>
+    <span>guandan-online · hi-fi wireframes · v0.6 · 23 scenes</span>
+    <span>made with huashu-design · <span style="color:var(--accent);">2026-05-17</span></span>
   </div>
 </footer>
 

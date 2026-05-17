@@ -565,28 +565,61 @@ Goal: implement tribute (进贡 / 还贡 / 抗贡) + A-level state machine + gam
 
 ### TRIBUTE-1 · Tribute phase implementation
 
-**Goal**: Implement tribute server-side per `docs/research/tribute-ux-deep-dive.md`. Direction calc, card auto-pick, 还贡, 抗贡, timeouts.
+**Goal**: Implement tribute server-side per `docs/research/tribute-ux-deep-dive.md`. Direction calc, card auto-pick, 还贡, 抗贡, timeouts. **Includes 2-teams-of-N sweep multi-pair tribute** (6P 3-pair, 8P 4-pair) per tribute-ux-deep-dive.md § Update 2026-05-17.
 
 **Depends on**: CORE-3, NET-3, ROOM-2.
 
 **Deliverables**:
-- `lib/game/tribute.ts` — direction calculator for 4/6/8 modes, card-picking logic, anti-tribute detection
+- `lib/game/tribute.ts` — direction calculator for 4/6/8 modes (Path A normal + Path B sweep), card-picking logic, anti-tribute detection
 - `api/tribute/select.ts` — POST handler for `player-pick` mode (tribute or return)
 - `lib/game/state.ts` enhanced — `'tribute-pending' | 'return-pending'` state nodes
 - `lib/realtime/messages.ts` extended — 6 new event types per tribute-ux-deep-dive.md (TributeRequiredEvent / ReturnRequiredEvent / TributeCompletedEvent / TributeResolvedEvent / AntiTributeEvent / tribute_return command)
-- `tests/game/tribute.test.ts` — all 4P / 6P / 8P direction scenarios + 抗贡 + timeout fallback
+- `tests/game/tribute.test.ts` — all 4P / 6P / 8P direction scenarios + 抗贡 + timeout fallback + 6P/8P sweep multi-pair
 
 **Acceptance**:
 - Scripted 4P game: 双下 result → both 3rd + 4th tribute biggest cards → winners 还贡 ≤10
 - 抗贡 condition: 4th holds 2 大王 → tribute skipped, banner event published
 - Timeout: loser doesn't pick in 15s → server auto-picks biggest card, game continues
 - All 4P + 6P canonical + 8P canonical directions tested
+- 8P 2-teams-of-4 sweep: 4 simultaneous tribute pairings resolve in parallel, 还贡 follows after
 
 **Files to touch**: new — `lib/game/tribute.ts`, `api/tribute/select.ts`, `tests/game/tribute.test.ts`; enhance — `lib/game/state.ts`, `lib/realtime/messages.ts`
-**Effort**: 4-5 days
+**Effort**: 5-7 days (was 4-5; added day for sweep multi-pair logic)
 **Notes**:
 - Tribute is the gnarliest game-rule complexity — budget extra time for edge cases
 - 6/8 mode direction variants are room-configurable (per ROOM-2's `tributeDirection6p` / `tributeDirection8p`)
+- Sweep tribute only triggers in 2-teams-of-N modes (not 4-teams-of-2)
+
+### EXCHANGE-1 · Card exchange optional rule
+
+**Goal**: Implement the optional 换牌 (card-exchange) mechanic — losing team votes after round-end; if >50% pass, all players exchange 3 cards in random direction after tribute.
+
+**Depends on**: TRIBUTE-1, ROOM-2.
+
+**Deliverables**:
+- `lib/game/exchange.ts` — vote tally, direction randomization (CW/CCW uniform), card swap orchestration
+- `api/exchange/vote.ts` — POST handler for vote casts; aggregates, deadline timer
+- `api/exchange/select.ts` — POST handler for 3-card selection per player
+- `lib/game/state.ts` enhanced — `'exchange-vote-pending' | 'exchange-select-pending'` state nodes
+- `lib/realtime/messages.ts` extended — 6 new event types (ExchangeVoteRequiredEvent, ExchangeVoteCastCommand, ExchangeVoteResolvedEvent, ExchangeSelectRequiredEvent, ExchangeSelectCommand, ExchangeCompletedEvent)
+- `tests/game/exchange.test.ts` — vote tally edge cases (tie / unanimous / timeout), CW + CCW direction tested, hand size preservation
+- `src/screens/ExchangeVoteModal.tsx` — wireframe S22
+- `src/screens/ExchangeSelectModal.tsx` — wireframe S23 (3-card picker + direction diagram)
+
+**Acceptance**:
+- Vote opens 15s; if >50% losers vote YES, exchange triggers
+- Direction picked server-side, displayed identically to all clients
+- All players (incl. winners) must select 3 cards within 15s; timeout = server auto-picks lowest 3
+- Hand count preserved post-exchange (each loses 3, gains 3 from neighbor)
+- Hidden-state filter: each player's 3 outgoing cards remain private until ExchangeCompletedEvent
+
+**Files to touch**: new — `lib/game/exchange.ts`, `api/exchange/*.ts`, `src/screens/ExchangeVoteModal.tsx`, `src/screens/ExchangeSelectModal.tsx`, `tests/game/exchange.test.ts`; enhance — `lib/game/state.ts`, `lib/realtime/messages.ts`
+**Effort**: 3-4 days
+**Notes**:
+- Rule is OFF by default — only triggers if room creator sets `cardExchange: true`
+- Voting scope: ONLY losing-team players (winners auto-accept)
+- Direction is server-RNG, no player influence — keeps it fair
+- Adds 4 new room rule axes to ROOM-2: `cardExchange`, `exchangeVoteThreshold`, `exchangeVoteDuration`, `exchangeCardCount`
 
 ### UI-4 · Tribute phase UI
 

@@ -604,3 +604,87 @@ After `TributeResolvedEvent` arrives:
 | 8-player default tribute depth | `top_only` (worst team tributes to best team) | Balance between complexity and pace |
 | 抗贡 detection timing | After deal, before tribute phase starts | Server-side, deterministic; no client interaction needed |
 | Animation: single vs parallel multi-tribute | Sequential | Clearer on small landscape phone; skip option for experienced players |
+
+---
+
+## Update — 2026-05-17: 6P/8P sweep + card exchange (换牌) mechanic
+
+### Clarification on 6P/8P tribute paths
+
+User feedback during wireframe review surfaced an ambiguity in the original
+6P/8P tribute coverage. There are two distinct paths:
+
+**Path A · Normal (mixed-team finishes)** — `1-2-3-4` from different teams:
+- Single tribute: 末游 → 头游, same as 4-player simplified rule.
+- Default for 4-teams-of-2 mode where one team rarely sweeps top positions.
+- See wireframe S20.
+
+**Path B · Sweep (one team wins all top N positions)** — only triggers in
+**2-teams-of-N modes** (6P 2-teams-of-3, 8P 2-teams-of-4):
+- Multi-pair tribute: losers in rank order pair with winners in rank order.
+- 8P 2-teams-of-4 sweep: 4 pairings (5→4, 6→3, 7→2, 8→1).
+- 6P 2-teams-of-3 sweep: 3 pairings (4→3, 5→2, 6→1).
+- See wireframe S21.
+
+**Mode incompatibility with 4-teams-of-2**: In 4P / 6P 3-teams-of-2 / 8P
+4-teams-of-2, a single team has only 2 members, so "all top N positions
+same team" is mathematically impossible beyond top-2. Sweep tribute (Path B)
+does NOT trigger in these modes — only Path A applies.
+
+### New optional rule axis: 换牌 (card exchange)
+
+Originally not in scope; added per user request as a "fun chaotic" optional
+rule for casual rooms.
+
+**Rule:**
+1. After round-end (level deltas applied), losing-team players vote on
+   whether to trigger card exchange.
+2. If > 50% of losing players vote YES → exchange triggered.
+3. After tribute phase completes, exchange phase begins.
+4. Every player (winners + losers) selects 3 cards from their hand.
+5. Server randomly picks direction: clockwise OR counter-clockwise.
+6. Each player's 3 cards pass to the adjacent player in that direction.
+7. Hand counts are preserved (each player loses 3, receives 3).
+
+**Voting scope:** Only losing-team players can vote. Winning team auto-
+accepts the result. This prevents winning team from blocking the
+re-shuffle that benefits losers.
+
+**Direction randomization:** Server picks CW vs CCW uniformly at random
+after vote passes. Displayed prominently so all players know which way
+their cards go. Cannot be influenced by players.
+
+**Strategic implication:** Losing team may dump high cards they can't
+use; winning team is forced to absorb the chaos. The mechanic favors
+losing team (they choose what to send; winners can only choose what to
+send back, not what they receive).
+
+**Default state:** OFF in standard rooms; ON only when room creator
+explicitly enables `cardExchange: true`.
+
+**New message types** (add to `MessageType` enum from
+realtime-sync-deep-dive.md):
+
+- `ExchangeVoteRequiredEvent` — sent to losing-team players after
+  RoundEnd; includes vote deadline (15s default).
+- `ExchangeVoteCastCommand` — client → server, `{voter, choice: 'yes'|'no'}`.
+- `ExchangeVoteResolvedEvent` — broadcast outcome (passed/rejected +
+  if passed, the random direction).
+- `ExchangeSelectRequiredEvent` — sent to ALL players (winners + losers)
+  if vote passes; player must select 3 cards.
+- `ExchangeSelectCommand` — client → server with selected card IDs.
+- `ExchangeCompletedEvent` — broadcast after all selections, includes
+  the cards each player received (private filter per recipient).
+
+**New configurable rule axes for `ROOM-2`:**
+
+- `cardExchange`: boolean (default `false`)
+- `exchangeVoteThreshold`: enum `'majority' | 'unanimous'` (default `'majority'`)
+- `exchangeVoteDuration`: enum `'10s' | '15s' | '20s'` (default `'15s'`)
+- `exchangeCardCount`: enum `'2' | '3' | '4'` (default `'3'`) — for tuning
+
+**UI references:** Wireframes S22 (vote panel) and S23 (selection panel
+with direction diagram). See `demos/index.html`.
+
+**Implementation milestone:** New `EXCHANGE-1` milestone added to PLAN.md
+(P4 phase, after TRIBUTE-1 lands).

@@ -53,6 +53,8 @@
 10. **Custom domain required day 1** — `*.vercel.app` is DNS-poisoned in mainland China. **Domain: `gdo.ax0x.ai`** (sibling subdomain to scorer at `gd.ax0x.ai`; "o" = online)
 11. **Tribute defaults**: tournament rule baseline (server auto-picks tribute card; "贡左还右" direction; 还贡 ≤10 cap with smallest-card fallback); casual variants surfaced as room rule axes
 12. **Anti-cheat v1**: Rate limiting (5s sliding window) + IP throttle (5 accounts/IP/24h) + report button + admin dashboard + Vercel BotID. ~340 LOC, ~5-6 days.
+13. **6P/8P sweep tribute** (2026-05-17): in 2-teams-of-N modes (6P 2-of-3, 8P 2-of-4), if winning team takes all top-N positions, losers tribute by rank order pairing (8→1, 7→2, 6→3, 5→4 for 8P sweep). Mixed-team finishes still use Path A single末→头 tribute. 4-teams-of-2 mode never triggers sweep tribute (mathematically impossible).
+14. **换牌 card-exchange optional rule** (2026-05-17): OFF by default; if enabled, losing team votes after round-end (>50% pass), then after tribute every player picks 3 cards which pass to neighbor in server-RNG'd direction (CW/CCW). New EXCHANGE-1 milestone in P3, ~3-4 days work.
 
 ## Recommended AI strategy
 
