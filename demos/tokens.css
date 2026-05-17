@@ -114,9 +114,12 @@
   --dur-slow: 320ms;
 
   /* ============ DEVICE METRICS ============ */
-  /* iPhone 14 Pro landscape minus safe areas */
-  --phone-w: 800px;
-  --phone-h: 340px;
+  /* iPhone 14/15 Pro landscape — real CSS pixels (logical), ratio 2.17:1 */
+  --phone-w: 852px;
+  --phone-h: 393px;
+  /* Effective playfield AFTER safe-area insets (Dynamic Island left, home indicator bottom) */
+  --phone-playfield-w: 820px;  /* phone-w - 16px island - 16px right safe edge */
+  --phone-playfield-h: 373px;  /* phone-h - 10px screen inset top - 10px bottom */
   /* Desktop game viewport (compact, fits in 13" laptop) */
   --desk-w: 1280px;
   --desk-h: 760px;
