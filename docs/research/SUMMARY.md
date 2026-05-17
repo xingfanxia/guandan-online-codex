@@ -50,7 +50,7 @@
 7. **AI tier strategy**: Different engines per tier (NOT same engine + search depth)
 8. **Auth**: Anonymous @handle, **shared namespace with sibling scorer** (Option B from `cross-project-integration.md`)
 9. **PRC delivery**: Vercel-only launch with client-side latency beacons; Tencent Cloud Shenzhen mirror deferred until p95 > 350ms observed
-10. **Custom domain required day 1** — `*.vercel.app` is DNS-poisoned in mainland China
+10. **Custom domain required day 1** — `*.vercel.app` is DNS-poisoned in mainland China. **Domain: `gdo.ax0x.ai`** (sibling subdomain to scorer at `gd.ax0x.ai`; "o" = online)
 11. **Tribute defaults**: tournament rule baseline (server auto-picks tribute card; "贡左还右" direction; 还贡 ≤10 cap with smallest-card fallback); casual variants surfaced as room rule axes
 12. **Anti-cheat v1**: Rate limiting (5s sliding window) + IP throttle (5 accounts/IP/24h) + report button + admin dashboard + Vercel BotID. ~340 LOC, ~5-6 days.
 

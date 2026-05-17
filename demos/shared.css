@@ -161,6 +161,14 @@
 .avatar--rival-1 { background: linear-gradient(135deg, oklch(48% 0.15 30), oklch(38% 0.13 30)); }
 .avatar--rival-2 { background: linear-gradient(135deg, oklch(45% 0.13 50), oklch(35% 0.11 50)); }
 
+/* Team-coded avatar fills — for 6P/8P multi-team scenes.
+ * Hue matches the team ring color tokens exactly so fill + ring agree.
+ * Team A = blue 230, B = red 25, C = green 130, D = gold/amber 70. */
+.avatar--team-A { background: linear-gradient(135deg, oklch(48% 0.14 230), oklch(38% 0.12 230)); }
+.avatar--team-B { background: linear-gradient(135deg, oklch(50% 0.18 25), oklch(38% 0.16 25)); }
+.avatar--team-C { background: linear-gradient(135deg, oklch(52% 0.16 130), oklch(40% 0.14 130)); }
+.avatar--team-D { background: linear-gradient(135deg, oklch(60% 0.13 70), oklch(48% 0.11 70)); }
+
 .avatar--active::after {
   content: "";
   position: absolute;

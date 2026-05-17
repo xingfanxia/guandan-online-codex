@@ -862,7 +862,7 @@ Goal: anti-cheat baseline + custom domain + observability. Production-ready.
 
 **Deliverables**:
 - Vercel project created and linked to `xingfanxia/guandan-online` GitHub repo
-- Custom domain registered (e.g., `guandan.ax0x.ai` or new domain)
+- Custom domain registered: **gdo.ax0x.ai** (sibling to scorer at gd.ax0x.ai)
 - DNS A/CNAME records configured
 - SSL cert issued (Vercel automatic)
 - Environment variables set: `UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`, `DEEPSEEK_API_KEY`, `ADMIN_TOKEN`, `FEATURE_AI_HARD`
