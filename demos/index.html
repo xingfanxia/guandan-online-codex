@@ -1684,11 +1684,702 @@
 </section>
 
 <!-- ============================================ -->
+<!-- PART 2 · DEEP-DIVE STATE WIREFRAMES            -->
+<!-- ============================================ -->
+<section style="margin: 120px 0 0; padding-bottom: 32px; border-bottom: 1px solid var(--rule-1);">
+  <div class="doc-eyebrow">part 2 · deep-dive state wireframes · <span>v0.2 envisioning</span></div>
+  <h2 class="doc-title" style="font-size: var(--t-2xl);">关键交互状态 + 后台界面</h2>
+  <p class="doc-lede" style="font-size: var(--t-md);">第一部分（屏 01-10）envision 整体游戏形态。第二部分（屏 11-18）补齐研究阶段新发现的关键交互状态：tribute 4 个阶段、报警 UX、排位 lobby、moderation 后台、断线 + AI 接管对话。共 18 个 wireframe。</p>
+</section>
+
+<!-- ============================================ -->
+<!-- S11: TRIBUTE · pending (loser picks)           -->
+<!-- ============================================ -->
+<section class="scene s11">
+  <div class="scene-head">
+    <div class="scene-num">11</div>
+    <div class="scene-title">Tribute · <em>败方手选阶段</em></div>
+    <div class="scene-tag">phone · landscape · player-pick mode</div>
+  </div>
+  <p class="scene-note">休闲房间 `tributeCardSelect: player-pick` 模式下，败方需要主动选一张牌进贡。系统标灰除最大点数之外的所有牌（红心通配豁免），玩家从可选项里 tap-to-select。倒计时 15s 内不选则 server 自动选最大点。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.4)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">K7M2P9</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil">
+          <div class="tribute-panel" style="width: 560px;">
+            <div class="tribute-head">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--accent);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:4px;">第 6 局 · 进贡阶段 · 1/2</div>
+                <div class="tribute-title">@饭团 选一张 <em>最大点数</em> 牌进贡给 @阿祥</div>
+              </div>
+              <span class="chip chip--accent mono">12s</span>
+            </div>
+            <p style="font-size:var(--t-xs);color:var(--ink-2);margin:8px 0 12px;line-height:1.5;">手中所有 ♠A / ♥A / ♦A / ♣A（红心通配除外）都是可选项。tap 选择，再 tap 确认。</p>
+            <div style="display:flex;align-items:end;gap:10px;padding:14px 18px;background:var(--surface-2);border-radius:var(--r-2);">
+              <div class="card card--md" style="opacity:0.3;"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              <div class="card card--md" style="opacity:0.3;"><span class="card__rank">5</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+              <div class="card card--md" style="opacity:0.3;color:var(--suit-red)"><span class="card__rank">7</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              <div class="card card--md" style="opacity:0.3;"><span class="card__rank">9</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              <div class="card card--md" style="opacity:0.3;color:var(--suit-red)"><span class="card__rank">J</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              <div class="card card--md" style="opacity:0.3;color:var(--suit-red)"><span class="card__rank">Q</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+              <div class="card card--md" style="opacity:0.3;"><span class="card__rank">K</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              <div class="card card--md card--lifted" style="color:var(--suit-red)"><span class="card__rank">A</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              <div class="card card--md"><span class="card__rank">A</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              <div class="card card--md" style="color:var(--suit-red)"><span class="card__rank">A</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+              <div class="card card--md"><span class="card__rank">A</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+              <span style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);text-transform:uppercase;">已选 · ♥A（红心通配不可选）</span>
+              <button class="btn btn--primary btn--sm">确认进贡 ♥A →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>可选 vs 灰色</dt><dd>4 张 A 全亮（同点最大），其他点数 opacity 0.3 不可选。红心通配（如果是 5 局，红心 5 是通配）被显式排除。</dd></div>
+    <div><dt>X/Y 进度</dt><dd>头部 "1/2" 表示这是 2 个 tribute 中的第一个（4P 双下时 3rd + 4th 都要进贡，按顺序串行）。</dd></div>
+    <div><dt>规则差异</dt><dd>锦标赛默认 server 自动选（不显示这个屏，直接进入动画）；这个屏是房间 `tributeCardSelect: player-pick` 时才出现。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S12: TRIBUTE · 抗贡 banner                     -->
+<!-- ============================================ -->
+<section class="scene s12">
+  <div class="scene-head">
+    <div class="scene-num">12</div>
+    <div class="scene-title">Tribute · <em>抗贡 跳过</em></div>
+    <div class="scene-tag">phone · landscape · anti-tribute</div>
+  </div>
+  <p class="scene-note">败方持有 2 张大王（红心通配豁免，必须是真红王）时触发抗贡。系统直接跳过进贡阶段，全屏 banner 通报。3s 后自动进入下一局。这是 Guandan 玩家心理上最爽的瞬间之一，UI 要给足仪式感。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.3)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">K7M2P9</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil" style="background: oklch(0% 0 0 / 0.85);">
+          <div style="text-align:center; max-width: 560px;">
+            <div style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--gold);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:14px;">第 6 局 · 进贡阶段</div>
+            <div style="font-size:var(--t-3xl);font-weight:700;letter-spacing:var(--tracking-tight);line-height:1;margin-bottom:18px;color:var(--gold);">
+              抗 贡
+            </div>
+            <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:24px;">
+              <div class="avatar avatar--md avatar--rival-1">FT</div>
+              <span style="font-family:var(--font-mono);color:var(--ink-1);font-size:var(--t-md);">@饭团</span>
+              <span style="color:var(--ink-3);font-family:var(--font-mono);">·</span>
+              <span style="color:var(--gold);font-family:var(--font-mono);font-weight:600;">持双红王</span>
+              <span style="color:var(--ink-3);font-family:var(--font-mono);">→ 免进贡</span>
+            </div>
+            <div style="display:flex;justify-content:center;gap:8px;margin-bottom:24px;">
+              <div class="card card--lg card--red" style="background: linear-gradient(135deg, var(--card-face), oklch(86% 0.05 0));outline: 2px solid var(--gold);">
+                <span class="card__rank">王</span>
+                <span class="card__suit" style="color:var(--gold);">★</span>
+                <span class="card__center" style="color:var(--suit-red);">王</span>
+              </div>
+              <div class="card card--lg card--red" style="background: linear-gradient(135deg, var(--card-face), oklch(86% 0.05 0));outline: 2px solid var(--gold);">
+                <span class="card__rank">王</span>
+                <span class="card__suit" style="color:var(--gold);">★</span>
+                <span class="card__center" style="color:var(--suit-red);">王</span>
+              </div>
+            </div>
+            <div style="padding: 12px 18px; background: var(--gold-tint); border: 1px solid oklch(82% 0.15 95 / 0.4); border-radius: var(--r-2); display: inline-block;">
+              <span style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--gold);letter-spacing:var(--tracking-wide);text-transform:uppercase;">2s 后开始下一局 · @饭团 起手</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>仪式感</dt><dd>大字 "抗 贡" 居中、双红王陈列卡牌、gold 配色——这是负方阵营的高光时刻，视觉要支撑这个 emotional beat。</dd></div>
+    <div><dt>规则强调</dt><dd>明确说"持双红王"，不是模糊的"持双王"。研究阶段确认抗贡需 2 张红王，不是大小王各一。</dd></div>
+    <div><dt>无操作 + 短时长</dt><dd>2s 自动推进 vs S11 的 12s，因为这是结果通报不是决策点。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S13: TRIBUTE · 还贡 phase                      -->
+<!-- ============================================ -->
+<section class="scene s13">
+  <div class="scene-head">
+    <div class="scene-num">13</div>
+    <div class="scene-title">Tribute · <em>还贡 阶段</em></div>
+    <div class="scene-tag">phone · landscape · winner picks return</div>
+  </div>
+  <p class="scene-note">收到进贡之后，赢家要"还贡"一张 ≤10 的牌给败家。这是被很多 app 跳过的环节。还贡总是赢家自由选择（无 auto-pick 锦标赛规则）。如果所有手牌都 >10，按规则返回最小点（fallback）。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.4)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">K7M2P9</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil">
+          <div class="tribute-panel" style="width: 580px;">
+            <div class="tribute-head">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--info);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:4px;">第 6 局 · 还贡阶段</div>
+                <div class="tribute-title">@阿祥 还一张 <em>≤10</em> 的牌给 @饭团</div>
+              </div>
+              <span class="chip chip--info mono">14s</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--surface-2);border-radius:var(--r-2);margin:8px 0;">
+              <span style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);text-transform:uppercase;">收到</span>
+              <div class="card card--md card--red"><span class="card__rank">A</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              <span style="color:var(--ink-3);font-family:var(--font-mono);">来自 @饭团</span>
+              <span style="margin-left:auto;font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--accent);">+ 一张大牌</span>
+            </div>
+            <div style="display:flex;align-items:end;gap:8px;padding:14px 18px;background:var(--surface-2);border-radius:var(--r-2);">
+              <div class="card card--md"><span class="card__rank">2</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              <div class="card card--md card--red"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              <div class="card card--md"><span class="card__rank">3</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+              <div class="card card--md card--lifted"><span class="card__rank">4</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              <div class="card card--md card--red"><span class="card__rank">5</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              <div class="card card--md"><span class="card__rank">7</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+              <div class="card card--md card--red"><span class="card__rank">8</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+              <div class="card card--md"><span class="card__rank">9</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+              <div class="card card--md card--red"><span class="card__rank">10</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+              <div class="card card--md" style="opacity:0.3"><span class="card__rank">J</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+              <div class="card card--md" style="opacity:0.3;color:var(--suit-red)"><span class="card__rank">Q</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+              <div class="card card--md" style="opacity:0.3"><span class="card__rank">K</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+              <span style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);text-transform:uppercase;">已选 · ♠4 · 最小手牌 = 最佳选择</span>
+              <button class="btn btn--primary btn--sm" style="background:var(--info);color:oklch(15% 0.04 230);">确认还 ♠4 →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>双方对照</dt><dd>顶部显示"收到 A 来自 @饭团"，让玩家在还贡决策时清楚记得自己已经拿到什么。</dd></div>
+    <div><dt>≤10 灰化</dt><dd>J / Q / K 自动 opacity 0.3 不可选（因为本局 `returnTributeMax: 10`）。如果手中全是 >10，按 fallback 规则赢家可返回最小手牌。</dd></div>
+    <div><dt>颜色区分</dt><dd>还贡用 info 蓝色（与进贡的 accent 红区分），让玩家直觉感知这是"回赠"不是"惩罚"。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S14: 报警 last-card declare UX                  -->
+<!-- ============================================ -->
+<section class="scene s14">
+  <div class="scene-head">
+    <div class="scene-num">14</div>
+    <div class="scene-title">报警 · <em>最后一张</em></div>
+    <div class="scene-tag">phone · landscape · last-card declare</div>
+  </div>
+  <p class="scene-note">某些规则配置下，玩家手牌只剩 1 张时必须"报警"宣告。本屏展示 @阿祥 倒数第二手出完后剩 1 张的瞬间——系统自动弹出 报警 按钮 + 3s 内必须点击，否则失去出牌权。如果当前房间 `lastCallDeclare: false` 则不出现这个屏。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table">
+          <div class="table-top">
+            <div class="table-top-left">
+              <span class="table-top-key mono">ROOM</span>
+              <span class="table-top-val mono">M4K8Q2</span>
+              <span class="chip chip--live mono">LIVE 23:11</span>
+              <span class="chip chip--danger mono">报警 ON</span>
+            </div>
+            <div class="table-top-right">
+              <span class="table-top-key mono">我方</span><span class="table-top-val tnum mono">LV <em>8</em></span>
+            </div>
+          </div>
+          <div class="table-arena">
+            <div class="seat-partner">
+              <div class="avatar avatar--sm avatar--partner">QQ</div>
+              <span class="seat-name mono">@泉酱</span>
+              <span class="chip mono" style="font-size:9px">LV 8 · 12 张</span>
+            </div>
+            <div class="seat">
+              <div class="seat-cards-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="avatar avatar--md avatar--rival-1">FT</div>
+              <span class="seat-name mono">@饭团</span>
+            </div>
+            <div class="trick">
+              <div class="trick-meta mono"><span>上一手</span><span>·</span><span class="trick-played-by">@阿祥</span><span>·</span><em>四带二</em></div>
+              <div class="trick-cards">
+                <div class="card card--md"><span class="card__rank">10</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--md card--red"><span class="card__rank">10</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card card--md card--red"><span class="card__rank">10</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card card--md"><span class="card__rank">10</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--md" style="margin-left:-4px"><span class="card__rank">3</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--md card--red"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              </div>
+            </div>
+            <div class="seat">
+              <div class="seat-cards-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="avatar avatar--md avatar--rival-2 avatar--active">LG</div>
+              <span class="seat-name mono">@老郭</span>
+            </div>
+          </div>
+          <div class="table-bot">
+            <div class="my-hand-wrap">
+              <div class="my-hand-meta mono">
+                <span style="color:var(--danger);">⚠ 仅剩 <em>1</em> 张 · 需在 3s 内报警</span>
+                <span>当前规则 · 报警 ON</span>
+              </div>
+              <div class="my-hand-row" style="padding-top: 18px;">
+                <div class="card card--lg card--red" style="box-shadow: var(--shadow-lifted), 0 0 24px oklch(64% 0.22 25 / 0.6);">
+                  <span class="card__rank">A</span><span class="card__suit">♥</span><span class="card__center">♥</span>
+                </div>
+              </div>
+            </div>
+            <div class="actions" style="grid-template-columns: 1fr;">
+              <button class="btn btn--primary" style="background:var(--danger);color:oklch(15% 0.04 25);font-size:var(--t-md);font-weight:600;">
+                报警! · ♥A（剩 1 张）
+              </button>
+              <button class="btn btn--ghost" style="font-size:var(--t-xs);">查规则</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>视觉警示</dt><dd>剩余手牌 1 张 + 巨大 lifted glow + danger 红色 CTA，让玩家无法忽视这是关键决策点。</dd></div>
+    <div><dt>3s 倒计时</dt><dd>实际实现时按钮上有 3-2-1 倒计时数字滚动。报警是要求性规则（rule-mandated），不按时点会导致这张牌不可出。</dd></div>
+    <div><dt>规则可选</dt><dd>topnav chip "报警 ON" 让玩家清楚知道此规则在生效。如果房间 `lastCallDeclare: false`，整个流程隐藏。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S15: Wildcard substitution dialog              -->
+<!-- ============================================ -->
+<section class="scene s15">
+  <div class="scene-head">
+    <div class="scene-num">15</div>
+    <div class="scene-title">Wildcard · <em>红心通配声明</em></div>
+    <div class="scene-tag">phone · landscape · combo using ★</div>
+  </div>
+  <p class="scene-note">玩家选择一个使用红心通配的 combo（如 7-7-? 三同），系统弹出对话让玩家声明通配代表什么。预选最 plausible 的（7♠ 因为接 7 牌型）。一旦确认，played 牌堆里通配显示为 "★ → 7♠" 让对手看清楚。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table" style="filter:brightness(0.45)">
+          <div class="table-top"><div class="table-top-left"><span class="table-top-key mono">K7M2P9</span></div></div>
+          <div class="table-arena"></div>
+          <div class="table-bot"></div>
+        </div>
+        <div class="tribute-veil" style="background: oklch(0% 0 0 / 0.7);">
+          <div class="tribute-panel" style="width: 480px;">
+            <div class="tribute-head">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--gold);letter-spacing:var(--tracking-wide);text-transform:uppercase;margin-bottom:4px;">红心通配 · 声明</div>
+                <div style="font-size:var(--t-lg); font-weight: 600; letter-spacing: var(--tracking-tight);">用 <span style="color: var(--gold);">♥5 ★</span> 当作什么？</div>
+              </div>
+            </div>
+            <p style="font-size:var(--t-xs);color:var(--ink-2);margin:8px 0 14px;line-height:1.5;">你正在出 <strong style="color:var(--ink-1);">三同 7</strong>。需要第 3 张 7。选择 ♥5 通配的代表点数。</p>
+            <div style="display:flex;align-items:end;gap:10px;padding:14px 18px;background:var(--surface-2);border-radius:var(--r-2);">
+              <div class="card card--md"><span class="card__rank">7</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+              <div class="card card--md card--red"><span class="card__rank">7</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+              <div style="font-family:var(--font-mono); font-size: var(--t-lg); color: var(--gold); margin: 0 6px;">+</div>
+              <div class="card card--md card--wild card--red" style="outline: 2px solid var(--gold);">
+                <span class="card__rank">5</span><span class="card__suit">♥</span><span class="card__center">♥</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-top:14px;">
+              <button class="btn btn--accent-soft btn--sm" style="background:var(--gold-tint);border-color:oklch(82% 0.15 95 / 0.4);color:var(--gold);"><span style="font-weight:600;">7♠ ★</span> 推荐</button>
+              <button class="btn btn--ghost btn--sm">7♥</button>
+              <button class="btn btn--ghost btn--sm">7♦</button>
+              <button class="btn btn--ghost btn--sm">7♣</button>
+            </div>
+            <p style="font-size:var(--t-3xs);color:var(--ink-3);margin:10px 0 0;font-family:var(--font-mono);letter-spacing:var(--tracking-wide);text-transform:uppercase;">声明后写入本局记录，对手可见</p>
+            <div style="display:flex;justify-content:space-between;margin-top:14px;">
+              <button class="btn btn--ghost btn--sm">取消</button>
+              <button class="btn btn--primary btn--sm">确认 出三同 7 · ♥5 → 7♠</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>视觉拼牌</dt><dd>将待出的 2 张 7 + 通配 ♥5 ★ 在面板里 visual 拼接，玩家直觉看见自己想出的 combo。</dd></div>
+    <div><dt>推荐选项</dt><dd>引擎自动算出最 plausible 的 7♠（因为另外 3 个花色已被使用 / 在场），高亮为推荐。但保留全部 4 个花色选项给玩家。</dd></div>
+    <div><dt>声明透明</dt><dd>"声明后写入本局记录，对手可见"——告诉玩家这不是秘密，是公开声明。Played stack 里通配会显示 "★ → 7♠"。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S16: Ranked lobby (v2 preview)                  -->
+<!-- ============================================ -->
+<section class="scene s16">
+  <div class="scene-head">
+    <div class="scene-num">16</div>
+    <div class="scene-title">Ranked Lobby · <em>排位</em></div>
+    <div class="scene-tag">phone · landscape · v2 preview</div>
+  </div>
+  <p class="scene-note">v2 排位模式（v1 不开放）。玩家从匿名手柄升级为已验证手柄后可进入。三选一队列（4P / 6P / 8P）+ 当前 Elo + 最近 5 场战绩 + 已禁辅助提示。匹配 4 个陌生人，同 IP 排除，辅助功能强制关闭。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="s01-nav">
+          <div class="s01-brand">
+            <span class="s01-brand-mark">掼·</span>
+            <span class="s01-brand-name">ranked</span>
+            <span class="chip chip--gold mono" style="font-size:9px;margin-left:6px;">SEASON 1</span>
+          </div>
+          <div class="s01-me">
+            <span class="s01-me-handle">@阿祥 <span class="chip mono" style="font-size:9px;padding:1px 5px;color:var(--gold);background:var(--gold-tint);border-color:transparent;">✓ 已验证</span></span>
+            <span class="s01-me-lvl tnum">ELO 1547 · 资深</span>
+            <div class="avatar avatar--sm avatar--self">XX</div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 0.95fr 1.05fr; height: calc(100% - 44px); overflow: hidden;">
+          <div style="padding: 18px 28px 18px 64px; border-right: 1px solid var(--rule-1); display: flex; flex-direction: column; gap: 12px;">
+            <div class="s01-eyebrow">本赛季 · 截至本周</div>
+            <div style="display:flex; align-items:baseline; gap: 12px;">
+              <span style="font-size: var(--t-3xl); font-weight: 600; font-family: var(--font-mono); color: var(--ink-1); letter-spacing: var(--tracking-tight); line-height: 1;" class="tnum">1547</span>
+              <span style="font-family: var(--font-mono); font-size: var(--t-xs); color: var(--accent); letter-spacing: 0.04em;">+23 ↑ vs 上周</span>
+            </div>
+            <div style="display: flex; gap: 4px; align-items: end; padding: 12px 0;">
+              <span class="chip mono" style="font-size:9px;padding:3px 6px;background:var(--accent);color:oklch(15% 0.04 30);border-color:transparent;font-weight:600;">W</span>
+              <span class="chip mono" style="font-size:9px;padding:3px 6px;background:var(--accent);color:oklch(15% 0.04 30);border-color:transparent;font-weight:600;">W</span>
+              <span class="chip mono" style="font-size:9px;padding:3px 6px;background:var(--surface-3);color:var(--ink-3);border-color:transparent;">L</span>
+              <span class="chip mono" style="font-size:9px;padding:3px 6px;background:var(--accent);color:oklch(15% 0.04 30);border-color:transparent;font-weight:600;">W</span>
+              <span class="chip mono" style="font-size:9px;padding:3px 6px;background:var(--surface-3);color:var(--ink-3);border-color:transparent;">L</span>
+              <span style="font-family: var(--font-mono); font-size: var(--t-xs); color: var(--ink-2); margin-left: 10px;">最近 5 场 · 3W2L</span>
+            </div>
+            <div style="padding: 12px 14px; background: var(--danger-tint); border-left: 2px solid var(--danger); border-radius: var(--r-1); font-size: var(--t-xs); color: var(--ink-2); line-height: 1.5;">
+              <strong style="color: var(--danger);">排位模式提示</strong>: 理牌 / 提示 / 终局解算全部 <strong>强制关闭</strong>。同 IP 玩家不会匹配进同一局。
+            </div>
+          </div>
+          <div style="padding: 18px 28px; display: flex; flex-direction: column; gap: 10px;">
+            <div class="s01-rooms-head">
+              <span class="s01-rooms-title">排位队列</span>
+              <span class="s01-rooms-count">等待中 · <em>312</em> 人</span>
+            </div>
+            <button class="btn btn--primary btn--lg" style="justify-content: space-between; padding: 18px 16px;">
+              <div style="text-align:left;">
+                <div style="font-size:var(--t-md);font-weight:600;">4P 对家排位</div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:oklch(25% 0.06 30);letter-spacing:var(--tracking-wide);margin-top:2px;">~12s 平均匹配 · 89 人在队</div>
+              </div>
+              <span style="font-size:var(--t-lg);">→</span>
+            </button>
+            <button class="btn btn--ghost" style="justify-content: space-between; padding: 14px 16px;">
+              <div style="text-align:left;">
+                <div style="font-size:var(--t-sm);font-weight:500;">6P 三家排位</div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);margin-top:2px;">~35s 平均 · 56 人</div>
+              </div>
+              <span>→</span>
+            </button>
+            <button class="btn btn--ghost" style="justify-content: space-between; padding: 14px 16px;">
+              <div style="text-align:left;">
+                <div style="font-size:var(--t-sm);font-weight:500;">8P 四家排位</div>
+                <div style="font-family:var(--font-mono);font-size:var(--t-2xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);margin-top:2px;">~1m 平均 · 167 人</div>
+              </div>
+              <span>→</span>
+            </button>
+            <div style="margin-top: auto; padding-top: 12px; border-top: 1px dashed var(--rule-1); display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase;">本周战绩 · 23W 17L</span>
+              <button class="btn btn--ghost btn--sm">排行榜 →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>验证标识</dt><dd>@handle 旁的 ✓ 已验证 chip 让玩家清楚自己进了排位门槛（需要手机验证 + 100 场休闲 + 30 天无举报）。</dd></div>
+    <div><dt>辅助禁用警示</dt><dd>左下 danger-tinted 提示明确告诉用户排位模式下哪些功能强制关闭。这是 anti-cheat 透明性的关键设计。</dd></div>
+    <div><dt>队列实时数据</dt><dd>每个模式按钮显示平均匹配时间 + 当前队列人数。这是排位玩家最关心的 2 个数。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S17: Admin / moderation dashboard               -->
+<!-- ============================================ -->
+<section class="scene s17">
+  <div class="scene-head">
+    <div class="scene-num">17</div>
+    <div class="scene-title">Admin Dashboard · <em>后台 · moderation</em></div>
+    <div class="scene-tag">desktop · 1280 × 760 · ADMIN_TOKEN gated</div>
+  </div>
+  <p class="scene-note">桌面端 `/admin?token=$ADMIN_TOKEN` 的 moderation 后台。三栏：左 = 举报队列（待处理）、中 = 选中举报详情 + 涉及游戏 replay 链接、右 = 处理动作（封禁 / 重置 / 跳过）。沿用 sibling scorer 的 token 鉴权模式（fail-closed if env unset）。</p>
+
+  <div class="scene-stage">
+    <div class="desktop">
+      <div class="desktop__chrome">
+        <div class="desktop__dot"></div>
+        <div class="desktop__dot"></div>
+        <div class="desktop__dot"></div>
+        <div class="desktop__url mono">guandan-online.vercel.app/admin · token: ***</div>
+        <span class="chip chip--danger mono">ADMIN</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 320px 1fr 280px; height: calc(100% - 34px); background: var(--surface-0);">
+        <aside class="s08-rail">
+          <div>
+            <div class="s08-rail-section-head">举报队列 · 待处理 · 14</div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="padding:10px 12px;background:var(--accent-tint);border-left:2px solid var(--accent);border-radius:var(--r-1);">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+                  <span style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-1);">@老郭</span>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--ink-3);letter-spacing:var(--tracking-wide);">17m 前</span>
+                </div>
+                <div style="font-size:var(--t-xs);color:var(--ink-2);">作弊 · 3 reports / 2 reporters</div>
+              </div>
+              <div style="padding:10px 12px;border:1px solid var(--rule-1);border-radius:var(--r-1);">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+                  <span style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-1);">@strangerXY</span>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--ink-3);letter-spacing:var(--tracking-wide);">2h 前</span>
+                </div>
+                <div style="font-size:var(--t-xs);color:var(--ink-2);">言语攻击 · 5 reports / 4 reporters</div>
+              </div>
+              <div style="padding:10px 12px;border:1px solid var(--rule-1);border-radius:var(--r-1);">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+                  <span style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-1);">@bot_player_99</span>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--ink-3);letter-spacing:var(--tracking-wide);">4h 前</span>
+                </div>
+                <div style="font-size:var(--t-xs);color:var(--ink-2);">挂机 · 2 reports / 2 reporters</div>
+              </div>
+              <div style="padding:10px 12px;border:1px solid var(--rule-1);border-radius:var(--r-1);">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+                  <span style="font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-1);">@spam_acct_4</span>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--ink-3);letter-spacing:var(--tracking-wide);">6h 前</span>
+                </div>
+                <div style="font-size:var(--t-xs);color:var(--ink-2);">多账号 · 1 IP, 5 accounts</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="s08-rail-section-head">本周指标</div>
+            <div class="s08-stat-row"><span class="s08-stat-key">举报数</span><span class="s08-stat-val tnum">47</span></div>
+            <div class="s08-stat-row"><span class="s08-stat-key">已封禁</span><span class="s08-stat-val tnum">3</span></div>
+            <div class="s08-stat-row"><span class="s08-stat-key">已驳回</span><span class="s08-stat-val tnum">12</span></div>
+            <div class="s08-stat-row"><span class="s08-stat-key">PRC p95</span><span class="s08-stat-val tnum">187ms</span></div>
+            <div class="s08-stat-row"><span class="s08-stat-key">US p95</span><span class="s08-stat-val tnum">94ms</span></div>
+          </div>
+        </aside>
+        <main style="padding: 24px 32px; overflow: auto;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;">
+            <div>
+              <div style="font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; margin-bottom: 4px;">举报详情 · #ER-2847</div>
+              <h2 style="font-size: var(--t-xl); font-weight: 600; letter-spacing: var(--tracking-tight);">@老郭 · 涉嫌作弊</h2>
+            </div>
+            <span class="chip chip--danger mono">3 reports · 2 distinct reporters</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--rule-1); border-radius: var(--r-2);">
+              <div style="font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; margin-bottom: 8px;">profile · 4 天前注册</div>
+              <div style="font-size: var(--t-sm); color: var(--ink-1); line-height: 1.6;">
+                @老郭 · LV 7 · 38 场 · 胜率 76%<br>
+                <span style="color: var(--ink-3); font-family: var(--font-mono); font-size: var(--t-xs);">注册 IP: 117.135.xxx.xxx · 上海</span><br>
+                <span style="color: var(--accent); font-family: var(--font-mono); font-size: var(--t-xs);">⚠ 同 IP 共 3 个账号</span>
+              </div>
+            </div>
+            <div style="padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--rule-1); border-radius: var(--r-2);">
+              <div style="font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; margin-bottom: 8px;">举报记录</div>
+              <div style="font-size: var(--t-sm); color: var(--ink-1); line-height: 1.6;">
+                @阿祥 · 17m · "胜率太异常，怀疑挂机"<br>
+                @泉酱 · 19m · "明显看牌，提示精确无误"<br>
+                @阿祥 · 23m · "和 @饭团 是同伙"
+              </div>
+            </div>
+          </div>
+          <div style="padding: 14px 16px; background: var(--surface-1); border: 1px solid var(--rule-1); border-radius: var(--r-2); margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-family: var(--font-mono); font-size: var(--t-2xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase;">相关游戏 · 5 局</div>
+              <button class="btn btn--ghost btn--sm">查看 replay 全部 →</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div class="s08-history-row"><span class="s08-history-n mono">L5</span><span class="s08-history-event">K7M2P9 · 头游 · <em>双下</em> · 17m</span><span class="s08-history-time">▶ replay</span></div>
+              <div class="s08-history-row"><span class="s08-history-n mono">L4</span><span class="s08-history-event">M3R9P2 · 头游 · 单上 · 32m</span><span class="s08-history-time">▶ replay</span></div>
+              <div class="s08-history-row"><span class="s08-history-n mono">L3</span><span class="s08-history-event">B8F1N4 · 头游 · <em>双下</em> · 1h</span><span class="s08-history-time">▶ replay</span></div>
+              <div class="s08-history-row"><span class="s08-history-n mono">L2</span><span class="s08-history-event">Q6V2L9 · 头游 · 单上 · 1h</span><span class="s08-history-time">▶ replay</span></div>
+              <div class="s08-history-row"><span class="s08-history-n mono">L1</span><span class="s08-history-event">H3K8P1 · 头游 · <em>双下</em> · 2h</span><span class="s08-history-time">▶ replay</span></div>
+            </div>
+          </div>
+          <div style="padding: 12px 14px; background: var(--surface-2); border-left: 2px solid var(--info); border-radius: var(--r-1); font-size: var(--t-xs); color: var(--ink-2); line-height: 1.5;">
+            <strong style="color: var(--info);">注:</strong> 单一玩家 5 局 5 头游 vs 平均 0.25 头游率（4 人局）—— 异常。建议先查 replay，确认有无引擎辅助痕迹。
+          </div>
+        </main>
+        <aside class="s08-rail right">
+          <div>
+            <div class="s08-rail-section-head">处理动作</div>
+            <button class="btn btn--primary" style="background:var(--danger);color:oklch(15% 0.04 25);width:100%;justify-content:flex-start;padding:10px 12px;margin-bottom:6px;">
+              封禁账户 · 永久
+            </button>
+            <button class="btn btn--ghost" style="width:100%;justify-content:flex-start;padding:10px 12px;margin-bottom:6px;">
+              封禁账户 · 7 天
+            </button>
+            <button class="btn btn--ghost" style="width:100%;justify-content:flex-start;padding:10px 12px;margin-bottom:6px;">
+              重置 stats
+            </button>
+            <button class="btn btn--ghost" style="width:100%;justify-content:flex-start;padding:10px 12px;margin-bottom:6px;">
+              加入 watch list
+            </button>
+            <button class="btn btn--ghost" style="width:100%;justify-content:flex-start;padding:10px 12px;color:var(--ink-3);">
+              驳回 · 证据不足
+            </button>
+          </div>
+          <div>
+            <div class="s08-rail-section-head">同 IP 账号</div>
+            <div class="s08-stat-row"><span class="s08-stat-key">@老郭</span><span class="s08-stat-val">当前</span></div>
+            <div class="s08-stat-row"><span class="s08-stat-key">@laoguo2024</span><span class="s08-stat-val tnum">2d</span></div>
+            <div class="s08-stat-row"><span class="s08-stat-key">@laoguoxyz</span><span class="s08-stat-val tnum">8d</span></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>token gated</dt><dd>URL 含 token，URL bar 显示 `***` 隐藏值。后端 API 通过 constant-time compare 验证（fail-closed if `ADMIN_TOKEN` env unset）。同 sibling scorer pattern。</dd></div>
+    <div><dt>证据驱动</dt><dd>右栏处理动作只在中栏 replay + reporter 记录都查看后才会真的点。"驳回 · 证据不足" 是合法选项 —— 防止 mod 被 swarm-report 操纵。</dd></div>
+    <div><dt>同 IP 警示</dt><dd>右下 panel 显示同 IP 关联账号，让 mod 一眼看出是否是同人多号（research § anti-cheat-deep-dive 重点关注）。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
+<!-- S18: DC + bot takeover prompt                   -->
+<!-- ============================================ -->
+<section class="scene s18">
+  <div class="scene-head">
+    <div class="scene-num">18</div>
+    <div class="scene-title">DC + 接管 · <em>断线 60s</em></div>
+    <div class="scene-tag">phone · landscape · mid-game</div>
+  </div>
+  <p class="scene-note">@饭团 断线了 60s。其他 3 个玩家看到的视图：饭团座位上出现 "AI 接管 · 进阶" badge + countdown bar，游戏继续。如果 @饭团 在 5 分钟内带着 token 重连，AI 退场，他回到自己座位。这个屏是从 @阿祥 视角看到。</p>
+
+  <div class="scene-stage">
+    <div class="phone">
+      <div class="phone__island"></div>
+      <div class="phone__screen">
+        <div class="table">
+          <div class="table-top">
+            <div class="table-top-left">
+              <span class="table-top-key mono">ROOM</span>
+              <span class="table-top-val mono">K7M2P9</span>
+              <span class="chip chip--live mono">LIVE 22:08</span>
+              <span class="chip chip--info mono">@饭团 断线 1m12s</span>
+            </div>
+            <div class="table-top-right">
+              <span class="table-top-key mono">我方</span><span class="table-top-val tnum mono">LV <em>8</em></span>
+              <span class="table-top-key mono">对方</span><span class="table-top-val tnum mono">LV 7</span>
+            </div>
+          </div>
+          <div class="table-arena">
+            <div class="seat-partner">
+              <div class="avatar avatar--sm avatar--partner">QQ</div>
+              <span class="seat-name mono">@泉酱</span>
+              <span class="chip mono" style="font-size:9px">LV 8 · 队友 · 16 张</span>
+            </div>
+            <div class="seat">
+              <div class="seat-cards-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="avatar avatar--md" style="background:linear-gradient(135deg, oklch(50% 0.14 130), oklch(40% 0.12 130)); position: relative;">
+                FT
+                <span style="position:absolute; bottom:-2px; right:-2px; width: 14px; height: 14px; background: var(--info); border: 2px solid var(--surface-0); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px;">🤖</span>
+              </div>
+              <span class="seat-name mono">@饭团 <span class="chip mono" style="font-size:8px;padding:0 4px;color:var(--info);border-color:transparent;background:transparent;">代打 · 进阶</span></span>
+              <span class="seat-lvl tnum mono">LV 7 · <em style="color:var(--info);font-style:normal">AI 接管中</em></span>
+            </div>
+            <div class="trick">
+              <div class="trick-meta mono"><span>上一手</span><span>·</span><span class="trick-played-by" style="color: var(--info);">@饭团 (AI)</span><span>·</span><em>三带二</em></div>
+              <div class="trick-cards">
+                <div class="card card--md card--red"><span class="card__rank">8</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card card--md"><span class="card__rank">8</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--md card--red"><span class="card__rank">8</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card card--md" style="margin-left:-4px"><span class="card__rank">3</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--md card--red"><span class="card__rank">3</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+              </div>
+              <div class="trick-meta mono" style="margin-top:6px;">
+                <span class="chip chip--accent mono" style="font-size:9px">轮到我 · 11s</span>
+              </div>
+            </div>
+            <div class="seat">
+              <div class="seat-cards-stack">
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+                <div class="card card--back"></div>
+              </div>
+              <div class="avatar avatar--md avatar--rival-2 avatar--active">LG</div>
+              <span class="seat-name mono">@老郭</span>
+              <span class="seat-lvl tnum mono">LV 7 · 等出</span>
+            </div>
+          </div>
+          <div class="table-bot">
+            <div class="my-hand-wrap">
+              <div class="my-hand-meta mono">
+                <span>我 · <em>@阿祥</em> · 22 张 · 局还在进行</span>
+                <span style="color:var(--info)">@饭团 重连倒计时 · 3m48s</span>
+              </div>
+              <div class="my-hand-row">
+                <div class="card card--red"><span class="card__rank">2</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card card--red"><span class="card__rank">5</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">6</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card"><span class="card__rank">7</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">8</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">9</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--lifted card--red"><span class="card__rank">10</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card card--lifted"><span class="card__rank">10</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--lifted"><span class="card__rank">10</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+                <div class="card card--lifted card--red"><span class="card__rank">10</span><span class="card__suit">♥</span><span class="card__center">♥</span></div>
+                <div class="card"><span class="card__rank">J</span><span class="card__suit">♣</span><span class="card__center">♣</span></div>
+                <div class="card card--red"><span class="card__rank">Q</span><span class="card__suit">♦</span><span class="card__center">♦</span></div>
+                <div class="card"><span class="card__rank">K</span><span class="card__suit">♠</span><span class="card__center">♠</span></div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn--primary">炸 4张 10 压</button>
+              <button class="btn btn--ghost">不出</button>
+              <button class="btn btn--ghost">理牌</button>
+              <button class="btn btn--accent-soft">提示</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <dl class="scene-annot">
+    <div><dt>状态明示</dt><dd>seat avatar 上的 🤖 chip 一眼看出这是 AI 代打、不是真人。Played card 也归属为 "@饭团 (AI)" with info 蓝色，让人清楚区分。</dd></div>
+    <div><dt>双倒计时</dt><dd>topnav "断线 1m12s" 是 DC 时长；底部 hand meta "重连倒计时 3m48s" 是 AI 接管到永久化的剩余时间。两个时间维度不同，都要让玩家看见。</dd></div>
+    <div><dt>不暂停</dt><dd>游戏继续进行 —— bot 行使 @饭团 的回合权，trick 区显示 bot 出的牌。如果暂停整桌等他重连，会破坏其他 3 人的体验。这是 1-vs-3 trade-off。</dd></div>
+  </dl>
+</section>
+
+<!-- ============================================ -->
 <!-- FOOTER                                         -->
 <!-- ============================================ -->
 <footer style="margin-top:120px;padding-top:32px;border-top:1px solid var(--rule-1);font-family:var(--font-mono);font-size:var(--t-xs);color:var(--ink-3);letter-spacing:var(--tracking-wide);">
   <div style="display:flex;justify-content:space-between;align-items:baseline;">
-    <span>guandan-online · hi-fi wireframes · v0.1 envisioning</span>
+    <span>guandan-online · hi-fi wireframes · v0.2 · 18 scenes</span>
     <span>made with huashu-design · <span style="color:var(--accent);">2026-05-16</span></span>
   </div>
 </footer>
