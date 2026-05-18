@@ -1,6 +1,6 @@
 import { type Card } from '../game/cards.js';
 import type { ExchangeVoteChoice } from '../game/exchange.js';
-import { type GameState, type Placement, type PlayerId } from '../game/state.js';
+import { type GameState, type Placement, type PlayerId, type TeamLevels } from '../game/state.js';
 import type { LevelRank } from '../game/cards.js';
 import type { TeamKey } from '../game/mode.js';
 import type { TributeObligation } from '../game/tribute.js';
@@ -47,7 +47,7 @@ export interface ClientStateView {
   placements?: Placement[];
   winnerTeam?: TeamKey;
   nextLevelRank?: LevelRank;
-  levels?: Record<TeamKey, LevelRank>;
+  levels?: TeamLevels;
   tribute?: ClientTributeView;
   exchange?: ClientExchangeView;
 }

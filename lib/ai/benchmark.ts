@@ -34,7 +34,7 @@ export function runBotBenchmark({
   maxMovesPerRound = 300,
 }: BotBenchmarkOptions = {}): BotBenchmarkResult {
   const safeRounds = Math.max(1, Math.floor(rounds));
-  const winnerTeams: Record<TeamKey, number> = { t1: 0, t2: 0 };
+  const winnerTeams: Record<TeamKey, number> = { t1: 0, t2: 0, t3: 0, t4: 0 };
   const failures: BotBenchmarkFailure[] = [];
   let completed = 0;
   let totalMoves = 0;

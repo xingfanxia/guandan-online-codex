@@ -1,14 +1,17 @@
 import type { Card, LevelRank } from './cards.js';
 import { dealCards } from './deal.js';
 import type { ExchangeDirection } from './exchange.js';
-import { DEFAULT_MODE_RULES, type GameMode, type TeamKey } from './mode.js';
+import { DEFAULT_MODE_RULES, type GameMode, type TeamKey, type TeamStructure } from './mode.js';
 import type { TributeObligation } from './tribute.js';
 import { calculateUpgrade } from './upgrade.js';
 import { applyRoundProgression } from './gameEnd.js';
 
+export type TeamLevels = Record<'t1' | 't2', LevelRank> & Partial<Record<TeamKey, LevelRank>>;
+export type TeamFailCounts = Record<'t1' | 't2', number> & Partial<Record<TeamKey, number>>;
+
 export interface LevelProgression {
-  levels: Record<TeamKey, LevelRank>;
-  aFails: Record<TeamKey, number>;
+  levels: TeamLevels;
+  aFails: TeamFailCounts;
   roundOwner: TeamKey | null;
   strictA: boolean;
 }
@@ -168,7 +171,7 @@ export type GameState =
   | ExchangeVotePendingState
   | ExchangeSelectPendingState;
 
-export function createPlayers(mode: GameMode): Player[] {
+export function createPlayers(mode: GameMode, teamStructure: TeamStructure = '2-teams-of-n'): Player[] {
   if (mode === '4') {
     return [
       { id: 'p1', seat: 'east', team: 't1' },
@@ -179,6 +182,15 @@ export function createPlayers(mode: GameMode): Player[] {
   }
 
   const count = mode === '6' ? 6 : 8;
+  if (teamStructure === 'teams-of-2') {
+    const teams: TeamKey[] = mode === '6' ? ['t1', 't2', 't3'] : ['t1', 't2', 't3', 't4'];
+    return Array.from({ length: count }, (_, index) => ({
+      id: `p${index + 1}`,
+      seat: `seat${index + 1}`,
+      team: teams[index % teams.length]!,
+    }));
+  }
+
   return Array.from({ length: count }, (_, index) => ({
     id: `p${index + 1}`,
     seat: `seat${index + 1}`,
@@ -219,12 +231,14 @@ export function buildRoundEndState(state: PlayingState, finished: readonly Place
   const placements = completePlacements(state, finished);
   const winnerTeam = placements[0]!.team;
   const winnerRanks = placements.filter((placement) => placement.team === winnerTeam).map((placement) => placement.position);
-  const { upgrade } = calculateUpgrade(state.mode, winnerRanks, DEFAULT_MODE_RULES);
+  const winnerTeamSize = teamRankCountForPlayers(state.players, winnerTeam);
+  const { upgrade } = calculateUpgrade(state.mode, winnerRanks, DEFAULT_MODE_RULES, DEFAULT_MODE_RULES.must1, winnerTeamSize);
   const progression = state.progression ?? createDefaultProgression(state.levelRank);
   const roundProgression = applyRoundProgression({
     mode: state.mode,
     winnerTeam,
     winnerRanks,
+    teamRankCount: winnerTeamSize,
     levels: cloneProgression(progression).levels,
     aFails: cloneProgression(progression).aFails,
     roundOwner: progression.roundOwner,
@@ -293,11 +307,15 @@ function cloneHands(hands: Record<PlayerId, Card[]>): Record<PlayerId, Card[]> {
 
 export function createDefaultProgression(levelRank: LevelRank): LevelProgression {
   return {
-    levels: { t1: levelRank, t2: levelRank },
-    aFails: { t1: 0, t2: 0 },
+    levels: { t1: levelRank, t2: levelRank, t3: levelRank, t4: levelRank },
+    aFails: { t1: 0, t2: 0, t3: 0, t4: 0 },
     roundOwner: null,
     strictA: DEFAULT_MODE_RULES.strictA,
   };
+}
+
+function teamRankCountForPlayers(players: readonly Player[], team: TeamKey): number {
+  return players.filter((player) => player.team === team).length;
 }
 
 export function cloneProgression(progression: LevelProgression): LevelProgression {

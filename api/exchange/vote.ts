@@ -102,6 +102,7 @@ export function createExchangeVoteHandler({
         stateStore,
         eventLog,
         publisher,
+        roomStore,
         rulesForRoom,
         direction,
         deadlineAt,
@@ -134,6 +135,7 @@ async function handleStatefulVote(
     stateStore: GameStateStore;
     eventLog: EventLog;
     publisher: RealtimePublisher;
+    roomStore?: RoomStore | undefined;
     rulesForRoom?: ((roomId: string) => RoomRules | Promise<RoomRules>) | undefined;
     direction?: ((roomId: string) => ExchangeDirection) | undefined;
     deadlineAt?: ((rules: RoomRules) => string) | undefined;
@@ -147,7 +149,7 @@ async function handleStatefulVote(
   if (!state) return json({ ok: false, error: 'ERR_EXCHANGE_NOT_FOUND' }, 404);
   if (state.phase !== 'exchange-vote-pending') return json({ ok: false, error: 'ERR_NOT_EXCHANGE_VOTE_PENDING' }, 409);
 
-  const rules = normalizeRoomRules(await (deps.rulesForRoom?.(roomId) ?? DEFAULT_ROOM_RULES));
+  const rules = await rulesForRoom(deps, roomId);
   const result = submitExchangeVote(state, {
     playerId,
     choice,
@@ -182,6 +184,18 @@ async function handleStatefulVote(
     events: events.map((event) => event.type),
     eventIds,
   }, 200);
+}
+
+async function rulesForRoom(
+  deps: {
+    roomStore?: RoomStore | undefined;
+    rulesForRoom?: ((roomId: string) => RoomRules | Promise<RoomRules>) | undefined;
+  },
+  roomId: string,
+): Promise<RoomRules> {
+  if (deps.rulesForRoom) return normalizeRoomRules(await deps.rulesForRoom(roomId));
+  const room = await deps.roomStore?.get(roomId);
+  return normalizeRoomRules(room?.rules ?? DEFAULT_ROOM_RULES);
 }
 
 function firstEvent(events: readonly ServerEvent[]): ServerEvent {

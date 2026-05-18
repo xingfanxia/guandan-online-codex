@@ -2,15 +2,16 @@ import type { LevelRank } from './cards.js';
 import { evaluateALevel } from './levels.js';
 import type { GameMode, TeamKey } from './mode.js';
 import { computeRoundEnd } from './roundEnd.js';
-import type { Placement } from './state.js';
+import type { Placement, TeamFailCounts, TeamLevels } from './state.js';
 import { nextLevel } from './upgrade.js';
 
 export interface RoundProgressionInput {
   mode: GameMode;
   winnerTeam: TeamKey;
   winnerRanks: number[];
-  levels: Record<TeamKey, LevelRank>;
-  aFails: Record<TeamKey, number>;
+  teamRankCount?: number;
+  levels: TeamLevels;
+  aFails: TeamFailCounts;
   roundOwner: TeamKey | null;
   roundLevel: LevelRank;
   strictA: boolean;
@@ -19,8 +20,8 @@ export interface RoundProgressionInput {
 export interface RoundProgressionResult {
   finalWin: boolean;
   winnerTeam: TeamKey;
-  levels: Record<TeamKey, LevelRank>;
-  aFails: Record<TeamKey, number>;
+  levels: TeamLevels;
+  aFails: TeamFailCounts;
   roundOwner: TeamKey;
   roundLevel: LevelRank;
   upgrade: number;
@@ -28,8 +29,8 @@ export interface RoundProgressionResult {
 
 export function applyRoundProgression(input: RoundProgressionInput): RoundProgressionResult {
   const placements = syntheticPlacements(input.winnerTeam, input.winnerRanks, input.mode);
-  const roundEnd = computeRoundEnd(input.mode, placements);
-  const loserTeam = input.winnerTeam === 't1' ? 't2' : 't1';
+  const roundEnd = computeRoundEnd(input.mode, placements, input.teamRankCount);
+  const loserTeam = input.mode === '4' ? otherTeam(input.winnerTeam) : undefined;
   const levels = { ...input.levels };
   const aLevel = evaluateALevel({
     mode: input.mode,
@@ -49,13 +50,13 @@ export function applyRoundProgression(input: RoundProgressionInput): RoundProgre
       levels,
       aFails: aLevel.aFails,
       roundOwner: input.winnerTeam,
-      roundLevel: levels[input.winnerTeam],
+      roundLevel: levelFor(levels, input.winnerTeam, input.roundLevel),
       upgrade: roundEnd.upgrade,
     };
   }
 
-  levels[input.winnerTeam] = aLevel.winnerNewLevel ?? nextLevel(levels[input.winnerTeam], roundEnd.upgrade);
-  levels[loserTeam] = aLevel.loserNewLevel ?? levels[loserTeam];
+  levels[input.winnerTeam] = aLevel.winnerNewLevel ?? nextLevel(levelFor(levels, input.winnerTeam, input.roundLevel), roundEnd.upgrade);
+  if (loserTeam) levels[loserTeam] = aLevel.loserNewLevel ?? levelFor(levels, loserTeam, input.roundLevel);
 
   return {
     finalWin: false,
@@ -63,9 +64,17 @@ export function applyRoundProgression(input: RoundProgressionInput): RoundProgre
     levels,
     aFails: aLevel.aFails,
     roundOwner: input.winnerTeam,
-    roundLevel: levels[input.winnerTeam],
+    roundLevel: levelFor(levels, input.winnerTeam, input.roundLevel),
     upgrade: roundEnd.upgrade,
   };
+}
+
+function levelFor(levels: TeamLevels, team: TeamKey, fallback: LevelRank): LevelRank {
+  return levels[team] ?? fallback;
+}
+
+function otherTeam(team: TeamKey): TeamKey {
+  return team === 't1' ? 't2' : 't1';
 }
 
 function syntheticPlacements(winnerTeam: TeamKey, winnerRanks: readonly number[], mode: GameMode): Placement[] {

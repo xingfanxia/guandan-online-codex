@@ -33,7 +33,7 @@ export function startNextRoundFlow({
   rules,
   deadlineAt,
   exchangeDeadlineAt = deadlineAt,
-  teamStructure = '2-teams-of-n',
+  teamStructure = rules.teamStructure,
 }: StartNextRoundFlowInput): StartNextRoundFlowResult {
   const deal = dealCards(roundEnd.mode, roundEnd.players, deck);
   const base = {
@@ -61,7 +61,7 @@ export function startNextRoundFlow({
     if (antiTribute.triggered) {
       events.push({
         type: MessageType.AntiTribute,
-        team: loserTeam(roundEnd),
+        team: tributeTeam(roundEnd, tributePlan.obligations.map((obligation) => obligation.from)),
         declaredBy: antiTribute.declaredByIndexes.map((index) => tributePlan.obligations[index]!.from),
         firstLeader: tributePlan.firstPlacePlayerId,
       });
@@ -137,6 +137,8 @@ function playingState({
   };
 }
 
-function loserTeam(roundEnd: RoundEndState): RoundEndState['winnerTeam'] {
-  return roundEnd.winnerTeam === 't1' ? 't2' : 't1';
+function tributeTeam(roundEnd: RoundEndState, playerIds: readonly string[]): RoundEndState['winnerTeam'] {
+  const playerId = playerIds[0];
+  return roundEnd.players.find((player) => player.id === playerId)?.team
+    ?? (roundEnd.winnerTeam === 't1' ? 't2' : 't1');
 }

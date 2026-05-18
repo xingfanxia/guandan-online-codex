@@ -95,14 +95,14 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
       return json(response, 409);
     }
 
-    const rules = normalizeRoomRules(await (deps.rulesForRoom?.(body.roomId, state) ?? DEFAULT_ROOM_RULES));
+    const rules = await rulesForRoom(deps, body.roomId, state);
     const flow = startNextRoundFlow({
       roundEnd: state,
       deck: deps.deckForRoom?.(body.roomId, state) ?? shuffleDeck(generateDoubleDeck()),
       rules,
       deadlineAt: deps.deadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.returnTimeLimitSeconds),
       exchangeDeadlineAt: deps.exchangeDeadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.exchangeVoteDurationSeconds),
-      teamStructure: deps.teamStructureForRoom?.(body.roomId, state) ?? '2-teams-of-n',
+      teamStructure: deps.teamStructureForRoom?.(body.roomId, state) ?? rules.teamStructure,
     });
 
     const automated = runAutomaticPhaseActions(flow.state, {
@@ -136,6 +136,16 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
     await completeIdempotentOperation(deps.idempotency, idempotencyKey, response, 300, nowMs());
     return json(response, 200);
   };
+}
+
+async function rulesForRoom(
+  deps: NextRoundHandlerDeps,
+  roomId: string,
+  state: RoundEndState,
+): Promise<RoomRules> {
+  if (deps.rulesForRoom) return normalizeRoomRules(await deps.rulesForRoom(roomId, state));
+  const room = await deps.roomStore?.get(roomId);
+  return normalizeRoomRules(room?.rules ?? DEFAULT_ROOM_RULES);
 }
 
 function validBody(body: NextRoundRequestBody): boolean {

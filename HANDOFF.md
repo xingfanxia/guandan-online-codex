@@ -23,12 +23,14 @@ Implemented in this clone:
 - UI-1 / UI-2 / UI-3 / SEC-3 UI foundation: Vite/React app shell, required local player-handle setup with profile persistence, first game-table screen, card/hand/trick/avatar primitives, locked token imports, CSS rotate orientation wrapper/prompt, typed profile/room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens with 4P/6P/8P picker, waiting-room host kick controls, public-room tokenless join flow, report button, admin dashboard wiring, latency admin panel, tribute/exchange phase modals, round-end placement/next-round panel, filtered-view table + phase overlay adapters, active-room loading state, local active-room reconnect persistence, table-side `理牌` / `提示` controls, disconnect takeover badge, active-room play/pass/round/tribute/exchange/assist POST wiring, component tests, and production build script
 - Full-game API integration coverage for all-human and human+bot 4P/8P games from create/join/start through move, round-next, tribute return, and `game-end`, including player-token authorization and hidden-state replay checks
 - Production API runtime fixes: server-side `api/` and `lib/` imports use explicit `.js` specifiers so Vercel's frameworkless TypeScript functions resolve under Node ESM; default API exports are wrapped by `api/_node.ts` so Vercel Node `(req, res)` invocations are adapted into the app's Web `Request`/`Response` handlers
+- 6P/8P team-structure support: room rules can now choose `2-teams-of-n` or `teams-of-2`; start/deal seating uses ABCABC for 6P and ABCDABCD for 8P in teams-of-2 rooms; round-end uses actual team size; teams-of-2 progression uses pair-team upgrade tiers so 8P four-team rooms can advance; Path B sweep tribute is limited to `2-teams-of-n`; create-room UI exposes the 2/3/4-team selector for 6P/8P
+- Playability fixes after implementation audit: browser SSE now subscribes to named server event types instead of only `message`, table hydration chooses the newest view by state version so POST responses are not hidden behind stale SSE snapshots, 8P bot stretches use a dynamic bot-turn budget instead of a 3-move cap, and the hidden-state publish guard now catches direct `publisher.publish(...)` calls outside the filtered publish path
 
 Verification after the update:
-- `npm test` — 91 files / 361 tests passing
+- `npm test` — 91 files / 371 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.36% statements / 93.37% lines
+- `npm run test:coverage` — 90.58% statements / 93.53% lines
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
@@ -44,6 +46,7 @@ Still not complete:
 - SSE uses bounded polling over the per-player event log; tune `pollMs`/duration against real Upstash/Vercel latency before production.
 - `api/round/next` is the explicit server transition from `round-end` into the next hand; `api/move` still stops at `round-end` so the UI can show the round summary before advancing.
 - API unit tests may call route defaults directly with Web `Request`; Vercel production calls the same defaults as Node functions through `universalHandler`. Keep `tests/api/nodeAdapter.test.ts` green before deploying API changes.
+- Room rule defaults are now read from stored room records by phase routes when no test override is injected; keep this covered because it is what makes production `cardExchange` / `teamStructure` settings matter after room creation.
 - AI WASM solver, Elo-rated benchmark league, live BotID production verification, real-device orientation validation, live deployed table validation, and deployment milestones remain pending per `docs/plan/PLAN.md`.
 
 ---

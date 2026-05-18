@@ -1,12 +1,13 @@
 import { maxRankForMode, type GameMode, type TeamKey } from './mode.js';
 import type { LevelRank } from './cards.js';
+import type { TeamFailCounts, TeamLevels } from './state.js';
 
 export interface ALevelInput {
   mode: GameMode;
   winnerTeam: TeamKey;
   winnerRanks: readonly number[];
-  levels: Record<TeamKey, LevelRank>;
-  aFails: Record<TeamKey, number>;
+  levels: TeamLevels;
+  aFails: TeamFailCounts;
   roundOwner: TeamKey | null;
   roundLevel: LevelRank;
   strictA: boolean;
@@ -17,7 +18,7 @@ export interface ALevelResult {
   aTeam: TeamKey | undefined;
   winnerNewLevel: LevelRank | undefined;
   loserNewLevel: LevelRank | undefined;
-  aFails: Record<TeamKey, number>;
+  aFails: TeamFailCounts;
   note: string;
 }
 
@@ -31,20 +32,21 @@ function tracksAFail(mode: GameMode): boolean {
 
 export function evaluateALevel(input: ALevelInput): ALevelResult {
   const aFails = { ...input.aFails };
-  const winnerLevel = input.levels[input.winnerTeam];
-  const loserTeam = otherTeam(input.winnerTeam);
-  const loserLevel = input.levels[loserTeam];
+  const winnerLevel = input.levels[input.winnerTeam] ?? input.roundLevel;
+  const loserTeam = input.mode === '4' ? otherTeam(input.winnerTeam) : undefined;
+  const loserLevel = loserTeam ? input.levels[loserTeam] : undefined;
   let aTeam: TeamKey | undefined;
   let winnerNewLevel: LevelRank | undefined;
   let loserNewLevel: LevelRank | undefined;
   let note = '';
 
-  if (input.levels.t1 === 'A' && input.levels.t2 === 'A') {
+  const aTeams = (Object.keys(input.levels) as TeamKey[]).filter((team) => input.levels[team] === 'A');
+  if (input.mode === '4' && input.levels.t1 === 'A' && input.levels.t2 === 'A') {
     aTeam = input.winnerTeam;
-  } else if (input.levels.t1 === 'A') {
-    aTeam = 't1';
-  } else if (input.levels.t2 === 'A') {
-    aTeam = 't2';
+  } else if (input.levels[input.winnerTeam] === 'A') {
+    aTeam = input.winnerTeam;
+  } else if (input.mode === '4') {
+    aTeam = aTeams[0];
   }
 
   if (!aTeam) {
@@ -53,7 +55,7 @@ export function evaluateALevel(input: ALevelInput): ALevelResult {
 
   function recordAFail(team: TeamKey): { count: number; demoted: boolean } | null {
     if (!tracksAFail(input.mode)) return null;
-    const count = aFails[team] + 1;
+    const count = (aFails[team] ?? 0) + 1;
     if (count >= 3) {
       aFails[team] = 0;
       return { count, demoted: true };

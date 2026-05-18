@@ -62,6 +62,50 @@ describe('bot turn chain', () => {
     expect(result.state).toMatchObject({ currentTurn: 'p1', version: 2 });
   });
 
+  test('default budget can advance a full 8P bot stretch back to the human', () => {
+    const result = runBotTurns({
+      phase: 'playing',
+      mode: '8',
+      levelRank: '2',
+      players: [
+        { id: 'p1', seat: 'seat1', team: 't1' },
+        { id: 'p2', seat: 'seat2', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p3', seat: 'seat3', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p4', seat: 'seat4', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p5', seat: 'seat5', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p6', seat: 'seat6', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p7', seat: 'seat7', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p8', seat: 'seat8', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+      ],
+      hands: {
+        p1: [c('3')],
+        p2: [c('4')],
+        p3: [c('5')],
+        p4: [c('6')],
+        p5: [c('7')],
+        p6: [c('8')],
+        p7: [c('9')],
+        p8: [c('10')],
+      },
+      undealt: [],
+      finished: [],
+      currentTurn: 'p2',
+      currentTrick: {
+        leader: 'p1',
+        currentPlay: {
+          playerId: 'p1',
+          cards: [c('3')],
+          pattern: { kind: 'single', length: 1, primaryRank: '3', wildcardsUsed: 0 },
+        },
+        passes: [],
+      },
+      version: 2,
+    }, { random: () => 0.9 });
+
+    expect(result.moves.map((move) => move.playerId)).toEqual(['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+    expect(result.state).toMatchObject({ phase: 'round-end' });
+  });
+
   test('emits round_end when a bot move finishes the round', () => {
     const result = runBotTurns(state({
       players: [

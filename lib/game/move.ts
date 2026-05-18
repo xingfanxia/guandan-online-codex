@@ -1,5 +1,5 @@
 import { cardKey, type Card } from './cards.js';
-import { expectedTeamRankCount, maxRankForMode } from './mode.js';
+import { maxRankForMode } from './mode.js';
 import { analyzeHand, canBeat } from './patterns.js';
 import {
   buildRoundEndState,
@@ -154,7 +154,8 @@ function roundShouldEnd(state: PlayingState): boolean {
   if (!first) return false;
 
   const firstPlaceTeamFinished = state.finished.filter((placement) => placement.team === first.team).length;
-  if (firstPlaceTeamFinished >= expectedTeamRankCount(state.mode)) return true;
+  const firstPlaceTeamSize = state.players.filter((player) => player.team === first.team).length;
+  if (firstPlaceTeamFinished >= firstPlaceTeamSize) return true;
 
   return state.finished.length >= maxRankForMode(state.mode) - 1;
 }

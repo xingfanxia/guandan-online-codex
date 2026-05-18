@@ -1,5 +1,6 @@
 import type { AntiTributeCondition, ReturnCardCap } from '../game/tribute.js';
 import type { ExchangeVoteThreshold } from '../game/exchange.js';
+import type { TeamStructure } from '../game/mode.js';
 
 export type TributeSelection = 'auto_pick' | 'player_picks';
 export type ReturnSelection = 'player_picks' | 'auto_pick_lowest';
@@ -15,6 +16,7 @@ export interface RoomRules {
   returnTimeLimitSeconds: 10 | 15 | 30;
   sameRankTiebreak: SameRankTiebreak;
   mode8TributeDepth: Mode8TributeDepth;
+  teamStructure: TeamStructure;
   cardExchange: boolean;
   exchangeVoteThreshold: ExchangeVoteThreshold;
   exchangeVoteDurationSeconds: 10 | 15 | 20;
@@ -32,6 +34,7 @@ export const DEFAULT_ROOM_RULES: RoomRules = {
   returnTimeLimitSeconds: 15,
   sameRankTiebreak: 'auto_left_right',
   mode8TributeDepth: 'top_only',
+  teamStructure: '2-teams-of-n',
   cardExchange: false,
   exchangeVoteThreshold: 'majority',
   exchangeVoteDurationSeconds: 15,
@@ -53,6 +56,7 @@ export function normalizeRoomRules(input: unknown = {}): RoomRules {
   if ('returnTimeLimitSeconds' in overrides) rules.returnTimeLimitSeconds = oneOf(overrides.returnTimeLimitSeconds, [10, 15, 30]);
   if ('sameRankTiebreak' in overrides) rules.sameRankTiebreak = oneOf(overrides.sameRankTiebreak, ['auto_left_right', 'winner_picks_suit']);
   if ('mode8TributeDepth' in overrides) rules.mode8TributeDepth = oneOf(overrides.mode8TributeDepth, ['full', 'top_only', 'single']);
+  if ('teamStructure' in overrides) rules.teamStructure = oneOf(overrides.teamStructure, ['2-teams-of-n', 'teams-of-2']);
   if ('cardExchange' in overrides) rules.cardExchange = boolean(overrides.cardExchange);
   if ('exchangeVoteThreshold' in overrides) rules.exchangeVoteThreshold = oneOf(overrides.exchangeVoteThreshold, ['majority', 'unanimous']);
   if ('exchangeVoteDurationSeconds' in overrides) rules.exchangeVoteDurationSeconds = oneOf(overrides.exchangeVoteDurationSeconds, [10, 15, 20]);

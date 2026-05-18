@@ -123,7 +123,7 @@ async function handleStatefulTributeSelect(
   const state = await deps.stateStore.get(roomId);
   if (!state) return json({ ok: false, error: 'ERR_ROOM_NOT_FOUND' }, 404);
 
-  const rules = normalizeRoomRules(await (deps.rulesForRoom?.(roomId) ?? DEFAULT_ROOM_RULES));
+  const rules = await rulesForRoom(deps, roomId);
   const result = state.phase === 'tribute-pending'
     ? submitTributeSelection(state, {
         playerId,
@@ -166,6 +166,12 @@ async function handleStatefulTributeSelect(
     events: events.map((event) => event.type),
     eventIds,
   }, 200);
+}
+
+async function rulesForRoom(deps: StatefulTributeSelectDeps, roomId: string): Promise<RoomRules> {
+  if (deps.rulesForRoom) return normalizeRoomRules(await deps.rulesForRoom(roomId));
+  const room = await deps.roomStore?.get(roomId);
+  return normalizeRoomRules(room?.rules ?? DEFAULT_ROOM_RULES);
 }
 
 function firstEvent(events: readonly ServerEvent[]): ServerEvent {

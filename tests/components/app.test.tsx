@@ -208,7 +208,7 @@ describe('App shell', () => {
     await waitFor(() => expect(created).toEqual([{
       hostHandle: 'momo',
       mode: '4',
-      rules: { cardExchange: false },
+      rules: { cardExchange: false, teamStructure: '2-teams-of-n' },
       visibility: 'public',
     }]));
     expect(await screen.findByLabelText('Waiting room')).toBeInTheDocument();
@@ -231,7 +231,7 @@ describe('App shell', () => {
   test('creates a room through the app shell and opens the waiting room', async () => {
     const api = roomApi({
       createRoom: async (input) => {
-        expect(input).toMatchObject({ hostHandle: 'fufu', mode: '4', rules: { cardExchange: true }, visibility: 'public' });
+        expect(input).toMatchObject({ hostHandle: 'fufu', mode: '4', rules: { cardExchange: true, teamStructure: '2-teams-of-n' }, visibility: 'public' });
         return { ok: true, room: room(), hostToken: 'host-token', joinToken: 'join-token', playerToken: 'player-token-p1' };
       },
     });

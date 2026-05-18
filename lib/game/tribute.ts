@@ -9,10 +9,10 @@ import {
   type Rank,
   type Suit,
 } from './cards.js';
-import { expectedTeamRankCount, maxRankForMode, type GameMode } from './mode.js';
+import { maxRankForMode, teamRankCount, type GameMode, type TeamStructure } from './mode.js';
 import type { Placement, PlayerId } from './state.js';
 
-export type TeamStructure = '2-teams-of-n' | 'teams-of-2';
+export type { TeamStructure } from './mode.js';
 export type TributeKind = 'none' | 'single' | 'double' | 'sweep';
 export type AntiTributeCondition = 'dual_big_joker' | 'any_dual_joker' | 'disabled';
 export type ReturnCardCap = 'rank_10' | 'rank_jack' | 'none';
@@ -62,7 +62,7 @@ export function computeTributePlan({
   }
 
   const maxPosition = maxRankForMode(mode);
-  const teamSize = expectedTeamRankCount(mode);
+  const teamSize = teamRankCount(mode, teamStructure);
   const topGroup = ordered.slice(0, teamSize);
   const sweep = teamStructure === '2-teams-of-n'
     && mode !== '4'

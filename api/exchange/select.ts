@@ -14,7 +14,7 @@ import type { RealtimePublisher } from '../../lib/realtime/upstash.js';
 import { defaultRoomStore } from '../../lib/room/defaultStore.js';
 import type { RoomStore } from '../../lib/room/lifecycle.js';
 import { authorizeRoomPlayer } from '../../lib/room/playerAuth.js';
-import { DEFAULT_ROOM_RULES } from '../../lib/room/rules.js';
+import { DEFAULT_ROOM_RULES, normalizeRoomRules, type RoomRules } from '../../lib/room/rules.js';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
 
 export interface ExchangeSelectSession {
@@ -55,10 +55,11 @@ export interface ExchangeSelectHandlerDeps {
   eventLog?: EventLog;
   publisher?: RealtimePublisher;
   roomStore?: RoomStore;
+  rulesForRoom?: (roomId: string) => RoomRules | Promise<RoomRules>;
   rateLimiter?: RequestRateLimiter;
 }
 
-export function createExchangeSelectHandler({ store, stateStore, eventLog, publisher, roomStore, rateLimiter }: ExchangeSelectHandlerDeps): (request: Request) => Promise<Response> {
+export function createExchangeSelectHandler({ store, stateStore, eventLog, publisher, roomStore, rulesForRoom, rateLimiter }: ExchangeSelectHandlerDeps): (request: Request) => Promise<Response> {
   return async function handleExchangeSelect(request: Request): Promise<Response> {
     if (request.method !== 'POST') return json({ ok: false, error: 'ERR_METHOD_NOT_ALLOWED' }, 405);
     const rateLimited = await enforceRateLimit(request, rateLimiter, Date.now());
@@ -79,7 +80,7 @@ export function createExchangeSelectHandler({ store, stateStore, eventLog, publi
     }
 
     if (stateStore && eventLog && publisher) {
-      return handleStatefulSelect({ stateStore, eventLog, publisher }, body.roomId, body.playerId, body.cards);
+      return handleStatefulSelect({ stateStore, eventLog, publisher, roomStore, rulesForRoom }, body.roomId, body.playerId, body.cards);
     }
 
     if (!store) return json({ ok: false, error: 'ERR_EXCHANGE_NOT_FOUND' }, 404);
@@ -115,7 +116,13 @@ export function createExchangeSelectHandler({ store, stateStore, eventLog, publi
 }
 
 async function handleStatefulSelect(
-  deps: { stateStore: GameStateStore; eventLog: EventLog; publisher: RealtimePublisher },
+  deps: {
+    stateStore: GameStateStore;
+    eventLog: EventLog;
+    publisher: RealtimePublisher;
+    roomStore?: RoomStore | undefined;
+    rulesForRoom?: ((roomId: string) => RoomRules | Promise<RoomRules>) | undefined;
+  },
   roomId: string,
   playerId: PlayerId,
   cards: Card[],
@@ -128,11 +135,12 @@ async function handleStatefulSelect(
 
   const result = submitExchangeSelection(state, { playerId, cards });
   if (!result.ok) return json({ ok: false, error: result.error }, statusForError(result.error));
+  const rules = await rulesForRoom(deps, roomId);
 
   const automated = runAutomaticPhaseActions(result.state, {
-    rules: DEFAULT_ROOM_RULES,
-    returnDeadlineAt: () => deadlineFromNow(DEFAULT_ROOM_RULES.returnTimeLimitSeconds),
-    exchangeDeadlineAt: () => deadlineFromNow(DEFAULT_ROOM_RULES.exchangeVoteDurationSeconds),
+    rules,
+    returnDeadlineAt: () => deadlineFromNow(rules.returnTimeLimitSeconds),
+    exchangeDeadlineAt: () => deadlineFromNow(rules.exchangeVoteDurationSeconds),
   });
   const finalState = automated.state;
   const events = [...result.events, ...automated.events];
@@ -153,6 +161,18 @@ async function handleStatefulSelect(
     events: events.map((event) => event.type),
     eventIds,
   }, 200);
+}
+
+async function rulesForRoom(
+  deps: {
+    roomStore?: RoomStore | undefined;
+    rulesForRoom?: ((roomId: string) => RoomRules | Promise<RoomRules>) | undefined;
+  },
+  roomId: string,
+): Promise<RoomRules> {
+  if (deps.rulesForRoom) return normalizeRoomRules(await deps.rulesForRoom(roomId));
+  const room = await deps.roomStore?.get(roomId);
+  return normalizeRoomRules(room?.rules ?? DEFAULT_ROOM_RULES);
 }
 
 function firstEvent(events: readonly ServerEvent[]): ServerEvent {

@@ -177,4 +177,36 @@ describe('post-round flow', () => {
       'p6->p1',
     ]);
   });
+
+  test('6P teams-of-2 uses normal last-to-first tribute instead of sweep tribute', () => {
+    const result = startNextRoundFlow({
+      roundEnd: roundEnd({
+        mode: '6',
+        players: [
+          { id: 'p1', seat: 'seat1', team: 't1' },
+          { id: 'p2', seat: 'seat2', team: 't2' },
+          { id: 'p3', seat: 'seat3', team: 't3' },
+          { id: 'p4', seat: 'seat4', team: 't1' },
+          { id: 'p5', seat: 'seat5', team: 't2' },
+          { id: 'p6', seat: 'seat6', team: 't3' },
+        ],
+        placements: [
+          { playerId: 'p1', position: 1, team: 't1' },
+          { playerId: 'p4', position: 2, team: 't1' },
+          { playerId: 'p2', position: 3, team: 't2' },
+          { playerId: 'p5', position: 4, team: 't2' },
+          { playerId: 'p3', position: 5, team: 't3' },
+          { playerId: 'p6', position: 6, team: 't3' },
+        ],
+      }),
+      deck: deck([c('A'), c('2'), c('3'), c('4'), c('5'), c('6')]),
+      rules: { ...DEFAULT_ROOM_RULES, teamStructure: 'teams-of-2' },
+      deadlineAt: '2026-05-18T00:00:15.000Z',
+    });
+
+    expect(result.state.phase).toBe('tribute-pending');
+    expect(result.state.phase === 'tribute-pending' ? result.state.obligations : []).toMatchObject([
+      { from: 'p6', to: 'p1', fromPosition: 6, toPosition: 1 },
+    ]);
+  });
 });

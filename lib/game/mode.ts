@@ -1,5 +1,6 @@
 export type GameMode = '4' | '6' | '8';
-export type TeamKey = 't1' | 't2';
+export type TeamKey = 't1' | 't2' | 't3' | 't4';
+export type TeamStructure = '2-teams-of-n' | 'teams-of-2';
 
 export interface ModeRules {
   c4: Record<'1,2' | '1,3' | '1,4', number>;
@@ -53,6 +54,11 @@ export function expectedTeamRankCount(mode: GameMode): number {
   if (mode === '4') return 2;
   if (mode === '6') return 3;
   return 4;
+}
+
+export function teamRankCount(mode: GameMode, teamStructure: TeamStructure = '2-teams-of-n'): number {
+  if (mode === '4' || teamStructure === 'teams-of-2') return 2;
+  return expectedTeamRankCount(mode);
 }
 
 export function maxRankForMode(mode: GameMode): number {

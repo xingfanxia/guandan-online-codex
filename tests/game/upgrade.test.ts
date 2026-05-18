@@ -25,6 +25,16 @@ describe('level upgrades', () => {
     });
   });
 
+  test('uses pair-team upgrade tiers for 6P/8P teams-of-2 rooms', () => {
+    expect(calculateUpgrade('6', [1, 2], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(3);
+    expect(calculateUpgrade('6', [1, 3], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(2);
+    expect(calculateUpgrade('6', [1, 4], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(1);
+    expect(calculateUpgrade('8', [1, 2], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(3);
+    expect(calculateUpgrade('8', [1, 4], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(2);
+    expect(calculateUpgrade('8', [1, 8], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(1);
+    expect(calculateUpgrade('8', [2, 3], DEFAULT_MODE_RULES, true, 2).upgrade).toBe(0);
+  });
+
   test('reports invalid team-rank lengths and mode metadata', () => {
     expect(calculateUpgrade('4', [1], DEFAULT_MODE_RULES)).toMatchObject({
       upgrade: 0,

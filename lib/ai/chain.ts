@@ -22,12 +22,13 @@ export interface BotTurnResult {
   moves: BotTurnRecord[];
 }
 
-export function runBotTurns(initialState: GameState, { maxMoves = 3, random = Math.random }: BotTurnOptions = {}): BotTurnResult {
+export function runBotTurns(initialState: GameState, { maxMoves, random = Math.random }: BotTurnOptions = {}): BotTurnResult {
   let state = initialState;
   const events: ServerEvent[] = [];
   const moves: BotTurnRecord[] = [];
+  const moveBudget = maxMoves ?? defaultBotMoveBudget(initialState);
 
-  for (let index = 0; index < maxMoves; index++) {
+  for (let index = 0; index < moveBudget; index++) {
     if (state.phase !== 'playing') break;
     const currentTurn = state.currentTurn;
     const player = state.players.find((candidate) => candidate.id === currentTurn);
@@ -55,6 +56,10 @@ export function runBotTurns(initialState: GameState, { maxMoves = 3, random = Ma
   }
 
   return { state, events, moves };
+}
+
+function defaultBotMoveBudget(state: GameState): number {
+  return Math.max(8, state.players.length * 4);
 }
 
 function selectBotMove(state: PlayingState, playerId: PlayerId, random: () => number): LegalMove {

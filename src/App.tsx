@@ -262,7 +262,8 @@ export function App({
       EventSourceCtor: stream?.EventSourceCtor,
     }),
   });
-  const tableView = liveStream.view ?? serverGameView ?? gameView ?? (currentRoom || !activeHandle ? undefined : demoGameView(activeHandle));
+  const tableView = newestView(serverGameView, liveStream.view, gameView)
+    ?? (currentRoom || !activeHandle ? undefined : demoGameView(activeHandle));
   const orderedTableView = tableView ? applyHandOrder(tableView, activePlayerId, handOrder) : undefined;
   const selectedCards = orderedTableView ? cardsFromSelection(orderedTableView, activePlayerId, selected) : [];
 
@@ -497,7 +498,7 @@ export function App({
         setError(result.error);
         return;
       }
-      setServerGameView(result.view);
+      setServerGameView(viewWithResponseVersion(result.view, result.version));
       setNotice('游戏已开始');
       setView('table');
     } finally {
@@ -577,7 +578,7 @@ export function App({
         return;
       }
       setSelected(new Set());
-      setServerGameView(result.view);
+      setServerGameView(viewWithResponseVersion(result.view, result.version));
       setNotice(command.type === 'pass' ? '不要' : `出牌 · ${command.cards.length} 张`);
     } finally {
       setBusy(false);
@@ -610,7 +611,7 @@ export function App({
         return;
       }
       setSelected(new Set());
-      setServerGameView(result.view);
+      setServerGameView(viewWithResponseVersion(result.view, result.version));
       setNotice(label);
     } finally {
       setBusy(false);
@@ -636,7 +637,7 @@ export function App({
         setError(result.error);
         return;
       }
-      setServerGameView(result.view);
+      setServerGameView(viewWithResponseVersion(result.view, result.version));
       setNotice(choice === 'yes' ? '同意换牌' : '不换');
     } finally {
       setBusy(false);
@@ -664,7 +665,7 @@ export function App({
         return;
       }
       setSelected(new Set());
-      setServerGameView(result.view);
+      setServerGameView(viewWithResponseVersion(result.view, result.version));
       setNotice('已确认换牌');
     } finally {
       setBusy(false);
@@ -691,7 +692,7 @@ export function App({
         return;
       }
       setSelected(new Set());
-      setServerGameView(result.view);
+      setServerGameView(viewWithResponseVersion(result.view, result.version));
       setNotice('进入下一局');
     } finally {
       setBusy(false);
@@ -845,6 +846,19 @@ function applyHandOrder(
       hand: handOrder.map((card) => ({ ...card })),
     },
   };
+}
+
+function newestView(...views: Array<ClientStateView | undefined>): ClientStateView | undefined {
+  return views.reduce<ClientStateView | undefined>((latest, candidate) => {
+    if (!candidate) return latest;
+    if (!latest || candidate.version > latest.version) return candidate;
+    return latest;
+  }, undefined);
+}
+
+function viewWithResponseVersion(view: ClientStateView | undefined, version: number | undefined): ClientStateView | undefined {
+  if (!view || typeof version !== 'number' || version <= view.version) return view;
+  return { ...view, version };
 }
 
 function playerIdForHandle(players: readonly PublicRoomDto['players'][number][], handle: string): string | undefined {

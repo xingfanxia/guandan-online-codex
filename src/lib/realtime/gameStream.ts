@@ -1,9 +1,11 @@
 import { buildEventSourceUrl, buildPollUrl, RealtimeCursor } from '../../../lib/client/realtime';
+import { MESSAGE_TYPES } from '../../../lib/realtime/messages';
 import type { ClientPayload } from '../../../lib/realtime/payload';
 
 export interface GameEventSource {
   onmessage: ((event: MessageEvent<string>) => void) | null;
   onerror: ((event: Event) => void) | null;
+  addEventListener?(type: string, listener: (event: MessageEvent<string>) => void): void;
   close(): void;
 }
 
@@ -63,7 +65,7 @@ export function connectGameStream({
     ...(lastEventId ? { lastEventId } : {}),
   }));
 
-  source.onmessage = (event) => {
+  const handleMessage = (event: MessageEvent<string>) => {
     cursor.record({ lastEventId: event.lastEventId });
     try {
       onPayload(JSON.parse(event.data) as ClientPayload);
@@ -71,6 +73,12 @@ export function connectGameStream({
       onError?.({ type: 'parse', error });
     }
   };
+
+  source.onmessage = handleMessage;
+  for (const type of MESSAGE_TYPES) {
+    source.addEventListener?.(type, handleMessage);
+  }
+
   source.onerror = () => {
     onError?.({ type: 'connection' });
   };

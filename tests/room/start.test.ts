@@ -70,6 +70,38 @@ describe('room start', () => {
     expect(eightResult.players[7]).toMatchObject({ id: 'p8', kind: 'bot', botDifficulty: 'easy' });
   });
 
+  test('uses the room team structure when starting 6P and 8P teams-of-2 rooms', async () => {
+    const store = new MemoryRoomStore();
+    const six = await createRoom(store, {
+      hostHandle: '@Fufu',
+      random: () => 0,
+      mode: '6',
+      rules: { teamStructure: 'teams-of-2' },
+    });
+    const eight = await createRoom(store, {
+      hostHandle: '@Momo',
+      random: () => 0.1,
+      mode: '8',
+      rules: { teamStructure: 'teams-of-2' },
+    });
+
+    const sixResult = startRoomGame(six.room, {
+      deck: generateDoubleDeck(),
+      fillBots: true,
+      botDifficulty: 'easy',
+    });
+    const eightResult = startRoomGame(eight.room, {
+      deck: generateDoubleDeck(),
+      fillBots: true,
+      botDifficulty: 'easy',
+    });
+
+    expect(sixResult.players.map((player) => player.team)).toEqual(['t1', 't2', 't3', 't1', 't2', 't3']);
+    expect(eightResult.players.map((player) => player.team)).toEqual(['t1', 't2', 't3', 't4', 't1', 't2', 't3', 't4']);
+    expect(sixResult.progression?.levels).toMatchObject({ t1: '2', t2: '2', t3: '2' });
+    expect(eightResult.progression?.levels).toMatchObject({ t1: '2', t2: '2', t3: '2', t4: '2' });
+  });
+
   test('keeps human room ids aligned with their game seats after a kicked seat is refilled', async () => {
     const store = new MemoryRoomStore();
     const created = await createRoom(store, { hostHandle: '@Fufu', random: () => 0 });

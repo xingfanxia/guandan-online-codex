@@ -1,4 +1,4 @@
-import { DEFAULT_MODE_RULES, type GameMode, type ModeRules, expectedTeamRankCount } from './mode.js';
+import { DEFAULT_MODE_RULES, type GameMode, type ModeRules, expectedTeamRankCount, maxRankForMode } from './mode.js';
 import type { LevelRank } from './cards.js';
 
 export const LEVELS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
@@ -34,8 +34,8 @@ export function calculateUpgrade(
   ranks: readonly number[],
   rules: ModeRules = DEFAULT_MODE_RULES,
   must1 = rules.must1,
+  expectedLength = expectedTeamRankCount(mode),
 ): UpgradeResult {
-  const expectedLength = expectedTeamRankCount(mode);
   if (ranks.length !== expectedLength) {
     return {
       upgrade: 0,
@@ -48,6 +48,21 @@ export function calculateUpgrade(
     return {
       upgrade: rules.c4[key] ?? 0,
       details: { mode: '4-player', combination: key, upgradeTable: rules.c4 },
+    };
+  }
+
+  if (expectedLength === 2) {
+    if (must1 && !ranks.includes(1)) {
+      return {
+        upgrade: 0,
+        details: { mode: `${mode}-player-pair-team`, hasFirstPlace: false },
+      };
+    }
+    const partnerRank = ranks.find((rank) => rank !== 1) ?? ranks[1];
+    const key = pairUpgradeKey(partnerRank, maxRankForMode(mode));
+    return {
+      upgrade: rules.c4[key] ?? 0,
+      details: { mode: `${mode}-player-pair-team`, combination: `1,${partnerRank}`, upgradeTable: rules.c4 },
     };
   }
 
@@ -91,4 +106,10 @@ export function calculateUpgrade(
       thresholds: rules.t8,
     },
   };
+}
+
+function pairUpgradeKey(partnerRank: number | undefined, maxRank: number): keyof ModeRules['c4'] {
+  if (partnerRank === 2) return '1,2';
+  if (partnerRank && partnerRank <= Math.ceil(maxRank / 2)) return '1,3';
+  return '1,4';
 }

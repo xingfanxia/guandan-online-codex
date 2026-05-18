@@ -11,6 +11,7 @@ class FakeEventSource implements GameEventSource {
   static instances: FakeEventSource[] = [];
   onmessage: ((event: MessageEvent<string>) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
+  listeners = new Map<string, Array<(event: MessageEvent<string>) => void>>();
   closed = false;
 
   constructor(readonly url: string) {
@@ -21,8 +22,18 @@ class FakeEventSource implements GameEventSource {
     this.closed = true;
   }
 
+  addEventListener(type: string, listener: (event: MessageEvent<string>) => void): void {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+  }
+
   emit(payload: ClientPayload, lastEventId: string): void {
     this.onmessage?.({ data: JSON.stringify(payload), lastEventId } as MessageEvent<string>);
+  }
+
+  emitNamed(type: string, payload: ClientPayload, lastEventId: string): void {
+    for (const listener of this.listeners.get(type) ?? []) {
+      listener({ data: JSON.stringify(payload), lastEventId } as MessageEvent<string>);
+    }
   }
 
   emitRaw(data: string): void {
@@ -80,6 +91,18 @@ describe('useGameStream', () => {
 
     expect(screen.getByTestId('phase')).toHaveTextContent('playing');
     expect(screen.getByTestId('last-event-id')).toHaveTextContent('7-0');
+  });
+
+  test('updates from named SSE events', () => {
+    FakeEventSource.instances = [];
+    render(<Harness />);
+
+    act(() => {
+      FakeEventSource.instances[0]!.emitNamed(MessageType.MovePlayed, payload(8), '8-0');
+    });
+
+    expect(screen.getByTestId('phase')).toHaveTextContent('playing');
+    expect(screen.getByTestId('last-event-id')).toHaveTextContent('8-0');
   });
 
   test('reports parse errors and closes stale connections', () => {

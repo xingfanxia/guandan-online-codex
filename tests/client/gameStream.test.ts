@@ -7,6 +7,7 @@ class FakeEventSource implements GameEventSource {
   static instances: FakeEventSource[] = [];
   onmessage: ((event: MessageEvent<string>) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
+  listeners = new Map<string, Array<(event: MessageEvent<string>) => void>>();
   closed = false;
 
   constructor(readonly url: string) {
@@ -17,8 +18,18 @@ class FakeEventSource implements GameEventSource {
     this.closed = true;
   }
 
+  addEventListener(type: string, listener: (event: MessageEvent<string>) => void): void {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+  }
+
   emit(data: unknown, lastEventId = ''): void {
     this.onmessage?.({ data: JSON.stringify(data), lastEventId } as MessageEvent<string>);
+  }
+
+  emitNamed(type: string, data: unknown, lastEventId = ''): void {
+    for (const listener of this.listeners.get(type) ?? []) {
+      listener({ data: JSON.stringify(data), lastEventId } as MessageEvent<string>);
+    }
   }
 
   emitRaw(data: string): void {
@@ -63,6 +74,24 @@ describe('connectGameStream', () => {
 
     expect(onPayload).toHaveBeenCalledWith(payload(2));
     expect(stream.lastEventId()).toBe('12-0');
+  });
+
+  test('listens to named SSE events emitted by the server', () => {
+    FakeEventSource.instances = [];
+    const onPayload = vi.fn();
+
+    const stream = connectGameStream({
+      baseUrl: 'https://gdo.ax0x.ai',
+      roomId: 'K7M2P9',
+      playerId: 'p1',
+      EventSourceCtor: FakeEventSource,
+      onPayload,
+    });
+
+    FakeEventSource.instances[0]!.emitNamed(MessageType.MovePlayed, payload(4), '14-0');
+
+    expect(onPayload).toHaveBeenCalledWith(payload(4));
+    expect(stream.lastEventId()).toBe('14-0');
   });
 
   test('uses an initial lastEventId for reconnects and reports malformed payloads', () => {

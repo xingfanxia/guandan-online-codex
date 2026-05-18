@@ -251,4 +251,39 @@ describe('api/round/next handler', () => {
     }));
     expect(allowed.status).toBe(200);
   });
+
+  test('uses stored room rules when no rules override is injected', async () => {
+    const roomStore = new MemoryRoomStore();
+    const created = await createRoom(roomStore, {
+      hostHandle: 'fufu',
+      random: () => 0,
+      rules: { tributeEnabled: false, cardExchange: true },
+    });
+    const d = deps(roundEnd(), plainDeck());
+    await d.stateStore.set(created.room.code, roundEnd());
+    const handler = createNextRoundHandler({
+      ...d,
+      roomStore,
+      deckForRoom: () => d.deck,
+      exchangeDeadlineAt: () => '2026-05-18T00:00:30.000Z',
+      nowMs: () => 1_000,
+    });
+
+    const response = await handler(request({
+      roomId: created.room.code,
+      transitionId: 'stored-rules',
+      playerId: 'p1',
+      token: created.playerToken,
+    }));
+
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      phase: 'exchange-vote-pending',
+      events: [MessageType.ExchangeVoteRequired],
+    });
+    expect(await d.stateStore.get(created.room.code)).toMatchObject({
+      phase: 'exchange-vote-pending',
+      eligibleVoters: ['p2', 'p4'],
+    });
+  });
 });

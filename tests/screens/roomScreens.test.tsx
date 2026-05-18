@@ -23,13 +23,14 @@ describe('room screens', () => {
     render(<CreateRoomScreen hostHandle="@Fufu" onCreate={onCreate} />);
 
     fireEvent.click(screen.getByRole('button', { name: '8P' }));
+    fireEvent.click(screen.getByRole('button', { name: '四队模式' }));
     fireEvent.click(screen.getByRole('button', { name: '换牌' }));
     fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
 
     expect(onCreate).toHaveBeenCalledWith({
       hostHandle: '@Fufu',
       mode: '8',
-      rules: { cardExchange: true },
+      rules: { cardExchange: true, teamStructure: 'teams-of-2' },
       visibility: 'public',
     });
   });

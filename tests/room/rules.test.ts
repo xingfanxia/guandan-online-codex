@@ -12,6 +12,7 @@ describe('room rules', () => {
       returnTimeLimitSeconds: 15,
       sameRankTiebreak: 'auto_left_right',
       mode8TributeDepth: 'top_only',
+      teamStructure: '2-teams-of-n',
       cardExchange: false,
       exchangeVoteThreshold: 'majority',
       exchangeVoteDurationSeconds: 15,
@@ -26,6 +27,7 @@ describe('room rules', () => {
         exchangeCardCount: 4,
         exchangeVoteThreshold: 'unanimous',
         mode8TributeDepth: 'full',
+        teamStructure: 'teams-of-2',
         tributeEnabled: false,
         returnCardCap: 'none',
         tributeSelection: 'player_picks',
@@ -40,6 +42,7 @@ describe('room rules', () => {
       exchangeCardCount: 4,
       exchangeVoteThreshold: 'unanimous',
       mode8TributeDepth: 'full',
+      teamStructure: 'teams-of-2',
       tributeEnabled: false,
       returnCardCap: 'none',
       tributeSelection: 'player_picks',
@@ -56,5 +59,6 @@ describe('room rules', () => {
     expect(() => normalizeRoomRules({ exchangeCardCount: 5 })).toThrow('ERR_INVALID_ROOM_RULES');
     expect(() => normalizeRoomRules({ returnTimeLimitSeconds: 20 })).toThrow('ERR_INVALID_ROOM_RULES');
     expect(() => normalizeRoomRules({ antiTributeCondition: 'red_joker' })).toThrow('ERR_INVALID_ROOM_RULES');
+    expect(() => normalizeRoomRules({ teamStructure: 'solo' })).toThrow('ERR_INVALID_ROOM_RULES');
   });
 });

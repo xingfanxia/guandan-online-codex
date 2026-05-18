@@ -58,6 +58,10 @@ function playersFor(mode: GameMode): Player[] {
   }));
 }
 
+function teamsOfTwoPlayersFor(mode: GameMode): Player[] {
+  return createPlayers(mode, 'teams-of-2');
+}
+
 function expectPlaying(result: ReturnType<typeof applyMove>): PlayingState {
   if (!result.ok || result.state.phase !== 'playing') {
     throw new Error(`Expected playing state, got ${JSON.stringify(result)}`);
@@ -340,6 +344,82 @@ describe('applyMove', () => {
           { playerId: 'p8', position: 8, team: 't2' },
         ],
         upgrade: 4,
+      },
+    });
+  });
+
+  test('ends a 6P teams-of-2 round when the first-place pair has both players out', () => {
+    const game = multiplayerState({
+      mode: '6',
+      players: teamsOfTwoPlayersFor('6'),
+      hands: {
+        p1: [],
+        p2: [c('3', 'hearts')],
+        p3: [c('4', 'diamonds')],
+        p4: [c('A')],
+        p5: [c('5', 'clubs')],
+        p6: [c('6', 'clubs')],
+      },
+      finished: [{ playerId: 'p1', position: 1, team: 't1' }],
+      currentTurn: 'p4',
+    });
+
+    const roundEnd = applyMove(game, { type: 'play', playerId: 'p4', cards: [c('A')] });
+
+    expect(roundEnd).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'round-end',
+        winnerTeam: 't1',
+        placements: [
+          { playerId: 'p1', position: 1, team: 't1' },
+          { playerId: 'p4', position: 2, team: 't1' },
+          { playerId: 'p2', position: 3, team: 't2' },
+          { playerId: 'p3', position: 4, team: 't3' },
+          { playerId: 'p5', position: 5, team: 't2' },
+          { playerId: 'p6', position: 6, team: 't3' },
+        ],
+      },
+    });
+  });
+
+  test('ends an 8P teams-of-2 round with pair-team level progression', () => {
+    const game = multiplayerState({
+      mode: '8',
+      players: teamsOfTwoPlayersFor('8'),
+      hands: {
+        p1: [],
+        p2: [c('3', 'hearts')],
+        p3: [c('4', 'diamonds')],
+        p4: [c('5', 'clubs')],
+        p5: [c('A')],
+        p6: [c('6', 'clubs')],
+        p7: [c('7', 'clubs')],
+        p8: [c('8', 'clubs')],
+      },
+      finished: [{ playerId: 'p1', position: 1, team: 't1' }],
+      currentTurn: 'p5',
+    });
+
+    const roundEnd = applyMove(game, { type: 'play', playerId: 'p5', cards: [c('A')] });
+
+    expect(roundEnd).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'round-end',
+        winnerTeam: 't1',
+        upgrade: 3,
+        nextLevelRank: '5',
+        placements: [
+          { playerId: 'p1', position: 1, team: 't1' },
+          { playerId: 'p5', position: 2, team: 't1' },
+          { playerId: 'p2', position: 3, team: 't2' },
+          { playerId: 'p3', position: 4, team: 't3' },
+          { playerId: 'p4', position: 5, team: 't4' },
+          { playerId: 'p6', position: 6, team: 't2' },
+          { playerId: 'p7', position: 7, team: 't3' },
+          { playerId: 'p8', position: 8, team: 't4' },
+        ],
       },
     });
   });

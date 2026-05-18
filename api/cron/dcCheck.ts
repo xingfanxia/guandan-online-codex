@@ -50,7 +50,7 @@ export function createDcCheckHandler(deps: DcCheckHandlerDeps): (request: Reques
       }
 
       const botResult = runBotTurns(takeover.state, {
-        maxMoves: deps.maxBotMoves ?? 3,
+        ...(deps.maxBotMoves ? { maxMoves: deps.maxBotMoves } : {}),
         ...(deps.random ? { random: deps.random } : {}),
       });
       if (botResult.moves.length === 0 && botResult.events.length === 0) continue;

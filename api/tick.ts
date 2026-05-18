@@ -32,7 +32,7 @@ export function createTickHandler(deps: TickHandlerDeps): (request: Request) => 
     } catch {
       return json({ ok: false, error: 'ERR_INVALID_JSON' }, 400);
     }
-    if (!body.roomId || (body.maxMoves !== undefined && (!Number.isInteger(body.maxMoves) || body.maxMoves < 1 || body.maxMoves > 10))) {
+    if (!body.roomId || (body.maxMoves !== undefined && (!Number.isInteger(body.maxMoves) || body.maxMoves < 1 || body.maxMoves > 64))) {
       return json({ ok: false, error: 'ERR_INVALID_REQUEST' }, 400);
     }
 
@@ -40,7 +40,7 @@ export function createTickHandler(deps: TickHandlerDeps): (request: Request) => 
     if (!state) return json({ ok: false, error: 'ERR_ROOM_NOT_FOUND' }, 404);
 
     const result = runBotTurns(state, {
-      maxMoves: body.maxMoves ?? 3,
+      ...(body.maxMoves ? { maxMoves: body.maxMoves } : {}),
       ...(deps.random ? { random: deps.random } : {}),
     });
     await deps.stateStore.set(body.roomId, result.state);
