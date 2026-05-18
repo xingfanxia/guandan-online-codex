@@ -3,10 +3,21 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import { CreateRoomScreen } from '../../src/screens/CreateRoom';
+import { HandleSetupScreen } from '../../src/screens/HandleSetup';
 import { RoomBrowserScreen } from '../../src/screens/RoomBrowser';
 import { WaitingRoomScreen } from '../../src/screens/WaitingRoom';
 
 describe('room screens', () => {
+  test('submits the player handle setup form', () => {
+    const onCreateHandle = vi.fn();
+    render(<HandleSetupScreen onCreateHandle={onCreateHandle} />);
+
+    fireEvent.change(screen.getByRole('textbox', { name: '玩家名' }), { target: { value: '@Momo' } });
+    fireEvent.click(screen.getByRole('button', { name: '进入牌桌' }));
+
+    expect(onCreateHandle).toHaveBeenCalledWith({ handle: '@Momo' });
+  });
+
   test('submits create-room options', () => {
     const onCreate = vi.fn();
     render(<CreateRoomScreen hostHandle="@Fufu" onCreate={onCreate} />);

@@ -25,6 +25,11 @@ import {
   type StartRoomResult,
 } from './lib/api/rooms';
 import {
+  createHandle,
+  type CreateHandleInput,
+  type CreateHandleResult,
+} from './lib/api/profile';
+import {
   banHandle,
   listLatency,
   listReports,
@@ -60,6 +65,7 @@ import type { ClientStateView } from '../lib/realtime/payload';
 import { AdminDashboard } from './screens/AdminDashboard';
 import { CreateRoomScreen, type CreateRoomScreenProps } from './screens/CreateRoom';
 import { GameTableScreen } from './screens/GameTable';
+import { HandleSetupScreen } from './screens/HandleSetup';
 import { RoomBrowserScreen } from './screens/RoomBrowser';
 import { WaitingRoomScreen, type WaitingRoomScreenProps } from './screens/WaitingRoom';
 
@@ -86,6 +92,10 @@ export interface AppRoomApi {
   kickPlayer(input: KickPlayerInput): Promise<KickPlayerResult>;
   startRoom(input: StartRoomInput): Promise<StartRoomResult>;
   listRooms(): Promise<ListRoomsResult>;
+}
+
+export interface AppProfileApi {
+  createHandle(input: CreateHandleInput): Promise<CreateHandleResult>;
 }
 
 export interface AppModerationApi {
@@ -125,6 +135,7 @@ export interface AppProps {
   currentPlayerId?: string;
   gameView?: ClientStateView;
   roomApi?: AppRoomApi;
+  profileApi?: AppProfileApi;
   moderationApi?: AppModerationApi;
   moveApi?: AppMoveApi;
   assistApi?: AppAssistApi;
@@ -139,7 +150,13 @@ export interface AppProps {
 type AppView = 'table' | 'create' | 'browser' | 'waiting' | 'admin';
 
 const ACTIVE_ROOM_SESSION_KEY = 'gdo:active-room-session:v1';
+const PLAYER_PROFILE_KEY = 'gdo:player-profile:v1';
 const restorableViews = new Set<AppView>(['table', 'waiting']);
+
+interface StoredPlayerProfile {
+  handle: string;
+  createdAt?: string;
+}
 
 interface StoredRoomSession {
   room: PublicRoomDto;
@@ -163,6 +180,10 @@ const defaultRoomApi: AppRoomApi = {
   kickPlayer,
   startRoom,
   listRooms,
+};
+
+const defaultProfileApi: AppProfileApi = {
+  createHandle,
 };
 
 const defaultModerationApi: AppModerationApi = {
@@ -191,10 +212,11 @@ const defaultRoundApi: AppRoundApi = {
 };
 
 export function App({
-  playerHandle = 'fufu',
+  playerHandle,
   currentPlayerId = 'p1',
   gameView,
   roomApi = defaultRoomApi,
+  profileApi = defaultProfileApi,
   moderationApi = defaultModerationApi,
   moveApi = defaultMoveApi,
   assistApi = defaultAssistApi,
@@ -206,6 +228,11 @@ export function App({
   createTransitionId = defaultTransitionId,
 }: AppProps): React.ReactElement {
   const [storedSession] = useState<StoredRoomSession | undefined>(() => readStoredRoomSession());
+  const explicitPlayerHandle = playerHandle ? normalizeClientHandle(playerHandle) : undefined;
+  const [storedProfile, setStoredProfile] = useState<StoredPlayerProfile | undefined>(() => (
+    explicitPlayerHandle ? { handle: explicitPlayerHandle } : readStoredPlayerProfile()
+  ));
+  const activeHandle = explicitPlayerHandle ?? storedProfile?.handle;
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [view, setView] = useState<AppView>(() => storedSession?.view ?? 'table');
   const [activePlayerId, setActivePlayerId] = useState(() => storedSession?.activePlayerId ?? currentPlayerId);
@@ -235,7 +262,7 @@ export function App({
       EventSourceCtor: stream?.EventSourceCtor,
     }),
   });
-  const tableView = liveStream.view ?? serverGameView ?? gameView ?? (currentRoom ? undefined : demoGameView(playerHandle));
+  const tableView = liveStream.view ?? serverGameView ?? gameView ?? (currentRoom || !activeHandle ? undefined : demoGameView(activeHandle));
   const orderedTableView = tableView ? applyHandOrder(tableView, activePlayerId, handOrder) : undefined;
   const selectedCards = orderedTableView ? cardsFromSelection(orderedTableView, activePlayerId, selected) : [];
 
@@ -264,7 +291,11 @@ export function App({
     setNotice(undefined);
     setError(undefined);
     try {
-      const result = await roomApi.createRoom(input);
+      if (!activeHandle) {
+        setError('ERR_HANDLE_REQUIRED');
+        return;
+      }
+      const result = await roomApi.createRoom({ ...input, hostHandle: activeHandle });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -273,7 +304,7 @@ export function App({
       setServerGameView(undefined);
       setHostToken(result.hostToken);
       setPlayerToken(result.playerToken);
-      setActivePlayerId(playerIdForHandle(result.room.players, playerHandle) ?? currentPlayerId);
+      setActivePlayerId(playerIdForHandle(result.room.players, activeHandle) ?? currentPlayerId);
       setNotice(`已创建房间 ${result.room.code}`);
       setView('waiting');
     } finally {
@@ -304,7 +335,11 @@ export function App({
     setNotice(undefined);
     setError(undefined);
     try {
-      const result = await roomApi.joinRoom({ code, handle: playerHandle });
+      if (!activeHandle) {
+        setError('ERR_HANDLE_REQUIRED');
+        return;
+      }
+      const result = await roomApi.joinRoom({ code, handle: activeHandle });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -371,6 +406,28 @@ export function App({
       }
       setReports(reportsResult.reports);
       setLatencyAggregates(latencyResult.aggregates);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCreateProfile(input: { handle: string }): Promise<void> {
+    setBusy(true);
+    setNotice(undefined);
+    setError(undefined);
+    try {
+      const result = await profileApi.createHandle({ handle: input.handle });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const profile = {
+        handle: normalizeClientHandle(result.profile.handle),
+        createdAt: result.profile.createdAt,
+      };
+      setStoredProfile(profile);
+      writeStoredPlayerProfile(profile);
+      setNotice(`已设置 @${profile.handle}`);
     } finally {
       setBusy(false);
     }
@@ -642,8 +699,11 @@ export function App({
   }
 
   function renderView(): React.ReactElement {
+    if (!activeHandle) {
+      return <HandleSetupScreen onCreateHandle={(input) => { void handleCreateProfile(input); }} />;
+    }
     if (view === 'create') {
-      return <CreateRoomScreen hostHandle={playerHandle} onCreate={(input) => { void handleCreate(input); }} />;
+      return <CreateRoomScreen hostHandle={activeHandle} onCreate={(input) => { void handleCreate(input); }} />;
     }
     if (view === 'browser') {
       return <RoomBrowserScreen rooms={rooms} onJoin={(code) => { void handleJoin(code); }} />;
@@ -726,12 +786,14 @@ export function App({
   return (
     <main className="gdo-app">
       <div className="gdo-shell">
-        <nav className="gdo-shell-nav" aria-label="App navigation">
-          <button className={navClass(view === 'table')} type="button" onClick={() => setView('table')}>牌桌</button>
-          <button className={navClass(view === 'create')} type="button" onClick={() => setView('create')}>开房</button>
-          <button className={navClass(view === 'browser')} type="button" onClick={() => { void handleOpenBrowser(); }}>大厅</button>
-          <button className={navClass(view === 'admin')} type="button" onClick={() => { void handleOpenAdmin(); }}>管理</button>
-        </nav>
+        {activeHandle ? (
+          <nav className="gdo-shell-nav" aria-label="App navigation">
+            <button className={navClass(view === 'table')} type="button" onClick={() => setView('table')}>牌桌</button>
+            <button className={navClass(view === 'create')} type="button" onClick={() => setView('create')}>开房</button>
+            <button className={navClass(view === 'browser')} type="button" onClick={() => { void handleOpenBrowser(); }}>大厅</button>
+            <button className={navClass(view === 'admin')} type="button" onClick={() => { void handleOpenAdmin(); }}>管理</button>
+          </nav>
+        ) : null}
         {(busy || notice || error) ? (
           <div className={['gdo-shell-status', error ? 'gdo-shell-status--error' : ''].filter(Boolean).join(' ')} role={error ? 'alert' : 'status'}>
             {busy ? '处理中' : error ?? notice}
@@ -798,6 +860,41 @@ function defaultMoveId(): string {
 function defaultTransitionId(): string {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `round_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+function readStoredPlayerProfile(): StoredPlayerProfile | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return parseStoredPlayerProfile(window.localStorage.getItem(PLAYER_PROFILE_KEY));
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredPlayerProfile(profile: StoredPlayerProfile): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PLAYER_PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    // Storage is best-effort; the in-memory handle still works for this tab.
+  }
+}
+
+function parseStoredPlayerProfile(value: string | null): StoredPlayerProfile | undefined {
+  if (!value) return undefined;
+  const parsed: unknown = JSON.parse(value);
+  if (!isRecord(parsed)) return undefined;
+  if (typeof parsed.handle !== 'string') return undefined;
+  const handle = normalizeClientHandle(parsed.handle);
+  if (!handle) return undefined;
+  return {
+    handle,
+    ...(typeof parsed.createdAt === 'string' ? { createdAt: parsed.createdAt } : {}),
+  };
+}
+
+function normalizeClientHandle(handle: string): string {
+  return handle.trim().replace(/^@/, '').toLowerCase();
 }
 
 function readStoredRoomSession(): StoredRoomSession | undefined {

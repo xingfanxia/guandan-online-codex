@@ -315,6 +315,38 @@ button.gdo-card {
   color: var(--ink-1);
 }
 
+.gdo-handle-panel {
+  width: min(100%, 360px);
+}
+
+.gdo-handle-input {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-1);
+  padding: 0 var(--s-3);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font: 650 var(--t-sm) / 1 var(--font-sans);
+}
+
+.gdo-handle-input input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink-1);
+  font: inherit;
+}
+
+.gdo-handle-input:focus-within {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 1px var(--accent-border);
+}
+
 .gdo-admin {
   width: min(100%, 720px);
 }

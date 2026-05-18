@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { App } from '../../src/App';
-import type { AppAssistApi, AppModerationApi, AppMoveApi, AppPhaseApi, AppRoomApi, AppRoundApi } from '../../src/App';
+import type { AppAssistApi, AppModerationApi, AppMoveApi, AppPhaseApi, AppProfileApi, AppRoomApi, AppRoundApi } from '../../src/App';
 import type { PublicRoomDto, RoomPlayerDto } from '../../src/lib/api/rooms';
 import type { ReportRecordDto } from '../../src/lib/api/moderation';
 import type { Card } from '../../lib/game/cards';
@@ -41,6 +41,16 @@ function roomApi(overrides: Partial<AppRoomApi> = {}): AppRoomApi {
     kickPlayer: async () => ({ ok: true, room: room() }),
     startRoom: async () => ({ ok: true, phase: 'playing', version: 1, players: [] }),
     listRooms: async () => ({ ok: true, rooms: [room()] }),
+    ...overrides,
+  };
+}
+
+function profileApi(overrides: Partial<AppProfileApi> = {}): AppProfileApi {
+  return {
+    createHandle: async ({ handle }) => ({
+      ok: true,
+      profile: { handle: handle.replace(/^@/, '').toLowerCase(), createdAt: '2026-05-18T00:00:00.000Z' },
+    }),
     ...overrides,
   };
 }
@@ -158,8 +168,54 @@ describe('App shell', () => {
     localStorage.clear();
   });
 
+  test('requires a persisted player handle before entering the table', async () => {
+    const created: unknown[] = [];
+    const api = profileApi({
+      createHandle: async (input) => {
+        created.push(input);
+        return { ok: true, profile: { handle: 'momo', createdAt: '2026-05-18T00:00:00.000Z' } };
+      },
+    });
+
+    render(<App profileApi={api} />);
+
+    expect(screen.getByLabelText('Player setup')).toBeInTheDocument();
+    expect(screen.queryByLabelText('App navigation')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '玩家名' }), { target: { value: '@Momo' } });
+    fireEvent.click(screen.getByRole('button', { name: '进入牌桌' }));
+
+    await waitFor(() => expect(created).toEqual([{ handle: '@Momo' }]));
+    expect(JSON.parse(localStorage.getItem('gdo:player-profile:v1') ?? '{}')).toMatchObject({ handle: 'momo' });
+    expect(await screen.findByLabelText('Guandan table')).toBeInTheDocument();
+    expect(screen.getByText('已设置 @momo')).toBeInTheDocument();
+  });
+
+  test('uses the stored player handle for room creation', async () => {
+    localStorage.setItem('gdo:player-profile:v1', JSON.stringify({ handle: 'momo' }));
+    const created: unknown[] = [];
+    const api = roomApi({
+      createRoom: async (input) => {
+        created.push(input);
+        return { ok: true, room: room({ hostHandle: 'momo', players: [{ id: 'p1', handle: 'momo', role: 'host' }] }), hostToken: 'host-token', joinToken: 'join-token', playerToken: 'player-token-p1' };
+      },
+    });
+
+    render(<App roomApi={api} />);
+    fireEvent.click(screen.getByRole('button', { name: '开房' }));
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+
+    await waitFor(() => expect(created).toEqual([{
+      hostHandle: 'momo',
+      mode: '4',
+      rules: { cardExchange: false },
+      visibility: 'public',
+    }]));
+    expect(await screen.findByLabelText('Waiting room')).toBeInTheDocument();
+  });
+
   test('renders the game table as the first screen and supports card selection', () => {
-    render(<App />);
+    render(<App playerHandle="fufu" />);
 
     expect(screen.getByLabelText('Guandan table')).toBeInTheDocument();
     expect(screen.getByText('K7M2P9')).toBeInTheDocument();
@@ -473,7 +529,7 @@ describe('App shell', () => {
       },
     });
 
-    render(<App moderationApi={api} adminToken="secret" />);
+    render(<App moderationApi={api} adminToken="secret" playerHandle="fufu" />);
     fireEvent.click(screen.getByRole('button', { name: '管理' }));
 
     expect(await screen.findByLabelText('Admin dashboard')).toBeInTheDocument();
@@ -496,7 +552,7 @@ describe('App shell', () => {
       },
     });
 
-    render(<App moderationApi={api} />);
+    render(<App moderationApi={api} playerHandle="fufu" />);
     fireEvent.click(screen.getByRole('button', { name: '管理' }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('ERR_ADMIN_TOKEN_REQUIRED');
