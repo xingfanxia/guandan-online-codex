@@ -870,7 +870,7 @@ Goal: anti-cheat baseline + custom domain + observability. Production-ready.
 **Depends on**: all P4 milestones (need a deployable app).
 
 **Deliverables**:
-- Vercel project created and linked to `xingfanxia/guandan-online-codex` GitHub repo
+- Vercel project created under `panpanmao/guandan-online-codex` and linked to `xingfanxia/guandan-online-codex` GitHub repo
 - Custom domain registered: **gdo.ax0x.ai** (sibling to scorer at gd.ax0x.ai)
 - DNS A/CNAME records configured
 - SSL cert issued (Vercel automatic)

@@ -168,7 +168,7 @@ This project is the **online multiplayer game**. Its sibling [`guandan-scorer`](
 
 Isolation boundary:
 - Separate GitHub repo: `xingfanxia/guandan-online-codex`
-- Separate Vercel project: `guandan-online-codex`
+- Separate Vercel project: `panpanmao/guandan-online-codex`
 - Separate Redis/Upstash project for all `go:*` online keys
 - No shared `@handle` namespace, no shared scorer profile reads, no scorer DB writes
 - Cross-app stats or identity linking, if wanted later, must use an explicit API boundary and remain opt-in

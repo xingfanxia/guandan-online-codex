@@ -31,7 +31,7 @@ Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to use Redis-backed 
 This Codex build is intentionally isolated from the original scorer app:
 
 - GitHub repo: `xingfanxia/guandan-online-codex`
-- Vercel project: `guandan-online-codex`
+- Vercel project: `panpanmao/guandan-online-codex`
 - Database: dedicated online Redis/Upstash env vars only
 
 The companion scoring app lives at [`../guandan-scorer`](../guandan-scorer) and remains useful as a rule-engine reference, but this app does not share its database, auth namespace, or production environment variables.
