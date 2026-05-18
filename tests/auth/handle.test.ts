@@ -7,10 +7,11 @@ describe('handle normalization', () => {
     expect(normalizeHandle('  AX0X  ')).toBe('ax0x');
   });
 
-  test('validates the sibling scorer handle contract', () => {
+  test('validates the online handle contract', () => {
     expect(validateHandle('abc')).toBe(true);
+    expect(validateHandle('ax')).toBe(true);
     expect(validateHandle('abc_123')).toBe(true);
-    expect(validateHandle('ab')).toBe(false);
+    expect(validateHandle('a')).toBe(false);
     expect(validateHandle('a'.repeat(21))).toBe(false);
     expect(validateHandle('bad-handle')).toBe(false);
     expect(validateHandle('@abc')).toBe(false);

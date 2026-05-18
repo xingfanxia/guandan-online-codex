@@ -10,6 +10,8 @@ import {
 } from '../../lib/security/ipThrottle.js';
 import { clientIpFromRequest } from '../../lib/security/requestIp.js';
 
+const ACCOUNT_CREATE_LIMIT_PER_IP_PER_DAY = 50;
+
 export interface CreateHandleDeps {
   profiles: PlayerProfileStore;
   throttleStore: IpThrottleStore;
@@ -24,13 +26,6 @@ export function createCreateHandleHandler(deps: CreateHandleDeps): (request: Req
   return async function handleCreateHandle(request: Request): Promise<Response> {
     if (request.method !== 'POST') return json({ ok: false, error: 'ERR_METHOD_NOT_ALLOWED' }, 405);
 
-    const throttle = await checkIpThrottle(deps.throttleStore, request, {
-      scope: 'acct-create',
-      limit: 5,
-      windowMs: 86_400_000,
-    });
-    if (!throttle.allowed) return ipThrottleResponse(throttle, nowMs());
-
     let body: { handle?: unknown };
     try {
       body = await request.json() as { handle?: unknown };
@@ -41,6 +36,13 @@ export function createCreateHandleHandler(deps: CreateHandleDeps): (request: Req
 
     const handle = normalizeHandle(body.handle);
     if (!validateHandle(handle)) return json({ ok: false, error: 'ERR_INVALID_HANDLE' }, 400);
+
+    const throttle = await checkIpThrottle(deps.throttleStore, request, {
+      scope: 'acct-create',
+      limit: ACCOUNT_CREATE_LIMIT_PER_IP_PER_DAY,
+      windowMs: 86_400_000,
+    });
+    if (!throttle.allowed) return ipThrottleResponse(throttle, nowMs());
 
     const profile = {
       handle,

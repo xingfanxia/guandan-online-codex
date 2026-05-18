@@ -6,7 +6,7 @@ Real online multiplayer **Guandan** (掼蛋) — landscape-first web game for 4 
 
 ✅ **Playable v1 gameplay implementation.** The isolated Codex build now supports real rooms and full game progression on the dedicated repo, Vercel project, and Redis/Upstash database.
 
-Current gameplay coverage includes 4P / 6P / 8P room creation, public-room join, host start, bot fill, Easy/Medium bot turns, token-protected moves, SSE plus long-poll replay, hidden-state filtering, round-end and game-end progression, level advancement through A, 4P tribute/return/anti-tribute, 6P/8P normal and sweep tribute paths, optional exchange-card voting/selection, disconnect takeover/reclaim, and active-room reconnect from local storage.
+Current gameplay coverage includes 2-20 character player handles, 4P / 6P / 8P room creation, public-room join, host start, bot fill, Easy/Medium bot turns, token-protected moves, SSE plus long-poll replay, hidden-state filtering, round-end and game-end progression, level advancement through A, 4P tribute/return/anti-tribute, 6P/8P normal and sweep tribute paths, optional exchange-card voting/selection, disconnect takeover/reclaim, and active-room reconnect from local storage.
 
 The browser app includes handle setup, create/waiting/browser/table/admin screens, the playable card table, selected-card play/pass, `理牌`, `提示`, round-next, tribute/return/exchange overlays, live filtered state consumption, report/admin controls, latency telemetry, and a Playwright production smoke covering two browser contexts joining, starting, playing, and syncing a live room. Gameplay phase endpoints now immediately continue bot turns after tribute/return/exchange/round transitions so human+bot rooms do not wait for cron when a bot is next to act.
 

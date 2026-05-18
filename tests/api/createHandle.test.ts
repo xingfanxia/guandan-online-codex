@@ -52,7 +52,7 @@ describe('api/auth/createHandle', () => {
     expect(await second.json()).toEqual({ ok: false, error: 'ERR_HANDLE_TAKEN' });
   });
 
-  test('blocks the sixth handle creation from the same IP in a 24h window', async () => {
+  test('validates handles before consuming the account creation throttle', async () => {
     const handler = createCreateHandleHandler({
       profiles: new MemoryPlayerProfileStore(),
       throttleStore: new MemoryIpThrottleStore(() => 1_000),
@@ -60,11 +60,28 @@ describe('api/auth/createHandle', () => {
       nowMs: () => 1_000,
     });
 
-    for (const handle of ['aa1', 'aa2', 'aa3', 'aa4', 'aa5']) {
-      expect((await handler(post({ handle }, { 'x-forwarded-for': '203.0.113.9' }))).status).toBe(200);
+    for (let index = 0; index < 60; index++) {
+      expect((await handler(post({ handle: 'x' }, { 'x-forwarded-for': '203.0.113.9' }))).status).toBe(400);
     }
 
-    const blocked = await handler(post({ handle: 'aa6' }, { 'x-forwarded-for': '203.0.113.9' }));
+    const valid = await handler(post({ handle: 'ax' }, { 'x-forwarded-for': '203.0.113.9' }));
+    expect(valid.status).toBe(200);
+    expect(await valid.json()).toMatchObject({ ok: true, profile: { handle: 'ax' } });
+  });
+
+  test('blocks the fifty-first handle creation from the same IP in a 24h window', async () => {
+    const handler = createCreateHandleHandler({
+      profiles: new MemoryPlayerProfileStore(),
+      throttleStore: new MemoryIpThrottleStore(() => 1_000),
+      nowIso: () => '2026-05-18T00:00:00.000Z',
+      nowMs: () => 1_000,
+    });
+
+    for (let index = 0; index < 50; index++) {
+      expect((await handler(post({ handle: `aa${index}` }, { 'x-forwarded-for': '203.0.113.9' }))).status).toBe(200);
+    }
+
+    const blocked = await handler(post({ handle: 'aa50' }, { 'x-forwarded-for': '203.0.113.9' }));
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get('retry-after')).toBe('86400');
     expect(await blocked.json()).toEqual({ ok: false, error: 'ERR_IP_THROTTLED' });
