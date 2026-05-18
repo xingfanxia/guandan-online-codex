@@ -1,0 +1,41 @@
+{
+  "name": "guandan-online-codex",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Real online multiplayer Guandan (掼蛋) — landscape-first card game",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "security:no-leak": "bash scripts/security/grep-no-leak.sh",
+    "bench:ai": "tsx scripts/ai/benchmark-self-play.ts"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^25.8.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.6",
+    "jsdom": "^27.0.1",
+    "tsx": "^4.22.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.13",
+    "vitest": "^4.1.6"
+  },
+  "engines": {
+    "node": "^22.0.0 || >=24.0.0"
+  },
+  "dependencies": {
+    "botid": "^1.5.11",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  }
+}

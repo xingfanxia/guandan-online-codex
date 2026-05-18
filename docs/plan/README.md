@@ -2,6 +2,8 @@
 
 **Status**: Plan phase active (2026-05-16). Research is complete (see [`docs/research/`](../research/)); this directory holds the executable plan derived from the research synthesis.
 
+**Codex build amendment (2026-05-18)**: `guandan-online-codex` is isolated from the scorer. AUTH-2 is canceled; use a dedicated Vercel project and Redis/Upstash database.
+
 ## Files
 
 | File | Purpose |
@@ -12,7 +14,7 @@
 ## High-level structure
 
 ```
-P0  Foundation         (week 1-2)  Rules engine + transport + auth bridge + hidden-state filter
+P0  Foundation         (week 1-2)  Rules engine + transport + online auth + hidden-state filter
    ↓
 P1  Vertical slice     (week 3-4)  1H + 3 Easy bots play a complete game on landscape phone
    ↓
@@ -49,7 +51,7 @@ Mnemonics in use:
 - `CORE-N`: rules engine, game state machine
 - `NET-N`: realtime transport (SSE+POST + Redis)
 - `UI-N`: visual components and screens
-- `AUTH-N`: identity, ownership tokens, cross-project bridge
+- `AUTH-N`: identity and ownership tokens
 - `ROOM-N`: room lifecycle (create / join / leave / browse)
 - `AI-N`: bot engines and player assistance
 - `TRIBUTE-N`: tribute phase implementation
@@ -65,7 +67,7 @@ This plan derives from these research streams (see `docs/research/`):
 - [`realtime-sync-deep-dive.md`](../research/realtime-sync-deep-dive.md) — prescriptive transport spec
 - [`ai-implementation-plan.md`](../research/ai-implementation-plan.md) — per-tier AI pseudocode
 - [`tribute-ux-deep-dive.md`](../research/tribute-ux-deep-dive.md) — tribute rules + UI
-- [`cross-project-integration.md`](../research/cross-project-integration.md) — sibling scorer bridge
+- [`cross-project-integration.md`](../research/cross-project-integration.md) — historical scorer integration options; superseded for Codex build
 - [`anti-cheat-deep-dive.md`](../research/anti-cheat-deep-dive.md) — security baseline
 - [`china-network-deployment.md`](../research/china-network-deployment.md) — PRC delivery
 - [`mobile-landscape-ux.md`](../research/mobile-landscape-ux.md) — CSS rotate + layouts

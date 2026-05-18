@@ -2,6 +2,8 @@
 
 **Status**: Research phase complete (2026-05-16). 13 investigation streams ran across two phases; this document is the cross-cutting synthesis. Read this first; per-stream files are the deep references.
 
+**Codex build amendment (2026-05-18)**: the shared-scorer auth/database recommendation below is superseded for `guandan-online-codex`. This fork uses a separate GitHub repo, separate Vercel project, and dedicated Redis/Upstash database. The scorer remains a rules/reference source only.
+
 ## TL;DR (7 headlines)
 
 1. **Realtime stack: Vercel-native SSE+POST + Upstash Redis pub/sub** — locked. No Fly.io / Colyseus / extra dependency. ~200 lines of glue (hidden-state filtering + reconnect) replaces the framework convenience. Latency budget 50-165ms end-to-end, within Guandan's 200ms target. Lichess's `lila-ws` is the closest production analog.
@@ -16,7 +18,7 @@
 
 6. **Tribute mechanic fully specified** — Cross-referenced 4 Chinese tournament PDFs (NUIST / SEU / CUP / 中国掼蛋研究院). All prior open questions resolved: 双下 both 3rd+4th tribute; 抗贡 needs 2 大王 (not mixed jokers); tribute card auto-pick in tournament, player-pick in casual; 还贡 always winner's choice with ≤10 cap fallback; "贡左还右" canonical. 6/8 modes get a 3-mode room selector.
 
-7. **Cross-project integration**: Option B — shared @handle namespace with sibling scorer, deferred cross-app stats sync. ~2 days total work, zero user friction. Scorer's bare `player:{handle}` keys migrate to `gs:player:{handle}` prefix; online uses `go:*` prefix in same Upstash instance. Online copies sibling's 10-line `validateOwnershipToken` for auth.
+7. **Cross-project integration superseded for Codex build**: Option B originally recommended a shared @handle namespace with the sibling scorer, but `guandan-online-codex` now intentionally uses independent online accounts and a dedicated database. No scorer key migration is required.
 
 ## Recommended stack
 
@@ -29,10 +31,10 @@
 | Orientation lock | **CSS rotate (iOS) + native lock (Android)** | Majsoul pattern. Rotate-prompt fallback. |
 | Realtime transport | **Vercel SSE+POST + Upstash Redis** | Platform unity. ~200 lines glue. ~$0 marginal. |
 | Backup if SSE hits a wall | Colyseus on Fly.io | Not in v1 plan. Documented escape. |
-| Persistence | Upstash Redis (Vercel Marketplace) | Same as sibling scorer. Per-room key + event log stream. |
+| Persistence | Upstash Redis (Vercel Marketplace) | Dedicated `guandan-online-codex` project. Per-room key + event log stream. |
 | Frontend host | Vercel with **custom domain day 1** | `*.vercel.app` DNS-poisoned in PRC. |
 | PRC mirror (deferred) | Tencent Cloud Run Shenzhen | Only if observed p95 > 350ms. Geo-route via Vercel Edge Middleware. |
-| Auth | Anonymous @handle (shared with sibling) | Option B from `cross-project-integration.md`. Copy `validateOwnershipToken`. |
+| Auth | Anonymous @handle (online-owned) | Independent `go:player:*` profiles; scorer sharing is superseded for this fork. |
 | Rules engine | Port `hash-panda/guandan-guide` (TS) | Most rigorous open-source trick engine. License: check before adopt. |
 | AI Easy / Medium | TS + WASM (zdhgg + Bobgy) | Server-side, inline in POST handler. |
 | AI Hard | DeepSeek LLM with candidate pre-filter | Feature-flagged. ~$0.01-0.05 per game. Vercel AI Gateway. |
@@ -48,7 +50,7 @@
 5. **Card back**: CSS `repeating-linear-gradient` using existing tokens (NO PNG / SVG asset)
 6. **Wildcard treatment**: Gold edge stroke + ★ corner badge (Option A)
 7. **AI tier strategy**: Different engines per tier (NOT same engine + search depth)
-8. **Auth**: Anonymous @handle, **shared namespace with sibling scorer** (Option B from `cross-project-integration.md`)
+8. **Auth**: Anonymous @handle, **independent online namespace and dedicated DB** for `guandan-online-codex`; prior shared-scorer Option B is superseded
 9. **PRC delivery**: Vercel-only launch with client-side latency beacons; Tencent Cloud Shenzhen mirror deferred until p95 > 350ms observed
 10. **Custom domain required day 1** — `*.vercel.app` is DNS-poisoned in mainland China. **Domain: `gdo.ax0x.ai`** (sibling subdomain to scorer at `gd.ax0x.ai`; "o" = online)
 11. **Tribute defaults**: tournament rule baseline (server auto-picks tribute card; "贡左还右" direction; 还贡 ≤10 cap with smallest-card fallback); casual variants surfaced as room rule axes
@@ -95,9 +97,9 @@ Visual style: technical + premium (Linear / Vercel / Bloomberg / Anthropic). 10 
 - A-level state machine: `src/game/rules.js`
 - 4/6/8 mode constants: `src/core/config.js`
 - Settings drawer + room codes pattern
-- `validateOwnershipToken` 10-line function (copy verbatim per cross-project plan)
+- Ownership-token hash pattern (use semantics only; validate online-owned profiles)
 - Upstash KV patterns (`api/rooms/*` + `api/players/*`)
-- Player profile schema + achievement system (will share via Option B)
+- Player profile schema + achievement system as product reference only; no shared DB/auth
 
 ### From `hash-panda/guandan-guide` (license check pending)
 - Card type recognition: `cards.ts`
@@ -144,7 +146,7 @@ Visual style: technical + premium (Linear / Vercel / Bloomberg / Anthropic). 10 
 ## Remaining open questions (minor — can resolve in plan phase)
 
 1. **Frontend framework**: React confirmed. TypeScript-only is on the table but **default to React**.
-2. **Match persistence**: ephemeral rooms (game ends → state gone) + post-game stats sync to shared profile (per cross-project Option B).
+2. **Match persistence**: ephemeral rooms (game ends → state gone) + online-only profile stats. Cross-app scorer sync is out of scope for this fork.
 3. **Spectator mode**: yes, read-only spectators in v1 (Lichess pattern). Limited to game public state; no view into player hands.
 
 ## v1 implementation milestones (loose-list — plan phase will sequence)
@@ -166,9 +168,9 @@ Using `<MILESTONE>-N: description` naming convention:
 - **UI-5**: 6/8-player layouts
 - **UI-6**: Round-end / A-level / victory screens
 
-**Auth + Cross-project**:
-- **AUTH-1**: Copy `validateOwnershipToken` from scorer + shared @handle namespace setup
-- **AUTH-2**: Migrate scorer's `player:*` → `gs:player:*` keys (sibling scorer side, ~15 file changes)
+**Auth**:
+- **AUTH-1**: Online-owned handle creation + ownership-token validation
+- **AUTH-2**: Canceled for `guandan-online-codex`; no scorer key migration
 
 **AI**:
 - **AI-1**: Easy + Medium engines inline (rule-based + WASM)
@@ -213,6 +215,6 @@ Phase 2 (deep dives):
 - [`card-visual-assets.md`](card-visual-assets.md) — Unicode + Geist verdict
 - [`china-network-deployment.md`](china-network-deployment.md) — PRC reachability + Tencent Cloud fallback
 - [`anti-cheat-deep-dive.md`](anti-cheat-deep-dive.md) — account-level + collusion + scripted-client
-- [`cross-project-integration.md`](cross-project-integration.md) — sibling scorer integration (Option B)
+- [`cross-project-integration.md`](cross-project-integration.md) — historical sibling scorer integration options; Option B superseded for Codex build
 
 Total: ~8,200 lines / ~65K words across 13 documents.

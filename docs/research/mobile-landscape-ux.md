@@ -625,7 +625,7 @@ Apply `env(safe-area-inset-*)` padding on all four sides of `.game-root`. Requir
 
 ## Update — 2026-05-16: CSS rotate is the production path for forced landscape
 
-The original analysis framed CSS `transform: rotate(90deg)` as a trap ("three hard problems") and concluded that the rotate-prompt overlay is "the only universally reliable iOS fallback." This was challenged in review against the empirical reality of major Chinese mobile web games — Majsoul (雀魂), 4399 H5 games, WeChat mini-games — which ship forced landscape on iPhone Safari today without a rotate prompt.
+The original analysis framed CSS `transform: rotate(90deg)` as a trap ("three hard problems") and concluded that the rotate-prompt overlay is "the only universally reliable iOS fallback." This was challenged in review against the empirical reality of major Chinese mobile web games — Majsoul (雀魂), 4399 H5 games, WeChat mini-games — which ship forced landscape on iPhone Safari as of 2026-05-16 without a rotate prompt.
 
 ### What Majsoul actually does
 

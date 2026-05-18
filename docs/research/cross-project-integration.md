@@ -6,6 +6,8 @@
 **Scorer KV schema source of truth**: `../guandan-scorer/docs/architecture/KV_SCHEMA.md`  
 **Scorer player API source of truth**: `../guandan-scorer/api/players/_utils.js` (`initializePlayerStats`)
 
+**Superseded for `guandan-online-codex` (2026-05-18)**: the active Codex build uses Option A: independent online accounts, a separate GitHub repo, a separate Vercel project, and a dedicated Redis/Upstash database. Do not perform the Option B scorer key migration or share scorer production database credentials for this fork. This document remains as historical product research only.
+
 ---
 
 ## Context
@@ -246,7 +248,9 @@ Online has completely independent account creation. A "Link scorer account" feat
 
 ## 7. Recommendation
 
-**Recommended option: B (Shared Handle Namespace) via Approach 1 (Direct KV Token Verification), with Option C (cross-app stats sync) deferred to v1.2.**
+**Historical recommendation, superseded for `guandan-online-codex`: B (Shared Handle Namespace) via Approach 1 (Direct KV Token Verification), with Option C (cross-app stats sync) deferred to v1.2.**
+
+The active Codex implementation uses Option A instead. The deciding constraint is blast-radius isolation: the online realtime game should not share the production scorer database or require a live scorer key migration before deployment.
 
 ### Rationale
 
@@ -269,7 +273,7 @@ Option B provides the highest user-facing value at the lowest implementation cos
 
 ## 8. Implementation Work in Sibling Scorer
 
-To support Option B, three tasks are needed in guandan-scorer:
+To support the now-superseded Option B, three tasks would have been needed in guandan-scorer. They are not required for `guandan-online-codex`:
 
 ### Task 1: KV Key Prefix Migration (~4 hours)
 
@@ -389,5 +393,5 @@ A scorer user who registered `@axiang` will have that handle reserved in online 
 | Race condition risk | None | None | Medium | High | Low |
 | Data corruption blast radius | None | None (read-only) | Low (API-proxy) | High | Low |
 | Solo-project maintenance | Easy | Easy | Manageable | Hard | Very Hard |
-| Recommended for v1 | | **Yes** | | | |
+| Recommended for v1 | **Yes for `guandan-online-codex`** | Historical only | | | |
 | Recommended for v1.2 | | | **Yes (add on top of B)** | | |

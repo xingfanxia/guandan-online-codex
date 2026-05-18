@@ -231,11 +231,11 @@ The **biggest implementation reference** for a rule-based Guandan bot in the wil
 **URL:** https://github.com/dashidhy/DanLM  
 **Stars / Forks:** 6 / 1  
 **License:** Apache 2.0 with non-commercial restriction. *"Free for academic research and personal use. Commercial use requires written permission from the author."* — relevant if we ever monetize.  
-**Last active commit:** 2026-05-16 (today). **Active development.**
+**Last active commit:** 2026-05-16. **Active development as of 2026-05-16.**
 
 ### What it actually is
 
-The flagship candidate. DanLM is a **causal Transformer ("TinyLM Encoder") that learns Guandan from raw tokenized game history with zero hand-crafted features**. It currently holds **#1 on the Botzone GuanDan leaderboard** (Elo 1307.75, 2026-04-03), beating all 30 other competitive bots including the published DanZero paper (Lu et al., AAAI 2023). The author also recently released DouLM (the DouDizhu variant), which reached #1 on Botzone's FightTheLandlord leaderboard 2026-05-01.
+The flagship candidate. DanLM is a **causal Transformer ("TinyLM Encoder") that learns Guandan from raw tokenized game history with zero hand-crafted features**. It currently holds **#1 on the Botzone GuanDan leaderboard** (Elo 1307.75, 2026-04-03), beating all 30 other competitive bots including the published DanZero paper (Lu et al., AAAI 2023). The author also released DouLM (the DouDizhu variant) before 2026-05-16, which reached #1 on Botzone's FightTheLandlord leaderboard 2026-05-01.
 
 This is the strongest known publicly-available Guandan AI.
 
@@ -323,7 +323,7 @@ If we adopt DanLM, treat it as a **black-box opponent service** with a clear sep
 **URL:** https://github.com/zdhgg/Guandan-training  
 **Stars / Forks:** 0 / 1  
 **License:** MIT  
-**Last active commit:** 2026-05-16 (today). **Brand-new and actively developed.**
+**Last active commit:** 2026-05-16. **Brand-new and actively developed as of 2026-05-16.**
 
 ### What it actually is
 
@@ -492,7 +492,7 @@ The biggest engineering risk is not the AI — it's the wildcard-aware decomposi
 
 ## Source references
 
-- [Bobgy/poker-guandan-strategy](https://github.com/Bobgy/poker-guandan-strategy) — MIT, 4-year-dormant-but-recently-revived DFS WASM decomposer
+- [Bobgy/poker-guandan-strategy](https://github.com/Bobgy/poker-guandan-strategy) — MIT, 4-year-dormant DFS WASM decomposer revived before the 2026-05-16 research pass
 - [agil27/Quentain](https://github.com/agil27/Quentain) — Apache-2, dormant, no AI
 - [shuilongzhu/ai-guandan](https://github.com/shuilongzhu/ai-guandan) — license unstated, dormant, Go server with strong rule-based decomposition
 - [dashidhy/DanLM](https://github.com/dashidhy/DanLM) — Apache-2-NC, active, #1 Botzone leaderboard, macOS-only binaries

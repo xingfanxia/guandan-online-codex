@@ -1,0 +1,264 @@
+.gdo-app {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  background:
+    radial-gradient(ellipse at 50% 35%, oklch(18% 0.03 150 / 0.55), transparent 58%),
+    var(--surface-0);
+}
+
+.gdo-shell {
+  display: grid;
+  gap: var(--s-3);
+  justify-items: center;
+  width: min(100%, 960px);
+}
+
+.gdo-shell-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 4px;
+  border: 1px solid var(--rule-1);
+  border-radius: var(--r-3);
+  background: var(--surface-1);
+}
+
+.gdo-shell-nav__button {
+  min-width: 64px;
+  min-height: 30px;
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink-2);
+  font: 650 var(--t-xs) / 1 var(--font-sans);
+}
+
+.gdo-shell-nav__button--active {
+  background: var(--surface-2);
+  color: var(--ink-1);
+}
+
+.gdo-shell-status {
+  min-height: 28px;
+  padding: 7px 10px;
+  border: 1px solid var(--rule-1);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  color: var(--ink-2);
+  font: 650 var(--t-xs) / 1 var(--font-sans);
+}
+
+.gdo-shell-status--error {
+  border-color: oklch(58% 0.15 30 / 0.7);
+  color: oklch(82% 0.11 30);
+}
+
+.gdo-orientation {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+.gdo-orientation--portrait-rotated {
+  width: min(var(--logical-h, 100vh), 920px);
+  transform: rotate(90deg);
+  transform-origin: center;
+}
+
+.gdo-orientation--portrait-prompt {
+  min-height: 100vh;
+}
+
+.gdo-rotate-prompt {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: center;
+  max-width: 280px;
+  padding: var(--s-5);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r-3);
+  background: var(--surface-1);
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.gdo-rotate-prompt__title {
+  color: var(--ink-1);
+  font-size: var(--t-lg);
+  font-weight: 700;
+}
+
+.gdo-rotate-prompt__body {
+  font-size: var(--t-sm);
+}
+
+.gdo-table {
+  width: min(100%, 920px);
+  aspect-ratio: 852 / 393;
+  min-height: 340px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rule-1);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, oklch(15% 0.025 150), oklch(10% 0.016 150)),
+    var(--surface-table);
+  box-shadow: 0 22px 70px oklch(0% 0 0 / 0.45);
+}
+
+.gdo-topbar {
+  position: absolute;
+  inset: var(--s-3) var(--s-3) auto var(--s-3);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-2xs);
+  letter-spacing: var(--tracking-wide);
+}
+
+.gdo-level {
+  color: var(--gold);
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.gdo-round {
+  justify-self: end;
+}
+
+.gdo-seat-map {
+  position: absolute;
+  inset: 44px 44px 112px;
+  display: grid;
+  grid-template-columns: 132px 1fr 132px;
+  grid-template-rows: 52px 1fr;
+  align-items: center;
+}
+
+.gdo-seat-map__top {
+  grid-column: 2;
+  justify-self: center;
+  align-self: start;
+}
+
+.gdo-seat-map__left {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+}
+
+.gdo-seat-map__right {
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.gdo-seat-map__center {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+}
+
+.gdo-actionbar {
+  position: absolute;
+  right: var(--s-4);
+  bottom: 72px;
+  display: flex;
+  gap: var(--s-2);
+}
+
+.gdo-actionbar__button {
+  min-width: 74px;
+  min-height: 34px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--ink-1);
+  font: 650 var(--t-sm) / 1 var(--font-sans);
+}
+
+.gdo-actionbar__button--primary {
+  min-width: 112px;
+  border-color: var(--accent-border);
+  background: var(--accent);
+  color: oklch(15% 0.04 30);
+}
+
+.gdo-my-hand {
+  position: absolute;
+  left: var(--s-4);
+  right: var(--s-4);
+  bottom: var(--s-3);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-3);
+  align-items: end;
+}
+
+.gdo-my-hand .gdo-hand {
+  overflow: hidden;
+}
+
+.gdo-seat-rail {
+  position: absolute;
+  left: var(--s-4);
+  right: var(--s-4);
+  top: 58px;
+  display: flex;
+  justify-content: center;
+  gap: var(--s-2);
+  pointer-events: none;
+}
+
+.gdo-seat-rail .gdo-seat {
+  min-width: 96px;
+  opacity: 0.88;
+}
+
+.gdo-table-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  pointer-events: none;
+}
+
+.gdo-table-overlay:empty {
+  display: none;
+}
+
+.gdo-table-overlay > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 700px) {
+  .gdo-app {
+    padding: var(--s-2);
+  }
+
+  .gdo-shell {
+    gap: var(--s-2);
+  }
+
+  .gdo-table {
+    min-height: 320px;
+  }
+
+  .gdo-seat-map {
+    inset-inline: var(--s-3);
+    grid-template-columns: 112px 1fr 112px;
+  }
+
+  .gdo-actionbar {
+    right: var(--s-3);
+  }
+
+  .gdo-seat-rail {
+    display: none;
+  }
+}

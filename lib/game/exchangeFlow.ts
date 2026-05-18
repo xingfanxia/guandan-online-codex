@@ -1,0 +1,204 @@
+import type { Card } from './cards';
+import {
+  applyCardExchange,
+  resolveExchangeVote,
+  validateExchangeSelection,
+  type ExchangeDirection,
+  type ExchangeVoteChoice,
+} from './exchange';
+import type {
+  ExchangeSelectPendingState,
+  ExchangeVotePendingState,
+  GameState,
+  PlayerId,
+  PlayingState,
+} from './state';
+import { MessageType, type ServerEvent } from '../realtime/messages';
+import type { RoomRules } from '../room/rules';
+
+export type ExchangeFlowError =
+  | 'ERR_NOT_EXCHANGE_VOTE_PENDING'
+  | 'ERR_NOT_EXCHANGE_VOTER'
+  | 'ERR_NOT_EXCHANGE_SELECT_PENDING'
+  | 'ERR_NOT_EXCHANGE_PLAYER'
+  | 'ERR_INVALID_EXCHANGE_SELECTION';
+
+export type ExchangeFlowResult = { ok: true; state: GameState; events: ServerEvent[] } | { ok: false; error: ExchangeFlowError };
+
+export function submitExchangeVote(
+  state: ExchangeVotePendingState,
+  {
+    playerId,
+    choice,
+    rules,
+    direction,
+    deadlineAt,
+  }: {
+    playerId: PlayerId;
+    choice: ExchangeVoteChoice;
+    rules: RoomRules;
+    direction: ExchangeDirection;
+    deadlineAt: string;
+  },
+): ExchangeFlowResult {
+  if (state.phase !== 'exchange-vote-pending') return { ok: false, error: 'ERR_NOT_EXCHANGE_VOTE_PENDING' };
+  if (!state.eligibleVoters.includes(playerId)) return { ok: false, error: 'ERR_NOT_EXCHANGE_VOTER' };
+
+  const votes = { ...state.votes, [playerId]: choice };
+  const vote = resolveExchangeVote({
+    eligibleVoters: state.eligibleVoters,
+    votes,
+    threshold: rules.exchangeVoteThreshold,
+  });
+
+  if (vote.passed) {
+    const selectState: ExchangeSelectPendingState = {
+      phase: 'exchange-select-pending',
+      mode: state.mode,
+      levelRank: state.levelRank,
+      players: state.players.map((player) => ({ ...player })),
+      hands: cloneHands(state.hands),
+      undealt: state.undealt.map(cloneCard),
+      direction,
+      cardCount: rules.exchangeCardCount,
+      selections: {},
+      firstLeader: state.firstLeader,
+      deadlineAt,
+      version: state.version + 1,
+    };
+    return {
+      ok: true,
+      state: selectState,
+      events: [
+        { type: MessageType.ExchangeVoteResolved, passed: true, yes: vote.yes, required: vote.required, direction },
+        ...selectState.players.map((player) => ({
+          type: MessageType.ExchangeSelectRequired,
+          playerId: player.id,
+          cardCount: selectState.cardCount,
+          direction,
+          deadlineAt,
+        }) satisfies ServerEvent),
+      ],
+    };
+  }
+
+  if (vote.yes + vote.no === state.eligibleVoters.length) {
+    return {
+      ok: true,
+      state: playingState(state, cloneHands(state.hands)),
+      events: [{ type: MessageType.ExchangeVoteResolved, passed: false, yes: vote.yes, required: vote.required }],
+    };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...cloneVoteState(state),
+      votes,
+      version: state.version + 1,
+    },
+    events: [{ type: MessageType.StateResync, reason: `exchange-vote:${playerId}` }],
+  };
+}
+
+export function submitExchangeSelection(
+  state: ExchangeSelectPendingState,
+  {
+    playerId,
+    cards,
+  }: {
+    playerId: PlayerId;
+    cards: readonly Card[];
+  },
+): ExchangeFlowResult {
+  if (state.phase !== 'exchange-select-pending') return { ok: false, error: 'ERR_NOT_EXCHANGE_SELECT_PENDING' };
+  const hand = state.hands[playerId];
+  if (!hand || !state.players.some((player) => player.id === playerId)) {
+    return { ok: false, error: 'ERR_NOT_EXCHANGE_PLAYER' };
+  }
+  if (!validateExchangeSelection(cards, hand, state.cardCount)) {
+    return { ok: false, error: 'ERR_INVALID_EXCHANGE_SELECTION' };
+  }
+
+  const selections = {
+    ...cloneCardSelections(state.selections),
+    [playerId]: cards.map(cloneCard),
+  };
+  const playerOrder = state.players.map((player) => player.id);
+  const complete = playerOrder.every((candidate) => selections[candidate]?.length === state.cardCount);
+  if (!complete) {
+    return {
+      ok: true,
+      state: {
+        ...cloneSelectState(state),
+        selections,
+        version: state.version + 1,
+      },
+      events: [{ type: MessageType.StateResync, reason: `exchange-select:${playerId}` }],
+    };
+  }
+
+  const result = applyCardExchange({
+    playerOrder,
+    hands: state.hands,
+    selections: selections as Record<PlayerId, Card[]>,
+    direction: state.direction,
+    cardCount: state.cardCount,
+  });
+  return {
+    ok: true,
+    state: playingState(state, result.hands),
+    events: [{ type: MessageType.ExchangeCompleted, direction: state.direction }],
+  };
+}
+
+function playingState(
+  state: ExchangeVotePendingState | ExchangeSelectPendingState,
+  hands: Record<PlayerId, Card[]>,
+): PlayingState {
+  return {
+    phase: 'playing',
+    mode: state.mode,
+    levelRank: state.levelRank,
+    players: state.players.map((player) => ({ ...player })),
+    hands: cloneHands(hands),
+    undealt: state.undealt.map(cloneCard),
+    finished: [],
+    currentTurn: state.firstLeader,
+    currentTrick: { leader: state.firstLeader, passes: [] },
+    version: state.version + 1,
+  };
+}
+
+function cloneVoteState(state: ExchangeVotePendingState): ExchangeVotePendingState {
+  return {
+    ...state,
+    players: state.players.map((player) => ({ ...player })),
+    hands: cloneHands(state.hands),
+    undealt: state.undealt.map(cloneCard),
+    eligibleVoters: [...state.eligibleVoters],
+    votes: { ...state.votes },
+  };
+}
+
+function cloneSelectState(state: ExchangeSelectPendingState): ExchangeSelectPendingState {
+  return {
+    ...state,
+    players: state.players.map((player) => ({ ...player })),
+    hands: cloneHands(state.hands),
+    undealt: state.undealt.map(cloneCard),
+    selections: cloneCardSelections(state.selections),
+  };
+}
+
+function cloneHands(hands: Record<PlayerId, Card[]>): Record<PlayerId, Card[]> {
+  return Object.fromEntries(Object.entries(hands).map(([playerId, hand]) => [playerId, hand.map(cloneCard)]));
+}
+
+function cloneCardSelections(selections: Partial<Record<PlayerId, Card[]>>): Partial<Record<PlayerId, Card[]>> {
+  return Object.fromEntries(Object.entries(selections).map(([playerId, cards]) => [playerId, cards?.map(cloneCard)]));
+}
+
+function cloneCard(card: Card): Card {
+  return { ...card };
+}

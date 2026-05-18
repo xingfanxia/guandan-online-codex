@@ -5,6 +5,8 @@
 **Total scope**: ~30 milestones across 6 phases (P0–P5), ~7-8 weeks full-time for a single engineer.
 **Convention**: `<MILESTONE>-N: <description>` per `~/.claude/CLAUDE.md`. Each milestone is a single PR / merge unit.
 
+**Codex build amendment (2026-05-18)**: `guandan-online-codex` is isolated from the scorer. AUTH-2 is canceled, no scorer DB/key migration is required, and all deployed env vars must point at a dedicated online Redis/Upstash project.
+
 ---
 
 ## Goal
@@ -18,7 +20,7 @@ Ship a real online multiplayer Guandan game with the following capabilities at v
 5. Mix of N humans + (M = mode_size - N) bots in same room, any combo
 6. Player assistance: auto-sort (理牌) + suggested move (提示) + wildcard substitution UI
 7. Custom rule axes per room (A-level strict / 抗贡 condition / bomb hierarchy / etc.)
-8. Anonymous @handle login, shared with sibling `guandan-scorer`
+8. Anonymous @handle login owned by the online game
 9. Realtime via Vercel SSE+POST + Upstash Redis pub/sub
 10. Anti-cheat baseline: rate-limit + IP throttle + report + admin dashboard
 11. Production-ready: custom domain, client-side latency beacons, error tracking
@@ -46,7 +48,7 @@ Ship a real online multiplayer Guandan game with the following capabilities at v
 
 ```
 P0 (week 1-2)  Foundation
-  CORE-1 · CORE-2 · AUTH-1 · AUTH-2 · NET-1 · NET-2 · NET-3
+  CORE-1 · CORE-2 · AUTH-1 · NET-1 · NET-2 · NET-3
   Acceptance: Two browsers in dev can exchange SSE messages via Redis; rules engine passes 100% of unit tests.
 
 P1 (week 3-4)  Vertical slice
@@ -78,29 +80,19 @@ Polish (v1.1+)
 ## Dependency graph
 
 ```
-                  ┌── CORE-1 ──┬── CORE-2 ──┬── CORE-3 ──┬── CORE-4 ──┐
-                  │            │            │            │            │
-                  │            │            │            └────────────┤
-P0 │ AUTH-1 ──┬── AUTH-2                                              │
-   │          │                                                       │
-   │ NET-1 ──┴── NET-2 ──── NET-3                                     │
-   │          │                                                       │
-   │          ├───────────────── (all P1+ depend on NET-1 NET-3)      │
-   └──────────┘                                                       │
-P1 │           UI-1 ──── UI-2 ──┬── ROOM-1 ──── AI-1                   │
-   │                            │                                     │
-   │                            └─────────┐                           │
-P2 │                           UI-3 ──── ROOM-2 ──── ROOM-3            │
-   │                                                                  │
-P3 │                                     TRIBUTE-1 ── UI-4 ── UI-5    │
-   │                                                                  │
-P4 │                                            UI-6 ── AI-2          │
-   │                                            AI-3 ── AI-4          │
-   │                                                                  │
-P5 │           SEC-1 ── SEC-2 ── SEC-3 ── SEC-4 ── DEPLOY-1 ── DEPLOY-2
+P0  CORE-1 ── CORE-2 ── NET-3
+    AUTH-1 ─┘
+    NET-1 ── NET-2 ──── NET-3
+
+P1  UI-1 ── UI-2 ── ROOM-1 ── AI-1
+P2  UI-3 ── ROOM-2 ── ROOM-3
+P3  CORE-3 ── CORE-4 ── TRIBUTE-1 ── UI-4 ── UI-5
+P4  UI-6 ── AI-2
+    AI-3 ── AI-4
+P5  SEC-1 ── SEC-2 ── SEC-3 ── SEC-4 ── DEPLOY-1 ── DEPLOY-2
 ```
 
-CORE-1 blocks everything. NET-1 / NET-3 block everything that exchanges state with client. AUTH-2 (scorer migration) is the only cross-project work and should land first since it touches the sibling repo.
+CORE-1 blocks everything. NET-1 / NET-3 block everything that exchanges state with client. The old AUTH-2 scorer migration is no longer part of this fork.
 
 ---
 
@@ -166,61 +158,45 @@ Goal: ship the rules engine, transport layer, auth bridge, and hidden-state filt
 
 ### AUTH-1 · Copy validateOwnershipToken
 
-**Goal**: Bring sibling scorer's ownership-token auth into this project verbatim, ready to validate tokens issued by scorer.
+**Goal**: Implement online-owned handle normalization and ownership-token validation using the scorer's token-hash pattern, without reading scorer data.
 
 **Depends on**: none.
 
 **Deliverables**:
-- `lib/auth/ownershipToken.ts` — 10-line `validateOwnershipToken(handle, token, kvClient)` function copied from `../guandan-scorer/api/players/_utils.js` lines 259-277
+- `lib/auth/ownershipToken.ts` — `validateOwnershipToken(handle, token, kvClient)` for online-owned profile records
 - `lib/auth/handle.ts` — handle normalization (lowercase, strip @, validate format)
 - `tests/auth/ownershipToken.test.ts` — valid + invalid + expired token cases
-- `lib/auth/README.md` — explains the shared @handle namespace pattern per `docs/research/cross-project-integration.md`
+- `lib/auth/README.md` — explains the independent online namespace and dedicated DB requirement
 
 **Acceptance**:
-- Function signature matches scorer's exactly
+- Function validates token hashes in constant time
 - Tests pass with mocked KV
-- Doc comments link to sibling source line numbers for future sync
+- Docs state that scorer DB/env vars are not shared
 
 **Files to touch**: new — `lib/auth/*`, `tests/auth/*`
 **Effort**: 0.5 days
 **Notes**:
-- Do NOT modify the function logic — copy verbatim
-- If scorer's signature changes, update here in sync (track via a `// SYNC: ../guandan-scorer/api/players/_utils.js:259-277` comment)
+- Keep the implementation small and dependency-free
+- Do not read `gs:*` or scorer-owned profile keys from this app
 
-### AUTH-2 · Migrate scorer's player keys to gs: prefix
+### AUTH-2 · Canceled for guandan-online-codex
 
-**Goal**: Cross-project work in sibling `guandan-scorer` — rename bare `player:{handle}` keys to `gs:player:{handle}` so this new project can use `go:player:{handle}` cleanly in the shared Upstash namespace.
+**Goal**: No work. The Codex build does not share the scorer database, so the scorer key migration is not required.
 
 **Depends on**: none.
 
 **Deliverables**:
-- Sibling scorer changes (~15 file/line updates):
-  - `api/players/[handle].js` — read/write `gs:player:` prefix
-  - `api/players/list.js` line 43 — `kv.keys('gs:player:*')`
-  - `api/players/create.js` — write to `gs:player:`
-  - `api/players/_utils.js` — update key construction helpers
-  - 11 other API files referencing `player:*` keys
-- Sibling scorer one-time migration script:
-  - `scripts/migrate-player-prefix.mjs` — copies all `player:*` to `gs:player:*` (idempotent — checks if target exists)
-  - Run during low-traffic window with read-fallback during rollout
-- Sibling scorer fallback-read pattern in `api/players/[handle].js`:
-  ```ts
-  let profile = await kv.get(`gs:player:${handle}`);
-  if (!profile) profile = await kv.get(`player:${handle}`); // backwards fallback
-  ```
-- Sibling scorer changelog entry + memory note (`gs:` prefix is the canonical namespace)
+- None in scorer
+- Verify online env vars point at a dedicated Redis/Upstash project before deployment
 
 **Acceptance**:
-- Migration script runs cleanly on scorer's production KV
-- Sibling scorer continues to work for existing users (fallback-read covers them)
-- Reading `kv.keys('gs:player:*')` returns same count as old `kv.keys('player:*')` after migration
+- No changes land in `../guandan-scorer`
+- No scorer database credentials are added to this repo or the Vercel project
 
-**Files to touch**: cross-project — `~/projects/side-projects/guandan-scorer/api/players/*` (15 files), `~/projects/side-projects/guandan-scorer/scripts/migrate-player-prefix.mjs` (new)
-**Effort**: 1-2 days (cross-project, requires deploy + monitoring)
+**Files to touch**: none
+**Effort**: 0 days
 **Notes**:
-- This is the only milestone that touches the SIBLING repo. Do this FIRST so guandan-online never has to deal with the bare `player:` namespace.
-- Coordinate with scorer's production deploy schedule
-- Verify ADMIN_TOKEN-gated admin endpoints still work after key rename
+- Historical Option B details remain in `docs/research/cross-project-integration.md` for context only.
 
 ### NET-1 · SSE+POST + Upstash Redis transport scaffold
 
@@ -468,7 +444,7 @@ Goal: 1 human + 3 Easy bots play a complete 4-player game on landscape mobile. E
 After all P1 milestones merge, the following demo must work end-to-end:
 
 1. Open `https://localhost:5173` in iPhone 14 Pro Safari (or equivalent)
-2. Sign in with `@阿祥` handle (from sibling scorer)
+2. Create or sign in with an online-owned `@阿祥` handle
 3. Create a new 4-player room with default rules
 4. Choose "Fill with 3 Easy bots"
 5. Game starts immediately
@@ -691,7 +667,7 @@ A full game completes:
 2. 6+ rounds played including tribute (at least one 双下 with 还贡)
 3. A-level reached, decisive round plays
 4. Victory screen shows correctly
-5. Stats sync to shared player profile (per AUTH-1)
+5. No scorer profile sync is attempted; round/game state remains online-owned
 
 ---
 
@@ -854,7 +830,7 @@ Goal: anti-cheat baseline + custom domain + observability. Production-ready.
 - `api/report.ts` — POST report `{ reporterHandle, targetHandle, gameId, reason }` (reason enum)
 - `lib/security/reports.ts` — persist + dedupe (max 1 per pair per game)
 - `src/components/ReportButton.tsx` — in-game report UI with reason picker
-- `src/screens/AdminDashboard.tsx` — gated by `ADMIN_TOKEN` env (same pattern as sibling scorer)
+- `src/screens/AdminDashboard.tsx` — gated by `ADMIN_TOKEN` env
   - View recent reports
   - Browse player profiles
   - Ban handle (set `banned: true` flag in profile)
@@ -894,11 +870,12 @@ Goal: anti-cheat baseline + custom domain + observability. Production-ready.
 **Depends on**: all P4 milestones (need a deployable app).
 
 **Deliverables**:
-- Vercel project created and linked to `xingfanxia/guandan-online` GitHub repo
+- Vercel project created and linked to `xingfanxia/guandan-online-codex` GitHub repo
 - Custom domain registered: **gdo.ax0x.ai** (sibling to scorer at gd.ax0x.ai)
 - DNS A/CNAME records configured
 - SSL cert issued (Vercel automatic)
-- Environment variables set: `UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`, `DEEPSEEK_API_KEY`, `ADMIN_TOKEN`, `FEATURE_AI_HARD`
+- Environment variables set: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `INTERNAL_TICK_SECRET`, `DEEPSEEK_API_KEY`, `ADMIN_TOKEN`, `FEATURE_AI_HARD`
+- The Upstash env vars point at a dedicated `guandan-online-codex` database, not scorer production.
 - Production deployment promoted
 
 **Acceptance**:
@@ -993,7 +970,7 @@ Launch-ready:
 | R-04 | iOS CSS rotate breaks on some device | Medium | Medium | UI-2 multi-device test matrix; rotate-prompt fallback | dev |
 | R-05 | PRC GFW kills SSE → game unplayable | Low | High | NET-2 keepalive + long-poll fallback; if persists, DEPLOY-3 | dev |
 | R-06 | DanLM author doesn't respond → no v1.1 Master tier | Medium | Low | Document deferral; Hard is good enough at launch | dev |
-| R-07 | AUTH-2 scorer migration breaks production | Low | High | Fallback-read pattern; deploy off-peak; monitor errors | dev |
+| R-07 | Online env accidentally points at scorer DB | Low | High | Dedicated Upstash project; env review before deploy; never copy scorer credentials | dev |
 | R-08 | Tribute edge case missed → game stuck | Medium | High | TRIBUTE-1 acceptance tests cover all 3 modes + 抗贡 + timeout | dev |
 | R-09 | License check fails on guandan-guide port | Low | Medium | Port semantics not source; or stop and use only zdhgg + Bobgy | dev |
 | R-10 | 27-card hand doesn't fit on iPhone SE landscape | Medium | Low | Two-row fallback at <600px; tested in UI-2 | dev |
@@ -1004,7 +981,7 @@ Launch-ready:
 
 | Week | Milestones | Demo |
 |---|---|---|
-| 1 | CORE-1 + AUTH-1 start, AUTH-2 in sibling | Rules engine passes 100 tests |
+| 1 | CORE-1 + AUTH-1 start | Rules engine passes 100 tests |
 | 2 | NET-1 + NET-2 + NET-3, CORE-2 | Two browsers exchange SSE messages |
 | 3 | UI-1 + UI-2 + AI-1 + ROOM-1 | First 4P game with bots end-to-end |
 | 4 | UI-3 + ROOM-2 + ROOM-3 | Full room lifecycle: create with rules → invite → play |
