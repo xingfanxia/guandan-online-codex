@@ -33,8 +33,8 @@ Verification after the update:
 
 Still not complete:
 - AUTH-2 scorer key migration is superseded for this Codex build. The online game now owns an independent `go:player:*` namespace and must use a dedicated Redis/Upstash project.
-- Route defaults use Upstash-backed persistence when `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are present; without env vars they intentionally fall back to process-local memory stores for local tests.
-- Dedicated production Upstash/Vercel env vars are not configured yet. Do not copy scorer database credentials into this project.
+- Route defaults use Upstash-backed persistence when `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` or Vercel Marketplace `KV_REST_API_URL` / `KV_REST_API_TOKEN` are present; without env vars they intentionally fall back to process-local memory stores for local tests.
+- Dedicated Upstash KV env vars are configured on `panpanmao/guandan-online-codex` for Production and Preview through Vercel Marketplace. Do not copy scorer database credentials into this project.
 - Live Vercel SSE+POST validation with two browser tabs is not done in this local foundation pass.
 - SSE uses bounded polling over the per-player event log; tune `pollMs`/duration against real Upstash/Vercel latency before production.
 - `api/round/next` is the explicit server transition from `round-end` into the next hand; `api/move` still stops at `round-end` so the UI can show the round summary before advancing.

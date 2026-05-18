@@ -1,19 +1,15 @@
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
 import { UpstashRedis } from '../realtime/upstashRest';
 import { MemoryLatencyStore, UpstashLatencyStore } from './latency';
 
-export interface LatencyStoreEnv {
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
-}
+export type LatencyStoreEnv = UpstashRestEnv;
 
 export function createDefaultLatencyStore(
   env: LatencyStoreEnv = process.env,
 ): MemoryLatencyStore | UpstashLatencyStore {
-  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    return new UpstashLatencyStore(new UpstashRedis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    }));
+  const config = resolveUpstashRestConfig(env);
+  if (config) {
+    return new UpstashLatencyStore(new UpstashRedis(config));
   }
   return new MemoryLatencyStore();
 }

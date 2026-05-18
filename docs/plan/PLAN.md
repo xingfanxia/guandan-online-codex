@@ -874,7 +874,7 @@ Goal: anti-cheat baseline + custom domain + observability. Production-ready.
 - Custom domain registered: **gdo.ax0x.ai** (sibling to scorer at gd.ax0x.ai)
 - DNS A/CNAME records configured
 - SSL cert issued (Vercel automatic)
-- Environment variables set: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `INTERNAL_TICK_SECRET`, `DEEPSEEK_API_KEY`, `ADMIN_TOKEN`, `FEATURE_AI_HARD`
+- Environment variables set: `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` or Vercel Marketplace `KV_REST_API_URL` / `KV_REST_API_TOKEN`, plus `INTERNAL_TICK_SECRET`, `DEEPSEEK_API_KEY`, `ADMIN_TOKEN`, `FEATURE_AI_HARD`
 - The Upstash env vars point at a dedicated `guandan-online-codex` database, not scorer production.
 - Production deployment promoted
 

@@ -1,18 +1,14 @@
 import { MemoryRoomStore } from './lifecycle';
 import { UpstashRoomStore } from './upstashStore';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
 import { UpstashRedis } from '../realtime/upstashRest';
 
-export interface RoomStoreEnv {
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
-}
+export type RoomStoreEnv = UpstashRestEnv;
 
 export function createDefaultRoomStore(env: RoomStoreEnv = process.env): MemoryRoomStore | UpstashRoomStore {
-  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    return new UpstashRoomStore(new UpstashRedis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    }));
+  const config = resolveUpstashRestConfig(env);
+  if (config) {
+    return new UpstashRoomStore(new UpstashRedis(config));
   }
   return new MemoryRoomStore();
 }

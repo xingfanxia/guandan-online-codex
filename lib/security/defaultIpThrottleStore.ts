@@ -1,19 +1,15 @@
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
 import { UpstashRedis } from '../realtime/upstashRest';
 import { MemoryIpThrottleStore, UpstashIpThrottleStore } from './ipThrottle';
 
-export interface IpThrottleStoreEnv {
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
-}
+export type IpThrottleStoreEnv = UpstashRestEnv;
 
 export function createDefaultIpThrottleStore(
   env: IpThrottleStoreEnv = process.env,
 ): MemoryIpThrottleStore | UpstashIpThrottleStore {
-  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    return new UpstashIpThrottleStore(new UpstashRedis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    }));
+  const config = resolveUpstashRestConfig(env);
+  if (config) {
+    return new UpstashIpThrottleStore(new UpstashRedis(config));
   }
   return new MemoryIpThrottleStore();
 }

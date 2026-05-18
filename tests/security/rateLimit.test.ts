@@ -74,6 +74,24 @@ describe('rate limiting', () => {
     });
   });
 
+  test('creates Upstash default limiter from Vercel Marketplace KV env', async () => {
+    const limiter = createDefaultRateLimiter({
+      scope: 'move',
+      limit: 1,
+      windowMs: 5_000,
+      env: {
+        KV_REST_API_URL: 'https://redis.example',
+        KV_REST_API_TOKEN: 'token',
+      },
+      fetcher: async () => new Response(JSON.stringify({ result: 1 })),
+    });
+
+    expect(await limiter.check(new Request('https://gdo.ax0x.ai/api/move'))).toMatchObject({
+      allowed: true,
+      remaining: 0,
+    });
+  });
+
   test('formats retry-after response from reset timestamp', async () => {
     const response = rateLimitResponse(7_000, 1_000);
 

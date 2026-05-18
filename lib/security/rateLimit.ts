@@ -1,3 +1,4 @@
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
 import { UpstashRedis } from '../realtime/upstashRest';
 import { clientIpFromRequest } from './requestIp';
 
@@ -27,10 +28,7 @@ export interface UpstashRateLimiterOptions extends MemoryRateLimiterOptions {
 }
 
 export interface DefaultRateLimiterOptions extends MemoryRateLimiterOptions {
-  env?: {
-    UPSTASH_REDIS_REST_URL?: string;
-    UPSTASH_REDIS_REST_TOKEN?: string;
-  };
+  env?: UpstashRestEnv;
   fetcher?: typeof fetch;
 }
 
@@ -104,10 +102,10 @@ export function createDefaultRateLimiter({
   env = process.env,
   fetcher,
 }: DefaultRateLimiterOptions): RequestRateLimiter {
-  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
+  const config = resolveUpstashRestConfig(env);
+  if (config) {
     const redis = new UpstashRedis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
+      ...config,
       ...(fetcher ? { fetcher } : {}),
     });
     return createUpstashRateLimiter({ scope, limit, windowMs, redis, ...(nowMs ? { nowMs } : {}) });

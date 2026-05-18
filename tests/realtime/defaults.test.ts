@@ -27,4 +27,17 @@ describe('default realtime persistence', () => {
     expect(deps.eventLog).toBeInstanceOf(UpstashEventLog);
     expect(deps.publisher).toBeInstanceOf(UpstashPublisher);
   });
+
+  test('uses Vercel Marketplace KV env vars as Upstash REST fallback', () => {
+    const deps = createDefaultRealtimePersistence({
+      KV_REST_API_URL: 'https://redis.example',
+      KV_REST_API_TOKEN: 'secret',
+    });
+
+    expect(deps.backend).toBe('upstash');
+    expect(deps.stateStore).toBeInstanceOf(UpstashGameStateStore);
+    expect(deps.idempotency).toBeInstanceOf(UpstashIdempotencyStore);
+    expect(deps.eventLog).toBeInstanceOf(UpstashEventLog);
+    expect(deps.publisher).toBeInstanceOf(UpstashPublisher);
+  });
 });

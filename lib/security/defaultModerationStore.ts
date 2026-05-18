@@ -1,19 +1,15 @@
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
 import { UpstashRedis } from '../realtime/upstashRest';
 import { MemoryModerationStore, UpstashModerationStore } from './reports';
 
-export interface ModerationStoreEnv {
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
-}
+export type ModerationStoreEnv = UpstashRestEnv;
 
 export function createDefaultModerationStore(
   env: ModerationStoreEnv = process.env,
 ): MemoryModerationStore | UpstashModerationStore {
-  if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    return new UpstashModerationStore(new UpstashRedis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    }));
+  const config = resolveUpstashRestConfig(env);
+  if (config) {
+    return new UpstashModerationStore(new UpstashRedis(config));
   }
   return new MemoryModerationStore();
 }

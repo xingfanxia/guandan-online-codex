@@ -24,7 +24,7 @@ npm run bench:ai -- 20 1 300
 npm audit --audit-level=moderate
 ```
 
-Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to use Redis-backed room/state/idempotency/event-log/report/profile/telemetry persistence. These must point at a dedicated `guandan-online-codex` Redis/Upstash project; do not reuse the production scorer database. Set `INTERNAL_TICK_SECRET` to require `x-internal-secret` on `api/tick` and `api/cron/dcCheck`. Set `ADMIN_TOKEN` for admin report/ban/reset/latency endpoints. Without Upstash env vars, route defaults use process-local memory stores for local tests.
+Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to use Redis-backed room/state/idempotency/event-log/report/profile/telemetry persistence. Vercel Marketplace's `KV_REST_API_URL` and `KV_REST_API_TOKEN` names are also accepted. These must point at a dedicated `guandan-online-codex` Redis/Upstash project; do not reuse the production scorer database. Set `INTERNAL_TICK_SECRET` to require `x-internal-secret` on `api/tick` and `api/cron/dcCheck`. Set `ADMIN_TOKEN` for admin report/ban/reset/latency endpoints. Without Upstash env vars, route defaults use process-local memory stores for local tests.
 
 ## Deployment isolation
 
