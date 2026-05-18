@@ -33,12 +33,14 @@ Verification after the update:
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
 - `vercel build --prod --scope panpanmao` — passing; generated `api/auth/createHandle`, `api/room/create`, `api/poll/[roomId]`, `api/sse/[roomId]`, and `api/move` functions import under Node ESM
+- Production deploy `cc478eb` is live on `https://guandan-online-codex.vercel.app` via `guandan-online-codex-mgxcv0q7u-panpanmao.vercel.app`
+- Production API smoke passed: create handle, create room, list room, start 4P with bots, long-poll replay, SSE first chunk, and authenticated move POST
 
 Still not complete:
 - AUTH-2 scorer key migration is superseded for this Codex build. The online game now owns an independent `go:player:*` namespace and must use a dedicated Redis/Upstash project.
 - Route defaults use Upstash-backed persistence when `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` or Vercel Marketplace `KV_REST_API_URL` / `KV_REST_API_TOKEN` are present; without env vars they intentionally fall back to process-local memory stores for local tests.
 - Dedicated Upstash KV env vars are configured on `panpanmao/guandan-online-codex` for Production and Preview through Vercel Marketplace. Do not copy scorer database credentials into this project.
-- Full-game route-handler integration is covered locally, and Vercel Authentication has been disabled for this project. Live Vercel SSE+POST validation with two browser tabs still needs a post-deploy pass.
+- Full-game route-handler integration is covered locally, production API/SSE smoke is passing, and Vercel Authentication has been disabled for this project. Live Vercel SSE+POST validation with two browser tabs still needs a UI pass.
 - SSE uses bounded polling over the per-player event log; tune `pollMs`/duration against real Upstash/Vercel latency before production.
 - `api/round/next` is the explicit server transition from `round-end` into the next hand; `api/move` still stops at `round-end` so the UI can show the round summary before advancing.
 - API unit tests may call route defaults directly with Web `Request`; Vercel production calls the same defaults as Node functions through `universalHandler`. Keep `tests/api/nodeAdapter.test.ts` green before deploying API changes.
