@@ -35,7 +35,7 @@ export function HandleSetupScreen({ onCreateHandle }: HandleSetupScreenProps): R
         disabled={!trimmed}
         onClick={() => onCreateHandle({ handle: trimmed })}
       >
-        进入牌桌
+        进入大厅
       </button>
     </section>
   );

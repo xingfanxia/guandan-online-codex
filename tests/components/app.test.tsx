@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { App } from '../../src/App';
 import type { AppAssistApi, AppModerationApi, AppMoveApi, AppPhaseApi, AppProfileApi, AppRoomApi, AppRoundApi } from '../../src/App';
@@ -83,7 +83,7 @@ function moderationApi(overrides: Partial<AppModerationApi> = {}): AppModeration
   };
 }
 
-function playingView(): ClientStateView {
+function playingView(overrides: Partial<ClientStateView> = {}): ClientStateView {
   return {
     phase: 'playing',
     mode: '4',
@@ -118,6 +118,7 @@ function playingView(): ClientStateView {
       passes: [],
     },
     finished: [],
+    ...overrides,
   };
 }
 
@@ -170,7 +171,7 @@ describe('App shell', () => {
     localStorage.clear();
   });
 
-  test('requires a persisted player handle before entering the table', async () => {
+  test('requires a persisted player handle before entering the lobby', async () => {
     const created: unknown[] = [];
     const api = profileApi({
       createHandle: async (input) => {
@@ -178,18 +179,27 @@ describe('App shell', () => {
         return { ok: true, profile: { handle: 'momo', createdAt: '2026-05-18T00:00:00.000Z' } };
       },
     });
+    const listed: unknown[] = [];
+    const roomsApi = roomApi({
+      listRooms: async () => {
+        listed.push('list');
+        return { ok: true, rooms: [room()] };
+      },
+    });
 
-    render(<App profileApi={api} />);
+    render(<App profileApi={api} roomApi={roomsApi} />);
 
     expect(screen.getByLabelText('Player setup')).toBeInTheDocument();
     expect(screen.queryByLabelText('App navigation')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('textbox', { name: '玩家名' }), { target: { value: '@Momo' } });
-    fireEvent.click(screen.getByRole('button', { name: '进入牌桌' }));
+    fireEvent.click(screen.getByRole('button', { name: '进入大厅' }));
 
     await waitFor(() => expect(created).toEqual([{ handle: '@Momo' }]));
+    await waitFor(() => expect(listed).toEqual(['list']));
     expect(JSON.parse(localStorage.getItem('gdo:player-profile:v1') ?? '{}')).toMatchObject({ handle: 'momo' });
-    expect(await screen.findByLabelText('Guandan table')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Room browser')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Guandan table')).not.toBeInTheDocument();
     expect(screen.getByText('已设置 @momo')).toBeInTheDocument();
   });
 
@@ -198,12 +208,13 @@ describe('App shell', () => {
       createHandle: async () => ({ ok: false, error: 'ERR_HANDLE_TAKEN' }),
     });
 
-    render(<App profileApi={api} />);
+    render(<App profileApi={api} roomApi={roomApi()} />);
 
     fireEvent.change(screen.getByRole('textbox', { name: '玩家名' }), { target: { value: '@ax' } });
-    fireEvent.click(screen.getByRole('button', { name: '进入牌桌' }));
+    fireEvent.click(screen.getByRole('button', { name: '进入大厅' }));
 
-    expect(await screen.findByLabelText('Guandan table')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Room browser')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Guandan table')).not.toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem('gdo:player-profile:v1') ?? '{}')).toMatchObject({ handle: 'ax' });
     expect(screen.getByText('已设置 @ax')).toBeInTheDocument();
   });
@@ -231,8 +242,8 @@ describe('App shell', () => {
     expect(await screen.findByLabelText('Waiting room')).toBeInTheDocument();
   });
 
-  test('renders the game table as the first screen and supports card selection', () => {
-    render(<App playerHandle="fufu" />);
+  test('renders an injected game table and supports card selection', () => {
+    render(<App playerHandle="fufu" gameView={playingView()} />);
 
     expect(screen.getByLabelText('Guandan table')).toBeInTheDocument();
     expect(screen.getByText('K7M2P9')).toBeInTheDocument();
@@ -243,6 +254,18 @@ describe('App shell', () => {
 
     expect(screen.getByText('出牌 · 1 张')).toBeInTheDocument();
     expect(screen.getByLabelText('3 of spades')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('does not show a demo table without an active room', () => {
+    render(<App playerHandle="fufu" roomApi={roomApi()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '牌桌' }));
+
+    const entry = screen.getByLabelText('Game entry');
+    expect(entry).toBeInTheDocument();
+    expect(screen.queryByLabelText('Guandan table')).not.toBeInTheDocument();
+    expect(within(entry).getByRole('button', { name: '开房' })).toBeInTheDocument();
+    expect(within(entry).getByRole('button', { name: '大厅' })).toBeInTheDocument();
   });
 
   test('creates a room through the app shell and opens the waiting room', async () => {
@@ -390,7 +413,7 @@ describe('App shell', () => {
     const moveApi: AppMoveApi = {
       submitMove: async (input) => {
         moves.push(input);
-        return { ok: true, version: 2, events: ['move_played'], view: playingView() };
+        return { ok: true, version: 2, events: ['move_played'], view: playingView({ currentTurn: 'p1' }) };
       },
     };
 
@@ -398,7 +421,7 @@ describe('App shell', () => {
       <App
         roomApi={roomApi()}
         moveApi={moveApi}
-        gameView={playingView()}
+        gameView={playingView({ currentTurn: 'p1' })}
         playerHandle="fufu"
         createMoveId={() => 'move-fixed'}
       />,
@@ -431,7 +454,7 @@ describe('App shell', () => {
     const moveApi: AppMoveApi = {
       submitMove: async (input) => {
         moves.push(input);
-        return { ok: true, version: 10, view: playingView() };
+        return { ok: true, version: 10, view: playingView({ currentTurn: 'p1' }) };
       },
     };
 
@@ -439,7 +462,7 @@ describe('App shell', () => {
       <App
         roomApi={roomApi()}
         moveApi={moveApi}
-        gameView={playingView()}
+        gameView={playingView({ currentTurn: 'p1' })}
         playerHandle="fufu"
         createMoveId={() => 'move-after-reload'}
       />,
@@ -508,7 +531,7 @@ describe('App shell', () => {
       },
     };
 
-    render(<App roomApi={roomApi()} assistApi={assistApi} gameView={playingView()} playerHandle="fufu" />);
+    render(<App roomApi={roomApi()} assistApi={assistApi} gameView={playingView({ currentTurn: 'p1' })} playerHandle="fufu" />);
     fireEvent.click(screen.getByRole('button', { name: '开房' }));
     fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
     fireEvent.click(await screen.findByRole('button', { name: '开始' }));

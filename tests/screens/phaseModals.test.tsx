@@ -123,6 +123,37 @@ describe('phase modals', () => {
     expect(screen.getByRole('button', { name: '确认还贡' })).toBeEnabled();
   });
 
+  test('renders return tribute as waiting for players who do not owe a return', () => {
+    const state: ReturnPendingState = {
+      phase: 'return-pending',
+      mode: '8',
+      levelRank: '5',
+      players: players8,
+      hands: hands(players8),
+      undealt: [],
+      exchanges: [{ from: 'p8', to: 'p1', tributeCard: c('A') }],
+      selectedReturns: {},
+      firstLeader: 'p1',
+      deadlineAt: '2026-05-18T00:00:15.000Z',
+      version: 2,
+    };
+
+    render(
+      <TributeModal
+        state={state}
+        currentPlayerId="p2"
+        selectedCardKeys={new Set([cardKey(c('3', 'clubs'))])}
+        onToggleCard={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('还贡阶段')).toBeInTheDocument();
+    expect(screen.getByText('等待还贡玩家选择')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Return hand')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '确认还贡' })).not.toBeInTheDocument();
+  });
+
   test('renders exchange vote tally and voter-only actions', () => {
     const onVote = vi.fn();
     const state: ExchangeVotePendingState = {

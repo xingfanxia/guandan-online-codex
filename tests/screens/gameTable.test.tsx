@@ -10,7 +10,7 @@ function c(rank: Card['rank'], suit: Card['suit'] = 'spades', deck: Card['deck']
   return { rank, suit, deck };
 }
 
-function playingView(): ClientStateView {
+function playingView(overrides: Partial<ClientStateView> = {}): ClientStateView {
   return {
     phase: 'playing',
     mode: '4',
@@ -31,6 +31,7 @@ function playingView(): ClientStateView {
       passes: ['p4'],
     },
     finished: [],
+    ...overrides,
   };
 }
 
@@ -87,7 +88,7 @@ describe('GameTableScreen', () => {
     render(
       <GameTableScreen
         roomCode="LIVE77"
-        view={playingView()}
+        view={playingView({ currentTurn: 'p1' })}
         currentPlayerId="p1"
         selectedCardKeys={new Set(['1:spades:3'])}
         selectedExchangeCards={[]}
@@ -117,6 +118,49 @@ describe('GameTableScreen', () => {
     expect(onSuggest).toHaveBeenCalledTimes(1);
     expect(onPlay).toHaveBeenCalledTimes(1);
     expect(onPass).toHaveBeenCalledTimes(1);
+  });
+
+  test('disables play actions while another player is active', () => {
+    const onPlay = vi.fn();
+    const onPass = vi.fn();
+    const onSuggest = vi.fn();
+
+    render(
+      <GameTableScreen
+        roomCode="LIVE77"
+        view={playingView({ currentTurn: 'p2' })}
+        currentPlayerId="p1"
+        selectedCardKeys={new Set(['1:spades:3'])}
+        selectedExchangeCards={[]}
+        onToggleCard={vi.fn()}
+        onPlaySelected={onPlay}
+        onPass={onPass}
+        onSuggestMove={onSuggest}
+        onTributeCardToggle={vi.fn()}
+        onTributeConfirm={vi.fn()}
+        onReturnCardToggle={vi.fn()}
+        onReturnConfirm={vi.fn()}
+        onExchangeVote={vi.fn()}
+        onExchangeCardToggle={vi.fn()}
+        onExchangeConfirm={vi.fn()}
+      />,
+    );
+
+    const suggest = screen.getByRole('button', { name: '提示' });
+    const pass = screen.getByRole('button', { name: '不要' });
+    const play = screen.getByRole('button', { name: '出牌 · 1 张' });
+
+    expect(suggest).toBeDisabled();
+    expect(pass).toBeDisabled();
+    expect(play).toBeDisabled();
+
+    fireEvent.click(suggest);
+    fireEvent.click(pass);
+    fireEvent.click(play);
+
+    expect(onSuggest).not.toHaveBeenCalled();
+    expect(onPass).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
   });
 
   test('renders phase overlays from the filtered live view', () => {

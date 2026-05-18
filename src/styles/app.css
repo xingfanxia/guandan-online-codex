@@ -188,6 +188,11 @@
   color: oklch(15% 0.04 30);
 }
 
+.gdo-actionbar__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .gdo-my-hand {
   position: absolute;
   left: var(--s-4);

@@ -13,7 +13,9 @@ export function RoomBrowserScreen({ rooms, onJoin }: RoomBrowserScreenProps): Re
         <strong>房间列表</strong>
       </div>
       <div className="gdo-room-list">
-        {rooms.map((room) => (
+        {rooms.length === 0 ? (
+          <div className="gdo-room-empty">暂无公开房间</div>
+        ) : rooms.map((room) => (
           <article className="gdo-room-row" key={room.code}>
             <div>
               <strong>{room.code}</strong>

@@ -75,23 +75,6 @@ import { HandleSetupScreen } from './screens/HandleSetup';
 import { RoomBrowserScreen } from './screens/RoomBrowser';
 import { WaitingRoomScreen, type WaitingRoomScreenProps } from './screens/WaitingRoom';
 
-const HAND: Card[] = [
-  { rank: '3', suit: 'spades', deck: 1 },
-  { rank: '3', suit: 'hearts', deck: 1 },
-  { rank: '5', suit: 'hearts', deck: 1 },
-  { rank: '7', suit: 'clubs', deck: 1 },
-  { rank: '9', suit: 'diamonds', deck: 1 },
-  { rank: 'J', suit: 'spades', deck: 1 },
-  { rank: 'Q', suit: 'hearts', deck: 1 },
-  { rank: 'A', suit: 'spades', deck: 1 },
-  { rank: 'BJ', suit: 'joker', deck: 1 },
-  { rank: 'RJ', suit: 'joker', deck: 1 },
-];
-
-const TRICK: Card[] = [
-  { rank: 'A', suit: 'diamonds', deck: 2 },
-];
-
 export interface AppRoomApi {
   createRoom(input: CreateRoomInput): Promise<CreateRoomResult>;
   getRoomStatus(input: RoomStatusInput): Promise<RoomStatusResult>;
@@ -246,7 +229,7 @@ export function App({
   ));
   const activeHandle = explicitPlayerHandle ?? storedProfile?.handle;
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [view, setView] = useState<AppView>(() => storedSession?.view ?? 'table');
+  const [view, setView] = useState<AppView>(() => storedSession?.view ?? (gameView ? 'table' : 'browser'));
   const [activePlayerId, setActivePlayerId] = useState(() => storedSession?.activePlayerId ?? currentPlayerId);
   const [handOrder, setHandOrder] = useState<Card[] | undefined>();
   const [currentRoom, setCurrentRoom] = useState<PublicRoomDto | undefined>(() => storedSession?.room);
@@ -275,8 +258,7 @@ export function App({
       EventSourceCtor: stream?.EventSourceCtor,
     }),
   });
-  const tableView = newestView(serverGameView, liveStream.view, gameView)
-    ?? (currentRoom || !activeHandle ? undefined : demoGameView(activeHandle));
+  const tableView = newestView(serverGameView, liveStream.view, gameView);
   const orderedTableView = tableView ? applyHandOrder(tableView, activePlayerId, handOrder) : undefined;
   const selectedCards = orderedTableView ? cardsFromSelection(orderedTableView, activePlayerId, selected) : [];
 
@@ -376,13 +358,7 @@ export function App({
     setNotice(undefined);
     setError(undefined);
     try {
-      const result = await roomApi.listRooms();
-      if (!result.ok) {
-        setError(result.error);
-        setRooms([]);
-        return;
-      }
-      setRooms(result.rooms);
+      await loadPublicRooms();
     } finally {
       setBusy(false);
     }
@@ -488,9 +464,21 @@ export function App({
       setStoredProfile(profile);
       writeStoredPlayerProfile(profile);
       setNotice(`已设置 @${profile.handle}`);
+      setView('browser');
+      await loadPublicRooms();
     } finally {
       setBusy(false);
     }
+  }
+
+  async function loadPublicRooms(): Promise<void> {
+    const result = await roomApi.listRooms();
+    if (!result.ok) {
+      setError(result.error);
+      setRooms([]);
+      return;
+    }
+    setRooms(result.rooms);
   }
 
   async function handleBan(handle: string): Promise<void> {
@@ -795,6 +783,14 @@ export function App({
 
   function renderTable(): React.ReactElement {
     if (!orderedTableView) {
+      if (!currentRoom) {
+        return (
+          <NoActiveRoomPanel
+            onCreateRoom={() => setView('create')}
+            onBrowseRooms={() => { void handleOpenBrowser(); }}
+          />
+        );
+      }
       return (
         <section className="gdo-table gdo-table--loading" aria-label="Game loading">
           <div className="gdo-topbar">
@@ -1034,26 +1030,27 @@ function navClass(active: boolean): string {
   return ['gdo-shell-nav__button', active ? 'gdo-shell-nav__button--active' : ''].filter(Boolean).join(' ');
 }
 
-function demoGameView(playerHandle: string): ClientStateView {
-  return {
-    phase: 'playing',
-    mode: '4',
-    levelRank: '5',
-    version: 3,
-    players: [
-      { id: 'p1', seat: 'east', team: 't1', displayName: `@${playerHandle}` },
-      { id: 'p2', seat: 'south', team: 't2', displayName: '@豆豆' },
-      { id: 'p3', seat: 'west', team: 't1', displayName: '@毛毛' },
-      { id: 'p4', seat: 'north', team: 't2', displayName: '@小雨' },
-    ],
-    currentTurn: 'p4',
-    handCounts: { p1: HAND.length, p2: 17, p3: 18, p4: 20 },
-    self: { playerId: 'p1', hand: HAND },
-    currentTrick: {
-      leader: 'p2',
-      currentPlay: { playerId: 'p2', cards: TRICK, kind: 'single' },
-      passes: [],
-    },
-    finished: [],
-  };
+function NoActiveRoomPanel({
+  onCreateRoom,
+  onBrowseRooms,
+}: {
+  onCreateRoom: () => void;
+  onBrowseRooms: () => void;
+}): React.ReactElement {
+  return (
+    <section className="gdo-room-panel" aria-label="Game entry">
+      <div className="gdo-room-panel__header">
+        <span className="gdo-room-panel__eyebrow">ENTRY</span>
+        <strong>牌局入口</strong>
+      </div>
+      <div className="gdo-entry-actions">
+        <button className="gdo-command gdo-command--primary" type="button" onClick={onCreateRoom}>
+          开房
+        </button>
+        <button className="gdo-command" type="button" onClick={onBrowseRooms}>
+          大厅
+        </button>
+      </div>
+    </section>
+  );
 }

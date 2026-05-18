@@ -98,14 +98,23 @@ function ReturnBody({
   const exchange = state.exchanges.find((candidate) => candidate.to === currentPlayerId);
   const hand = state.hands[currentPlayerId] ?? [];
 
+  if (!exchange) {
+    return (
+      <div className="gdo-phase-picker">
+        <div className="gdo-phase-picker__meta">
+          <span>等待还贡玩家选择</span>
+          <span>{state.exchanges.length} 笔</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="gdo-phase-picker">
-      {exchange ? (
-        <div className="gdo-return-received">
-          <span>收到 {displayName(state.players, exchange.from)} 的进贡</span>
-          <CardView card={exchange.tributeCard} levelRank={state.levelRank} size="md" />
-        </div>
-      ) : null}
+      <div className="gdo-return-received">
+        <span>收到 {displayName(state.players, exchange.from)} 的进贡</span>
+        <CardView card={exchange.tributeCard} levelRank={state.levelRank} size="md" />
+      </div>
       <div className="gdo-phase-hand" aria-label="Return hand">
         {hand.map((card) => (
           <CardView

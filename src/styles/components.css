@@ -227,6 +227,12 @@ button.gdo-card {
   gap: var(--s-2);
 }
 
+.gdo-entry-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
 .gdo-rule-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -296,6 +302,17 @@ button.gdo-card {
 .gdo-room-row span {
   color: var(--ink-3);
   font-size: var(--t-xs);
+}
+
+.gdo-room-empty {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule-1);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font: 650 var(--t-xs) / 1 var(--font-sans);
 }
 
 .gdo-report-box {

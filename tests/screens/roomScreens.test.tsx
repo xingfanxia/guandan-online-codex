@@ -13,7 +13,7 @@ describe('room screens', () => {
     render(<HandleSetupScreen onCreateHandle={onCreateHandle} />);
 
     fireEvent.change(screen.getByRole('textbox', { name: '玩家名' }), { target: { value: '@Momo' } });
-    fireEvent.click(screen.getByRole('button', { name: '进入牌桌' }));
+    fireEvent.click(screen.getByRole('button', { name: '进入大厅' }));
 
     expect(onCreateHandle).toHaveBeenCalledWith({ handle: '@Momo' });
   });
@@ -85,5 +85,12 @@ describe('room screens', () => {
     expect(screen.getByText('1/4')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '加入 K7M2P9' }));
     expect(onJoin).toHaveBeenCalledWith('K7M2P9');
+  });
+
+  test('renders an empty public-room state', () => {
+    render(<RoomBrowserScreen rooms={[]} onJoin={vi.fn()} />);
+
+    expect(screen.getByLabelText('Room browser')).toBeInTheDocument();
+    expect(screen.getByText('暂无公开房间')).toBeInTheDocument();
   });
 });

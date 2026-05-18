@@ -52,6 +52,10 @@ export function GameTableScreen({
   const self = view.self?.playerId === currentPlayerId ? view.self : undefined;
   const selectedCards = self?.hand.filter((card) => selectedCardKeys.has(cardKey(card))) ?? [];
   const seats = seatLayout(view.players, currentPlayerId);
+  const isMyTurn = view.phase === 'playing' && view.currentTurn === currentPlayerId;
+  const canSuggest = isMyTurn && Boolean(onSuggestMove);
+  const canPass = isMyTurn && Boolean(view.currentTrick?.currentPlay);
+  const canPlay = isMyTurn && selectedCards.length > 0;
 
   return (
     <section className="gdo-table" aria-label="Guandan table">
@@ -85,13 +89,13 @@ export function GameTableScreen({
       ) : null}
 
       <div className="gdo-actionbar">
-        <button className="gdo-actionbar__button" type="button" onClick={onSortHand}>理牌</button>
-        <button className="gdo-actionbar__button" type="button" onClick={onSuggestMove}>提示</button>
-        <button className="gdo-actionbar__button" type="button" onClick={onPass}>不要</button>
+        <button className="gdo-actionbar__button" type="button" disabled={!onSortHand} onClick={onSortHand}>理牌</button>
+        <button className="gdo-actionbar__button" type="button" disabled={!canSuggest} onClick={onSuggestMove}>提示</button>
+        <button className="gdo-actionbar__button" type="button" disabled={!canPass} onClick={onPass}>不要</button>
         <button
           className="gdo-actionbar__button gdo-actionbar__button--primary"
           type="button"
-          disabled={selectedCards.length === 0}
+          disabled={!canPlay}
           onClick={() => onPlaySelected(selectedCards.map((card) => ({ ...card })))}
         >
           出牌 · {selectedCards.length} 张
