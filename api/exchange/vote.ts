@@ -7,8 +7,9 @@ import {
   type ExchangeVoteThreshold,
 } from '../../lib/game/exchange.js';
 import { submitExchangeVote } from '../../lib/game/exchangeFlow.js';
-import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
+import { runGameplayContinuation } from '../../lib/game/continuation.js';
 import type { PlayerId } from '../../lib/game/state.js';
+import type { BotTurnOptions } from '../../lib/ai/chain.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import type { EventLog } from '../../lib/realtime/eventLog.js';
 import { MessageType, type ServerEvent } from '../../lib/realtime/messages.js';
@@ -62,6 +63,7 @@ export interface ExchangeVoteHandlerDeps {
   rulesForRoom?: (roomId: string) => RoomRules | Promise<RoomRules>;
   direction?: (roomId: string) => ExchangeDirection;
   deadlineAt?: (rules: RoomRules) => string;
+  botChain?: BotTurnOptions | false;
   random?: () => number;
   rateLimiter?: RequestRateLimiter;
 }
@@ -75,6 +77,7 @@ export function createExchangeVoteHandler({
   rulesForRoom,
   direction,
   deadlineAt,
+  botChain,
   random = Math.random,
   rateLimiter,
 }: ExchangeVoteHandlerDeps): (request: Request) => Promise<Response> {
@@ -106,6 +109,7 @@ export function createExchangeVoteHandler({
         rulesForRoom,
         direction,
         deadlineAt,
+        botChain,
         random,
       }, body.roomId, body.playerId, body.choice);
     }
@@ -139,6 +143,7 @@ async function handleStatefulVote(
     rulesForRoom?: ((roomId: string) => RoomRules | Promise<RoomRules>) | undefined;
     direction?: ((roomId: string) => ExchangeDirection) | undefined;
     deadlineAt?: ((rules: RoomRules) => string) | undefined;
+    botChain?: BotTurnOptions | false | undefined;
     random?: (() => number) | undefined;
   },
   roomId: string,
@@ -159,14 +164,15 @@ async function handleStatefulVote(
   });
   if (!result.ok) return json({ ok: false, error: result.error }, statusForError(result.error));
 
-  const automated = runAutomaticPhaseActions(result.state, {
+  const continuation = runGameplayContinuation(result.state, {
     rules,
     returnDeadlineAt: () => deps.deadlineAt?.(rules) ?? deadlineFromNow(rules.returnTimeLimitSeconds),
     exchangeDeadlineAt: () => deps.deadlineAt?.(rules) ?? deadlineFromNow(rules.exchangeVoteDurationSeconds),
     exchangeDirection: () => deps.direction?.(roomId) ?? pickExchangeDirection(deps.random),
+    ...(deps.botChain !== undefined ? { botChain: deps.botChain } : {}),
   });
-  const finalState = automated.state;
-  const events = [...result.events, ...automated.events];
+  const finalState = continuation.state;
+  const events = [...result.events, ...continuation.events];
 
   await deps.stateStore.set(roomId, finalState);
   const logged = await publishEventsToPlayers(deps, roomId, finalState, events);
@@ -182,6 +188,7 @@ async function handleStatefulVote(
     version: finalState.version,
     view: buildClientPayload(playerId, firstEvent(events), finalState).view,
     events: events.map((event) => event.type),
+    ...(continuation.botMoves.length > 0 ? { botMoves: continuation.botMoves } : {}),
     eventIds,
   }, 200);
 }

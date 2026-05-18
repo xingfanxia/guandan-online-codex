@@ -192,6 +192,47 @@ describe('api/round/next handler', () => {
     expect(d.eventLog.replayAfter('K7M2P9', 'p1').map((entry) => entry.payload.type)).toEqual([MessageType.StateResync]);
   });
 
+  test('continues bot play immediately when the next-round leader is a bot', async () => {
+    const state = roundEnd();
+    state.players = [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'human' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'human' },
+    ];
+    state.placements = [
+      { playerId: 'p2', position: 1, team: 't2' },
+      { playerId: 'p4', position: 2, team: 't2' },
+      { playerId: 'p1', position: 3, team: 't1' },
+      { playerId: 'p3', position: 4, team: 't1' },
+    ];
+    state.winnerTeam = 't2';
+    const d = deps(state, plainDeck());
+    const handler = createNextRoundHandler({
+      ...d,
+      deckForRoom: () => d.deck,
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, tributeEnabled: false, cardExchange: false }),
+      botChain: { maxMoves: 1, random: () => 0.9 },
+      nowMs: () => 1_000,
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9', transitionId: 'round-bot-leader' }));
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      ok: true,
+      phase: 'playing',
+      events: [MessageType.MovePlayed],
+      botMoves: [{ playerId: 'p2', command: { type: 'play' } }],
+      view: { phase: 'playing', currentTurn: 'p3' },
+    });
+    expect(await d.stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'playing',
+      currentTurn: 'p3',
+      currentTrick: { currentPlay: { playerId: 'p2' } },
+    });
+  });
+
   test('returns named errors for invalid method, missing room, and non-round-end state', async () => {
     const d = deps(roundEnd());
     const handler = createNextRoundHandler({

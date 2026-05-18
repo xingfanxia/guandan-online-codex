@@ -2,8 +2,9 @@ import { universalHandler } from '../_node.js';
 import type { Card } from '../../lib/game/cards.js';
 import { applyCardExchange, validateExchangeSelection, type ExchangeDirection } from '../../lib/game/exchange.js';
 import { submitExchangeSelection } from '../../lib/game/exchangeFlow.js';
-import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
+import { runGameplayContinuation } from '../../lib/game/continuation.js';
 import type { PlayerId } from '../../lib/game/state.js';
+import type { BotTurnOptions } from '../../lib/ai/chain.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import type { EventLog } from '../../lib/realtime/eventLog.js';
 import { MessageType, type ServerEvent } from '../../lib/realtime/messages.js';
@@ -56,10 +57,11 @@ export interface ExchangeSelectHandlerDeps {
   publisher?: RealtimePublisher;
   roomStore?: RoomStore;
   rulesForRoom?: (roomId: string) => RoomRules | Promise<RoomRules>;
+  botChain?: BotTurnOptions | false;
   rateLimiter?: RequestRateLimiter;
 }
 
-export function createExchangeSelectHandler({ store, stateStore, eventLog, publisher, roomStore, rulesForRoom, rateLimiter }: ExchangeSelectHandlerDeps): (request: Request) => Promise<Response> {
+export function createExchangeSelectHandler({ store, stateStore, eventLog, publisher, roomStore, rulesForRoom, botChain, rateLimiter }: ExchangeSelectHandlerDeps): (request: Request) => Promise<Response> {
   return async function handleExchangeSelect(request: Request): Promise<Response> {
     if (request.method !== 'POST') return json({ ok: false, error: 'ERR_METHOD_NOT_ALLOWED' }, 405);
     const rateLimited = await enforceRateLimit(request, rateLimiter, Date.now());
@@ -80,7 +82,7 @@ export function createExchangeSelectHandler({ store, stateStore, eventLog, publi
     }
 
     if (stateStore && eventLog && publisher) {
-      return handleStatefulSelect({ stateStore, eventLog, publisher, roomStore, rulesForRoom }, body.roomId, body.playerId, body.cards);
+      return handleStatefulSelect({ stateStore, eventLog, publisher, roomStore, rulesForRoom, botChain }, body.roomId, body.playerId, body.cards);
     }
 
     if (!store) return json({ ok: false, error: 'ERR_EXCHANGE_NOT_FOUND' }, 404);
@@ -122,6 +124,7 @@ async function handleStatefulSelect(
     publisher: RealtimePublisher;
     roomStore?: RoomStore | undefined;
     rulesForRoom?: ((roomId: string) => RoomRules | Promise<RoomRules>) | undefined;
+    botChain?: BotTurnOptions | false | undefined;
   },
   roomId: string,
   playerId: PlayerId,
@@ -137,13 +140,14 @@ async function handleStatefulSelect(
   if (!result.ok) return json({ ok: false, error: result.error }, statusForError(result.error));
   const rules = await rulesForRoom(deps, roomId);
 
-  const automated = runAutomaticPhaseActions(result.state, {
+  const continuation = runGameplayContinuation(result.state, {
     rules,
     returnDeadlineAt: () => deadlineFromNow(rules.returnTimeLimitSeconds),
     exchangeDeadlineAt: () => deadlineFromNow(rules.exchangeVoteDurationSeconds),
+    ...(deps.botChain !== undefined ? { botChain: deps.botChain } : {}),
   });
-  const finalState = automated.state;
-  const events = [...result.events, ...automated.events];
+  const finalState = continuation.state;
+  const events = [...result.events, ...continuation.events];
 
   await deps.stateStore.set(roomId, finalState);
   const logged = await publishEventsToPlayers(deps, roomId, finalState, events);
@@ -159,6 +163,7 @@ async function handleStatefulSelect(
     version: finalState.version,
     view: buildClientPayload(playerId, firstEvent(events), finalState).view,
     events: events.map((event) => event.type),
+    ...(continuation.botMoves.length > 0 ? { botMoves: continuation.botMoves } : {}),
     eventIds,
   }, 200);
 }

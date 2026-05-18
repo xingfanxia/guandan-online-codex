@@ -203,32 +203,28 @@ describe('exchange API handlers', () => {
 
     const response = await handler(request({ roomId: 'K7M2P9', playerId: 'p2', choice: 'yes' }));
 
-    expect(await response.json()).toMatchObject({
+    const body = await response.json();
+
+    expect(body).toMatchObject({
       ok: true,
       phase: 'playing',
-      version: 26,
-      events: [
-        MessageType.StateResync,
-        MessageType.ExchangeVoteResolved,
-        MessageType.ExchangeSelectRequired,
-        MessageType.ExchangeSelectRequired,
-        MessageType.ExchangeSelectRequired,
-        MessageType.ExchangeSelectRequired,
-        MessageType.StateResync,
-        MessageType.StateResync,
-        MessageType.StateResync,
-        MessageType.ExchangeCompleted,
-      ],
+      botMoves: expect.any(Array),
     });
-    expect(await stateStore.get('K7M2P9')).toMatchObject({
-      phase: 'playing',
-      hands: {
-        p1: [c('Q'), c('K'), c('A')],
-        p2: [c('3'), c('4'), c('5')],
-        p3: [c('6'), c('7'), c('8')],
-        p4: [c('9'), c('10'), c('J')],
-      },
-    });
+    expect(body.events.slice(0, 10)).toEqual([
+      MessageType.StateResync,
+      MessageType.ExchangeVoteResolved,
+      MessageType.ExchangeSelectRequired,
+      MessageType.ExchangeSelectRequired,
+      MessageType.ExchangeSelectRequired,
+      MessageType.ExchangeSelectRequired,
+      MessageType.StateResync,
+      MessageType.StateResync,
+      MessageType.StateResync,
+      MessageType.ExchangeCompleted,
+    ]);
+    expect(body.events).toContain(MessageType.MovePlayed);
+    expect(body.botMoves.length).toBeGreaterThan(0);
+    expect(await stateStore.get('K7M2P9')).toMatchObject({ phase: 'playing' });
   });
 
   test('stateful select handler transitions stored exchange selection into playing', async () => {
@@ -266,6 +262,48 @@ describe('exchange API handlers', () => {
         p3: [c('10'), c('J'), c('6')],
         p4: [c('K'), c('A'), c('9')],
       },
+    });
+  });
+
+  test('stateful select handler continues bot play after exchange completes to a bot leader', async () => {
+    const state = selectState();
+    state.firstLeader = 'p2';
+    state.players = state.players.map((player) => (
+      player.id === 'p2' ? { ...player, kind: 'bot' as const, botDifficulty: 'easy' as const } : player
+    ));
+    const stateStore = new MemoryGameStateStore([['K7M2P9', state]]);
+    const handler = createExchangeSelectHandler({
+      stateStore,
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+      botChain: { maxMoves: 1, random: () => 0.9 },
+    });
+
+    for (const [playerId, cards] of [
+      ['p1', [c('3')]],
+      ['p2', [c('6')]],
+      ['p3', [c('9')]],
+    ] as const) {
+      expect(await (await handler(request({ roomId: 'K7M2P9', playerId, cards }))).json()).toMatchObject({
+        ok: true,
+        phase: 'exchange-select-pending',
+      });
+    }
+
+    const response = await handler(request({ roomId: 'K7M2P9', playerId: 'p4', cards: [c('Q')] }));
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      ok: true,
+      phase: 'playing',
+      events: [MessageType.ExchangeCompleted, MessageType.MovePlayed],
+      botMoves: [{ playerId: 'p2', command: { type: 'play' } }],
+      view: { phase: 'playing', currentTurn: 'p3' },
+    });
+    expect(await stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'playing',
+      currentTurn: 'p3',
+      currentTrick: { currentPlay: { playerId: 'p2' } },
     });
   });
 });

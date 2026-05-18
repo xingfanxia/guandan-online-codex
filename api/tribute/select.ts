@@ -1,8 +1,9 @@
 import { universalHandler } from '../_node.js';
 import type { Card, LevelRank } from '../../lib/game/cards.js';
-import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
+import { runGameplayContinuation } from '../../lib/game/continuation.js';
 import type { PlayerId } from '../../lib/game/state.js';
 import { submitReturnSelection, submitTributeSelection } from '../../lib/game/tributeFlow.js';
+import type { BotTurnOptions } from '../../lib/ai/chain.js';
 import {
   validatePlayerReturnCard,
   validatePlayerTributeCard,
@@ -63,6 +64,7 @@ export interface TributeSelectHandlerDeps {
   rulesForRoom?: (roomId: string) => RoomRules | Promise<RoomRules>;
   returnDeadlineAt?: (rules: RoomRules) => string;
   exchangeDeadlineAt?: (rules: RoomRules) => string;
+  botChain?: BotTurnOptions | false;
   rateLimiter?: RequestRateLimiter;
 }
 
@@ -142,13 +144,14 @@ async function handleStatefulTributeSelect(
 
   if (!result.ok) return json({ ok: false, error: result.error }, statusForError(result.error));
 
-  const automated = runAutomaticPhaseActions(result.state, {
+  const continuation = runGameplayContinuation(result.state, {
     rules,
     returnDeadlineAt: () => deps.returnDeadlineAt?.(rules) ?? deadlineFromNow(rules.returnTimeLimitSeconds),
     exchangeDeadlineAt: () => deps.exchangeDeadlineAt?.(rules) ?? deadlineFromNow(rules.exchangeVoteDurationSeconds),
+    ...(deps.botChain !== undefined ? { botChain: deps.botChain } : {}),
   });
-  const finalState = automated.state;
-  const events = [...result.events, ...automated.events];
+  const finalState = continuation.state;
+  const events = [...result.events, ...continuation.events];
 
   await deps.stateStore.set(roomId, finalState);
   const logged = await publishEventsToPlayers(deps, roomId, finalState, events);
@@ -164,6 +167,7 @@ async function handleStatefulTributeSelect(
     version: finalState.version,
     view: buildClientPayload(playerId, firstEvent(events), finalState).view,
     events: events.map((event) => event.type),
+    ...(continuation.botMoves.length > 0 ? { botMoves: continuation.botMoves } : {}),
     eventIds,
   }, 200);
 }

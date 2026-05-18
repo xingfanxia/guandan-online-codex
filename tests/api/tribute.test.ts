@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createTributeSelectHandler, MemoryTributeSelectStore } from '../../api/tribute/select';
 import type { Card, Rank, Suit } from '../../lib/game/cards';
-import type { TributePendingState } from '../../lib/game/state';
+import type { ReturnPendingState, TributePendingState } from '../../lib/game/state';
 import { MemoryEventLog } from '../../lib/realtime/eventLog';
 import { MessageType } from '../../lib/realtime/messages';
 import { MemoryGameStateStore } from '../../lib/realtime/stateStore';
@@ -44,6 +44,32 @@ function tributeState(): TributePendingState {
     firstLeader: 'p1',
     deadlineAt: '2026-05-18T00:00:15.000Z',
     version: 10,
+  };
+}
+
+function returnStateWithBotLeader(): ReturnPendingState {
+  return {
+    phase: 'return-pending',
+    mode: '4',
+    levelRank: '2',
+    players: [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'human' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'human' },
+    ],
+    hands: {
+      p1: [c('3'), c('5')],
+      p2: [c('K')],
+      p3: [c('4')],
+      p4: [c('A'), c('Q')],
+    },
+    undealt: [],
+    exchanges: [{ from: 'p4', to: 'p1', tributeCard: c('A') }],
+    selectedReturns: {},
+    firstLeader: 'p3',
+    deadlineAt: '2026-05-18T00:00:15.000Z',
+    version: 30,
   };
 }
 
@@ -187,6 +213,34 @@ describe('tribute select API handler', () => {
     expect(await stateStore.get('K7M2P9')).toMatchObject({
       phase: 'return-pending',
       selectedReturns: { p3: c('7') },
+    });
+  });
+
+  test('continues bot play immediately after a return phase resolves to a bot leader', async () => {
+    const stateStore = new MemoryGameStateStore([['K7M2P9', returnStateWithBotLeader()]]);
+    const handler = createTributeSelectHandler({
+      stateStore,
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, cardExchange: false }),
+      botChain: { maxMoves: 1, random: () => 0.9 },
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9', playerId: 'p1', card: c('3') }));
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      ok: true,
+      phase: 'playing',
+      version: 32,
+      events: [MessageType.TributeResolved, MessageType.MovePlayed],
+      botMoves: [{ playerId: 'p3', command: { type: 'play' } }],
+      view: { phase: 'playing', currentTurn: 'p4' },
+    });
+    expect(await stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'playing',
+      currentTurn: 'p4',
+      currentTrick: { currentPlay: { playerId: 'p3' } },
     });
   });
 });

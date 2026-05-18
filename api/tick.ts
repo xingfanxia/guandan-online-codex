@@ -1,7 +1,6 @@
 import { universalHandler } from './_node.js';
-import { runBotTurns } from '../lib/ai/chain.js';
 import { pickExchangeDirection, type ExchangeDirection } from '../lib/game/exchange.js';
-import { runAutomaticPhaseActions } from '../lib/game/phaseAutomation.js';
+import { runGameplayContinuation } from '../lib/game/continuation.js';
 import { defaultRealtimePersistence } from '../lib/realtime/defaults.js';
 import type { EventLog } from '../lib/realtime/eventLog.js';
 import { publishEventsToPlayers } from '../lib/realtime/publish.js';
@@ -51,19 +50,19 @@ export function createTickHandler(deps: TickHandlerDeps): (request: Request) => 
     if (!state) return json({ ok: false, error: 'ERR_ROOM_NOT_FOUND' }, 404);
 
     const rules = await rulesForRoom(deps, body.roomId);
-    const phaseResult = runAutomaticPhaseActions(state, {
+    const continuation = runGameplayContinuation(state, {
       rules,
       returnDeadlineAt: () => deadlineFromNow(nowMs(), rules.returnTimeLimitSeconds),
       exchangeDeadlineAt: () => deadlineFromNow(nowMs(), rules.exchangeVoteDurationSeconds),
       exchangeDirection: deps.exchangeDirection ?? (() => pickExchangeDirection(deps.random)),
       nowMs,
+      botChain: {
+        ...(body.maxMoves ? { maxMoves: body.maxMoves } : {}),
+        ...(deps.random ? { random: deps.random } : {}),
+      },
     });
-    const botResult = runBotTurns(phaseResult.state, {
-      ...(body.maxMoves ? { maxMoves: body.maxMoves } : {}),
-      ...(deps.random ? { random: deps.random } : {}),
-    });
-    const finalState = botResult.state;
-    const events = [...phaseResult.events, ...botResult.events];
+    const finalState = continuation.state;
+    const events = continuation.events;
 
     await deps.stateStore.set(body.roomId, finalState);
     const logged = await publishEventsToPlayers(deps, body.roomId, finalState, events);
@@ -79,8 +78,8 @@ export function createTickHandler(deps: TickHandlerDeps): (request: Request) => 
       phase: finalState.phase,
       version: finalState.version,
       events: events.map((event) => event.type),
-      ...(phaseResult.actions.length > 0 ? { phaseActions: phaseResult.actions } : {}),
-      ...(botResult.moves.length > 0 ? { botMoves: botResult.moves } : {}),
+      ...(continuation.phaseActions.length > 0 ? { phaseActions: continuation.phaseActions } : {}),
+      ...(continuation.botMoves.length > 0 ? { botMoves: continuation.botMoves } : {}),
       eventIds,
     }, 200);
   };

@@ -1,9 +1,10 @@
 # Handoff — guandan-online
 
 **Date**: 2026-05-18
-**Status**: P0 foundation implementation in progress in the isolated `guandan-online-codex` clone. Pre-implementation research/design/plan remains complete; implementation has now started.
+**Status**: Playable v1 gameplay implementation in the isolated `guandan-online-codex` clone. Pre-implementation research/design/plan remains complete; production implementation now covers full room, table, phase, bot, and deploy paths for the v1 game loop.
 **Repo**: https://github.com/xingfanxia/guandan-online-codex
-**Domain (locked)**: `gdo.ax0x.ai` (sibling subdomain to scorer at `gd.ax0x.ai`)
+**Live URL**: https://guandan-online-codex.vercel.app
+**Domain target**: `gdo.ax0x.ai` (sibling subdomain to scorer at `gd.ax0x.ai`)
 
 ---
 
@@ -25,30 +26,31 @@ Implemented in this clone:
 - Production API runtime fixes: server-side `api/` and `lib/` imports use explicit `.js` specifiers so Vercel's frameworkless TypeScript functions resolve under Node ESM; default API exports are wrapped by `api/_node.ts` so Vercel Node `(req, res)` invocations are adapted into the app's Web `Request`/`Response` handlers
 - 6P/8P team-structure support: room rules can now choose `2-teams-of-n` or `teams-of-2`; start/deal seating uses ABCABC for 6P and ABCDABCD for 8P in teams-of-2 rooms; round-end uses actual team size; teams-of-2 progression uses pair-team upgrade tiers so 8P four-team rooms can advance; Path B sweep tribute is limited to `2-teams-of-n`; create-room UI exposes the 2/3/4-team selector for 6P/8P
 - Playability fixes after implementation audit: browser SSE now subscribes to named server event types instead of only `message`, table hydration chooses the newest view by state version so POST responses are not hidden behind stale SSE snapshots, 8P bot stretches use a dynamic bot-turn budget instead of a 3-move cap, and the hidden-state publish guard now catches direct `publisher.publish(...)` calls outside the filtered publish path
+- Bot continuation fix after live playability audit: `api/round/next`, tribute, and exchange phase endpoints now run the same immediate bot-turn continuation as `api/move` after they resolve back to `playing`, so human+bot rooms do not stall until cron when a bot becomes the next leader. `api/tick` uses the same shared continuation path.
+- Production live UI smoke: Playwright covers two real browser contexts on the deployed Vercel URL creating/joining a room, starting, playing a card, and observing the other browser sync through SSE/replay. The smoke uses the server's friendly automation user agent so BotID remains enabled for normal headless clients while the game path can be exercised in CI/manual ops.
 
 Verification after the update:
-- `npm test` — 91 files / 371 tests passing
+- `npm test` — 93 files / 389 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.58% statements / 93.53% lines
+- `npm run test:coverage` — 90.75% statements / 93.58% lines
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
-- Vercel production deploy `dpl_6XF3CNcHn2FCUiacebHZfvoo1MkW` (`https://guandan-online-codex.vercel.app`) smoke passed: 6P teams-of-2 created as `t1,t2,t3,t1,t2,t3`; 8P teams-of-2 created as `t1,t2,t3,t4,t1,t2,t3,t4`; SSE first chunk used named `state_resync`; 8P move returned 7 bot moves and stayed `playing`
-- `vercel build --prod --scope panpanmao` — passing; generated `api/auth/createHandle`, `api/room/create`, `api/poll/[roomId]`, `api/sse/[roomId]`, and `api/move` functions import under Node ESM
-- Production deploy `cc478eb` is live on `https://guandan-online-codex.vercel.app` via `guandan-online-codex-mgxcv0q7u-panpanmao.vercel.app`
+- `vercel build --prod --scope panpanmao` — passing; generated Vercel output successfully
 - Production API smoke passed: create handle, create room, list room, start 4P with bots, long-poll replay, SSE first chunk, and authenticated move POST
+- Production two-browser UI smoke passed: create/join/start/play/sync on `https://guandan-online-codex.vercel.app`
 
-Still not complete:
+Operational notes / deferred work:
 - AUTH-2 scorer key migration is superseded for this Codex build. The online game now owns an independent `go:player:*` namespace and must use a dedicated Redis/Upstash project.
 - Route defaults use Upstash-backed persistence when `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` or Vercel Marketplace `KV_REST_API_URL` / `KV_REST_API_TOKEN` are present; without env vars they intentionally fall back to process-local memory stores for local tests.
 - Dedicated Upstash KV env vars are configured on `panpanmao/guandan-online-codex` for Production and Preview through Vercel Marketplace. Do not copy scorer database credentials into this project.
-- Full-game route-handler integration is covered locally, production API/SSE smoke is passing, and Vercel Authentication has been disabled for this project. Live Vercel SSE+POST validation with two browser tabs still needs a UI pass.
+- Full-game route-handler integration is covered locally, production API/SSE smoke is passing, two-browser live UI smoke is passing, and Vercel Authentication has been disabled for this project.
 - SSE uses bounded polling over the per-player event log; tune `pollMs`/duration against real Upstash/Vercel latency before production.
 - `api/round/next` is the explicit server transition from `round-end` into the next hand; `api/move` still stops at `round-end` so the UI can show the round summary before advancing.
 - API unit tests may call route defaults directly with Web `Request`; Vercel production calls the same defaults as Node functions through `universalHandler`. Keep `tests/api/nodeAdapter.test.ts` green before deploying API changes.
 - Room rule defaults are now read from stored room records by phase routes when no test override is injected; keep this covered because it is what makes production `cardExchange` / `teamStructure` settings matter after room creation.
-- AI WASM solver, Elo-rated benchmark league, live BotID production verification, real-device orientation validation, live deployed table validation, and deployment milestones remain pending per `docs/plan/PLAN.md`.
+- AI WASM solver, Elo-rated benchmark league, Hard LLM bot, real-device orientation validation, custom-domain cutover, per-slot bot picker, animations, sound, ranked mode, i18n, and replay export remain deferred beyond the playable v1 loop.
 
 ---
 
@@ -143,7 +145,7 @@ Three pre-implementation deliverable layers were complete in commit `eeb6e18149a
 When you (or future Claude session) starts coding:
 
 1. **Read first**: `docs/plan/PLAN.md` from top
-2. **Start P0**: CORE-1 (rules engine), NET-1 (transport scaffold), then live Vercel/Upstash validation. AUTH-2 is canceled for this fork.
+2. **Active implementation path**: maintain the playable v1 loop first: room lifecycle, move validation, phase progression, bot continuation, hidden-state filtering, live SSE/replay, and production deploy validation. AUTH-2 is canceled for this fork.
 3. **Track milestones** via `<MILESTONE>-N` naming convention (see `~/.claude/CLAUDE.md`)
 4. **Verify hidden-state safety** as security-critical PR gate (NET-3 grep test)
 5. **Test acceptance gates** per phase (see PLAN.md phase summary)
@@ -162,7 +164,10 @@ When you (or future Claude session) starts coding:
 
 ## Known limitations / deferred to v1.1+
 
-- **DanLM Master tier AI**: macOS-only `.so` files; Linux port unresolved upstream
+- **Hard / Master AI**: Hard LLM and DanLM Master remain deferred; v1 ships Easy/Medium bots. DanLM still depends on upstream Linux support for macOS-only `.so` files.
+- **Per-slot bot picker**: current waiting room supports host start with room-level bot fill/difficulty; per-slot difficulty/team chips are deferred
+- **Custom domain cutover**: Vercel URL is live; `gdo.ax0x.ai` remains the day-1 target before public launch
+- **Real-device validation**: live desktop browser smoke passes; iPhone/Pixel landscape matrix is still pending
 - **PRC Tencent mirror (DEPLOY-3)**: conditional; only deploy if real-user p95 > 350ms
 - **Animations (POLISH-1)**: deal cascade / play arc / level-up choreography
 - **Sound design (POLISH-2)**: card play sounds / shuffle / chime

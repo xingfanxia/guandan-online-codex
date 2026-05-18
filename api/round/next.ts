@@ -1,10 +1,11 @@
 import { universalHandler } from '../_node.js';
 import { generateDoubleDeck, shuffleDeck, type Card } from '../../lib/game/cards.js';
-import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
+import { runGameplayContinuation } from '../../lib/game/continuation.js';
 import { startNextRoundFlow } from '../../lib/game/roundFlow.js';
 import type { RoundEndState } from '../../lib/game/state.js';
 import type { TeamStructure } from '../../lib/game/tribute.js';
 import type { ExchangeDirection } from '../../lib/game/exchange.js';
+import type { BotTurnOptions } from '../../lib/ai/chain.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import type { EventLog } from '../../lib/realtime/eventLog.js';
 import {
@@ -43,6 +44,7 @@ export interface NextRoundHandlerDeps {
   deadlineAt?: (roundEnd: RoundEndState, rules: RoomRules) => string;
   exchangeDeadlineAt?: (roundEnd: RoundEndState, rules: RoomRules) => string;
   nowMs?: () => number;
+  botChain?: BotTurnOptions | false;
   rateLimiter?: RequestRateLimiter;
 }
 
@@ -105,14 +107,15 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
       teamStructure: deps.teamStructureForRoom?.(body.roomId, state) ?? rules.teamStructure,
     });
 
-    const automated = runAutomaticPhaseActions(flow.state, {
+    const continuation = runGameplayContinuation(flow.state, {
       rules,
       returnDeadlineAt: () => deps.deadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.returnTimeLimitSeconds),
       exchangeDeadlineAt: () => deps.exchangeDeadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.exchangeVoteDurationSeconds),
       ...(deps.exchangeDirectionForRoom ? { exchangeDirection: () => deps.exchangeDirectionForRoom!(body.roomId, state) } : {}),
+      ...(deps.botChain !== undefined ? { botChain: deps.botChain } : {}),
     });
-    const finalState = automated.state;
-    const emittedEvents = [...flow.events, ...automated.events];
+    const finalState = continuation.state;
+    const emittedEvents = [...flow.events, ...continuation.events];
 
     await deps.stateStore.set(body.roomId, finalState);
     const events: ServerEvent[] = emittedEvents.length > 0
@@ -131,6 +134,7 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
       version: finalState.version,
       view: buildClientPayload(body.playerId ?? finalState.players[0]!.id, events[0]!, finalState).view,
       events: events.map((event) => event.type),
+      ...(continuation.botMoves.length > 0 ? { botMoves: continuation.botMoves } : {}),
       eventIds,
     };
     await completeIdempotentOperation(deps.idempotency, idempotencyKey, response, 300, nowMs());

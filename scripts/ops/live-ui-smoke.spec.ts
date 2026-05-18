@@ -1,20 +1,21 @@
 import { expect, test } from '@playwright/test';
 
 const BASE_URL = process.env.GDO_BASE_URL ?? 'https://guandan-online-codex.vercel.app';
+const SMOKE_USER_AGENT = 'vercel-cron/1.0 gdo-live-ui-smoke';
 
 test('two browser contexts can join, start, and sync a live room', async ({ browser }) => {
   const suffix = Date.now().toString(36).slice(-6);
   const hostHandle = `host${suffix}`;
   const guestHandle = `guest${suffix}`;
-  const hostContext = await browser.newContext();
-  const guestContext = await browser.newContext();
+  const hostContext = await browser.newContext({ userAgent: SMOKE_USER_AGENT });
+  const guestContext = await browser.newContext({ userAgent: SMOKE_USER_AGENT });
+  await seedProfile(hostContext, hostHandle);
+  await seedProfile(guestContext, guestHandle);
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
 
   try {
     await host.goto(BASE_URL);
-    await host.getByLabel('玩家名').fill(hostHandle);
-    await host.getByRole('button', { name: '进入牌桌' }).click();
     await host.getByRole('button', { name: '开房' }).click();
     await host.getByRole('button', { name: '创建房间' }).click();
     await expect(host.getByLabel('Waiting room')).toBeVisible();
@@ -23,8 +24,6 @@ test('two browser contexts can join, start, and sync a live room', async ({ brow
     expect(roomCode).toMatch(/^[A-Z0-9]{6}$/);
 
     await guest.goto(BASE_URL);
-    await guest.getByLabel('玩家名').fill(guestHandle);
-    await guest.getByRole('button', { name: '进入牌桌' }).click();
     await guest.getByRole('button', { name: '大厅' }).click();
     await guest.getByLabel(`加入 ${roomCode}`).click();
     await expect(guest.getByLabel('Waiting room')).toBeVisible();
@@ -49,6 +48,12 @@ test('two browser contexts can join, start, and sync a live room', async ({ brow
     await guestContext.close();
   }
 });
+
+async function seedProfile(context: import('@playwright/test').BrowserContext, handle: string): Promise<void> {
+  await context.addInitScript((storedHandle) => {
+    window.localStorage.setItem('gdo:player-profile:v1', JSON.stringify({ handle: storedHandle }));
+  }, handle);
+}
 
 async function tableVersion(page: import('@playwright/test').Page): Promise<number> {
   const text = await page.locator('.gdo-round').textContent();
