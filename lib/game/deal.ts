@@ -1,6 +1,6 @@
-import type { Card } from './cards';
-import type { GameMode } from './mode';
-import type { Player, PlayerId } from './state';
+import type { Card } from './cards.js';
+import type { GameMode } from './mode.js';
+import type { Player, PlayerId } from './state.js';
 
 export interface DealResult {
   hands: Record<PlayerId, Card[]>;

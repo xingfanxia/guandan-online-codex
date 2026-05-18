@@ -1,7 +1,7 @@
-import { MemoryRoomStore } from './lifecycle';
-import { UpstashRoomStore } from './upstashStore';
-import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
-import { UpstashRedis } from '../realtime/upstashRest';
+import { MemoryRoomStore } from './lifecycle.js';
+import { UpstashRoomStore } from './upstashStore.js';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv.js';
+import { UpstashRedis } from '../realtime/upstashRest.js';
 
 export type RoomStoreEnv = UpstashRestEnv;
 

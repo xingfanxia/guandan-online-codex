@@ -1,6 +1,6 @@
-import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
-import { UpstashRedis } from '../realtime/upstashRest';
-import { MemoryPlayerProfileStore, UpstashPlayerProfileStore } from './playerProfile';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv.js';
+import { UpstashRedis } from '../realtime/upstashRest.js';
+import { MemoryPlayerProfileStore, UpstashPlayerProfileStore } from './playerProfile.js';
 
 export type PlayerProfileStoreEnv = UpstashRestEnv;
 

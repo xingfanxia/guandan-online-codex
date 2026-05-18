@@ -1,4 +1,4 @@
-import type { UpstashRedis } from '../realtime/upstashRest';
+import type { UpstashRedis } from '../realtime/upstashRest.js';
 
 type MaybePromise<T> = T | Promise<T>;
 

@@ -1,8 +1,8 @@
-import { defaultRoomStore } from '../../../lib/room/defaultStore';
-import { leaveRoom, type RoomStore } from '../../../lib/room/lifecycle';
-import { authorizeRoomHandle } from '../../../lib/room/playerAuth';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit';
-import type { RoomCodeParams } from './join';
+import { defaultRoomStore } from '../../../lib/room/defaultStore.js';
+import { leaveRoom, type RoomStore } from '../../../lib/room/lifecycle.js';
+import { authorizeRoomHandle } from '../../../lib/room/playerAuth.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit.js';
+import type { RoomCodeParams } from './join.js';
 
 export function createLeaveRoomHandler({ store, rateLimiter }: { store: RoomStore; rateLimiter?: RequestRateLimiter }): (request: Request, params: RoomCodeParams) => Promise<Response> {
   return async function handleLeaveRoom(request: Request, params: RoomCodeParams): Promise<Response> {

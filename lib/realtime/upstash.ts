@@ -1,6 +1,6 @@
-import type { GameState, PlayerId } from '../game/state';
-import type { ServerEvent } from './messages';
-import { buildClientPayload } from './payload';
+import type { GameState, PlayerId } from '../game/state.js';
+import type { ServerEvent } from './messages.js';
+import { buildClientPayload } from './payload.js';
 
 export interface RealtimePublisher {
   publish(channel: string, payload: string): Promise<void>;

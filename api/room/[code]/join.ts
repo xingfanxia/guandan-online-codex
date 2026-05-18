@@ -1,9 +1,9 @@
-import { defaultRoomStore } from '../../../lib/room/defaultStore';
-import { joinRoom, publicRoom, publicRoomPlayer, type RoomStore } from '../../../lib/room/lifecycle';
-import { defaultModerationStore } from '../../../lib/security/defaultModerationStore';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit';
-import { isHandleBanned, type ModerationStore } from '../../../lib/security/reports';
-import { clientIpFromRequest } from '../../../lib/security/requestIp';
+import { defaultRoomStore } from '../../../lib/room/defaultStore.js';
+import { joinRoom, publicRoom, publicRoomPlayer, type RoomStore } from '../../../lib/room/lifecycle.js';
+import { defaultModerationStore } from '../../../lib/security/defaultModerationStore.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit.js';
+import { isHandleBanned, type ModerationStore } from '../../../lib/security/reports.js';
+import { clientIpFromRequest } from '../../../lib/security/requestIp.js';
 
 export interface RoomCodeParams {
   code: string;

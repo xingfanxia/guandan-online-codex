@@ -1,24 +1,24 @@
-import type { Card, LevelRank } from '../../lib/game/cards';
-import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation';
-import type { PlayerId } from '../../lib/game/state';
-import { submitReturnSelection, submitTributeSelection } from '../../lib/game/tributeFlow';
+import type { Card, LevelRank } from '../../lib/game/cards.js';
+import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
+import type { PlayerId } from '../../lib/game/state.js';
+import { submitReturnSelection, submitTributeSelection } from '../../lib/game/tributeFlow.js';
 import {
   validatePlayerReturnCard,
   validatePlayerTributeCard,
   type ReturnCardCap,
-} from '../../lib/game/tribute';
-import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
-import type { EventLog } from '../../lib/realtime/eventLog';
-import { MessageType, type ServerEvent } from '../../lib/realtime/messages';
-import { buildClientPayload } from '../../lib/realtime/payload';
-import { publishEventsToPlayers } from '../../lib/realtime/publish';
-import type { GameStateStore } from '../../lib/realtime/stateStore';
-import type { RealtimePublisher } from '../../lib/realtime/upstash';
-import { defaultRoomStore } from '../../lib/room/defaultStore';
-import type { RoomStore } from '../../lib/room/lifecycle';
-import { authorizeRoomPlayer } from '../../lib/room/playerAuth';
-import { DEFAULT_ROOM_RULES, normalizeRoomRules, type RoomRules } from '../../lib/room/rules';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit';
+} from '../../lib/game/tribute.js';
+import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
+import type { EventLog } from '../../lib/realtime/eventLog.js';
+import { MessageType, type ServerEvent } from '../../lib/realtime/messages.js';
+import { buildClientPayload } from '../../lib/realtime/payload.js';
+import { publishEventsToPlayers } from '../../lib/realtime/publish.js';
+import type { GameStateStore } from '../../lib/realtime/stateStore.js';
+import type { RealtimePublisher } from '../../lib/realtime/upstash.js';
+import { defaultRoomStore } from '../../lib/room/defaultStore.js';
+import type { RoomStore } from '../../lib/room/lifecycle.js';
+import { authorizeRoomPlayer } from '../../lib/room/playerAuth.js';
+import { DEFAULT_ROOM_RULES, normalizeRoomRules, type RoomRules } from '../../lib/room/rules.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
 
 export type TributeSelectKind = 'tribute' | 'return';
 

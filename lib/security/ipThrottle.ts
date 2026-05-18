@@ -1,5 +1,5 @@
-import type { UpstashRedis } from '../realtime/upstashRest';
-import { clientIpFromRequest } from './requestIp';
+import type { UpstashRedis } from '../realtime/upstashRest.js';
+import { clientIpFromRequest } from './requestIp.js';
 
 type MaybePromise<T> = T | Promise<T>;
 

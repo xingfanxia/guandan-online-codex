@@ -1,8 +1,8 @@
-import { generateDoubleDeck, shuffleDeck } from '../game/cards';
-import type { TeamKey } from '../game/mode';
-import type { Player } from '../game/state';
-import { createDeterministicRandom } from './timing';
-import { runBotRound, startBotRound } from './selfPlay';
+import { generateDoubleDeck, shuffleDeck } from '../game/cards.js';
+import type { TeamKey } from '../game/mode.js';
+import type { Player } from '../game/state.js';
+import { createDeterministicRandom } from './timing.js';
+import { runBotRound, startBotRound } from './selfPlay.js';
 
 export interface BotBenchmarkOptions {
   rounds?: number;

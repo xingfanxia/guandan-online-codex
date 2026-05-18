@@ -1,10 +1,10 @@
-import type { Card, LevelRank } from './cards';
-import { dealCards } from './deal';
-import type { ExchangeDirection } from './exchange';
-import { DEFAULT_MODE_RULES, type GameMode, type TeamKey } from './mode';
-import type { TributeObligation } from './tribute';
-import { calculateUpgrade } from './upgrade';
-import { applyRoundProgression } from './gameEnd';
+import type { Card, LevelRank } from './cards.js';
+import { dealCards } from './deal.js';
+import type { ExchangeDirection } from './exchange.js';
+import { DEFAULT_MODE_RULES, type GameMode, type TeamKey } from './mode.js';
+import type { TributeObligation } from './tribute.js';
+import { calculateUpgrade } from './upgrade.js';
+import { applyRoundProgression } from './gameEnd.js';
 
 export interface LevelProgression {
   levels: Record<TeamKey, LevelRank>;
@@ -31,7 +31,7 @@ export interface Player {
 export interface PlayedCards {
   playerId: PlayerId;
   cards: Card[];
-  pattern: import('./patterns').Pattern;
+  pattern: import('./patterns.js').Pattern;
 }
 
 export interface TrickState {

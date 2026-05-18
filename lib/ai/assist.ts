@@ -1,7 +1,7 @@
-import { isHeartLevelWildcard, rankValue, type Card, type LevelRank } from '../game/cards';
-import type { PlayerId, PlayingState } from '../game/state';
-import { mediumBotMove } from './bots/medium';
-import { buildPlayerView, type LegalMove } from './engine';
+import { isHeartLevelWildcard, rankValue, type Card, type LevelRank } from '../game/cards.js';
+import type { PlayerId, PlayingState } from '../game/state.js';
+import { mediumBotMove } from './bots/medium.js';
+import { buildPlayerView, type LegalMove } from './engine.js';
 
 export interface SuggestedMove {
   move: LegalMove;

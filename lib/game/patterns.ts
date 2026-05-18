@@ -8,8 +8,8 @@ import {
   type LevelRank,
   type NaturalRank,
   type Rank,
-} from './cards';
-import { bombPower, isBombKind } from './bomb';
+} from './cards.js';
+import { bombPower, isBombKind } from './bomb.js';
 
 export type PatternKind =
   | 'single'

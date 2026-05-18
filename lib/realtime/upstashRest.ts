@@ -1,10 +1,10 @@
-import type { GameState, PlayerId } from '../game/state';
-import type { EventLog, LoggedEvent } from './eventLog';
-import { playerEventStream } from './eventLog';
-import type { IdempotencyRecord, IdempotencyStore } from './idempotency';
-import type { ClientPayload } from './payload';
-import type { GameStateStore } from './stateStore';
-import type { RealtimePublisher } from './upstash';
+import type { GameState, PlayerId } from '../game/state.js';
+import type { EventLog, LoggedEvent } from './eventLog.js';
+import { playerEventStream } from './eventLog.js';
+import type { IdempotencyRecord, IdempotencyStore } from './idempotency.js';
+import type { ClientPayload } from './payload.js';
+import type { GameStateStore } from './stateStore.js';
+import type { RealtimePublisher } from './upstash.js';
 
 type RedisArgument = string | number;
 

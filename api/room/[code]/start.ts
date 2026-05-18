@@ -1,16 +1,16 @@
-import { generateDoubleDeck, shuffleDeck, type Card } from '../../../lib/game/cards';
-import { defaultRealtimePersistence } from '../../../lib/realtime/defaults';
-import type { EventLog } from '../../../lib/realtime/eventLog';
-import { MessageType, type ServerEvent } from '../../../lib/realtime/messages';
-import { buildClientPayload } from '../../../lib/realtime/payload';
-import { publishEventsToPlayers } from '../../../lib/realtime/publish';
-import type { GameStateStore } from '../../../lib/realtime/stateStore';
-import type { RealtimePublisher } from '../../../lib/realtime/upstash';
-import { defaultRoomStore } from '../../../lib/room/defaultStore';
-import { markRoomStarted, type RoomStore } from '../../../lib/room/lifecycle';
-import { startRoomGame } from '../../../lib/room/start';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit';
-import type { RoomCodeParams } from './join';
+import { generateDoubleDeck, shuffleDeck, type Card } from '../../../lib/game/cards.js';
+import { defaultRealtimePersistence } from '../../../lib/realtime/defaults.js';
+import type { EventLog } from '../../../lib/realtime/eventLog.js';
+import { MessageType, type ServerEvent } from '../../../lib/realtime/messages.js';
+import { buildClientPayload } from '../../../lib/realtime/payload.js';
+import { publishEventsToPlayers } from '../../../lib/realtime/publish.js';
+import type { GameStateStore } from '../../../lib/realtime/stateStore.js';
+import type { RealtimePublisher } from '../../../lib/realtime/upstash.js';
+import { defaultRoomStore } from '../../../lib/room/defaultStore.js';
+import { markRoomStarted, type RoomStore } from '../../../lib/room/lifecycle.js';
+import { startRoomGame } from '../../../lib/room/start.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit.js';
+import type { RoomCodeParams } from './join.js';
 
 export interface StartRoomDeps {
   roomStore: RoomStore;

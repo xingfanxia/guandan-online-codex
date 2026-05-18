@@ -1,9 +1,9 @@
-import type { Card, LevelRank } from '../game/cards';
-import { dealCards } from '../game/deal';
-import type { GameMode } from '../game/mode';
-import { createPlayers, type GameState, type Player, type PlayingState } from '../game/state';
-import type { ServerEvent } from '../realtime/messages';
-import { runBotTurns, type BotTurnRecord } from './chain';
+import type { Card, LevelRank } from '../game/cards.js';
+import { dealCards } from '../game/deal.js';
+import type { GameMode } from '../game/mode.js';
+import { createPlayers, type GameState, type Player, type PlayingState } from '../game/state.js';
+import type { ServerEvent } from '../realtime/messages.js';
+import { runBotTurns, type BotTurnRecord } from './chain.js';
 
 export interface StartBotRoundOptions {
   mode?: GameMode;

@@ -1,4 +1,4 @@
-import type { GameState } from '../game/state';
+import type { GameState } from '../game/state.js';
 
 type MaybePromise<T> = T | Promise<T>;
 

@@ -1,6 +1,6 @@
-import { defaultModerationStore } from '../../lib/security/defaultModerationStore';
-import { setHandleBan, type ModerationStore } from '../../lib/security/reports';
-import { enforceAdminToken } from './_auth';
+import { defaultModerationStore } from '../../lib/security/defaultModerationStore.js';
+import { setHandleBan, type ModerationStore } from '../../lib/security/reports.js';
+import { enforceAdminToken } from './_auth.js';
 
 export interface AdminBanDeps {
   store: ModerationStore;

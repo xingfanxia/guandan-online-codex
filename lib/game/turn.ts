@@ -1,5 +1,5 @@
-import type { Player, PlayerId } from './state';
-import type { TeamKey } from './mode';
+import type { Player, PlayerId } from './state.js';
+import type { TeamKey } from './mode.js';
 
 export function teamOf(players: readonly Player[], playerId: PlayerId): TeamKey | undefined {
   return players.find((player) => player.id === playerId)?.team;

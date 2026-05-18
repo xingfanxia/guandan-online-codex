@@ -1,6 +1,6 @@
-import { defaultRoomStore } from '../../lib/room/defaultStore';
-import { listPublicRooms, type RoomStore } from '../../lib/room/lifecycle';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit';
+import { defaultRoomStore } from '../../lib/room/defaultStore.js';
+import { listPublicRooms, type RoomStore } from '../../lib/room/lifecycle.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
 
 export interface ListRoomDeps {
   store: RoomStore;

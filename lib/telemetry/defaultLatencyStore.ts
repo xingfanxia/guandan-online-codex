@@ -1,6 +1,6 @@
-import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
-import { UpstashRedis } from '../realtime/upstashRest';
-import { MemoryLatencyStore, UpstashLatencyStore } from './latency';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv.js';
+import { UpstashRedis } from '../realtime/upstashRest.js';
+import { MemoryLatencyStore, UpstashLatencyStore } from './latency.js';
 
 export type LatencyStoreEnv = UpstashRestEnv;
 

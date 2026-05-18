@@ -1,9 +1,9 @@
-import { runBotTurns } from '../lib/ai/chain';
-import { defaultRealtimePersistence } from '../lib/realtime/defaults';
-import type { EventLog } from '../lib/realtime/eventLog';
-import { publishEventsToPlayers } from '../lib/realtime/publish';
-import type { GameStateStore } from '../lib/realtime/stateStore';
-import type { RealtimePublisher } from '../lib/realtime/upstash';
+import { runBotTurns } from '../lib/ai/chain.js';
+import { defaultRealtimePersistence } from '../lib/realtime/defaults.js';
+import type { EventLog } from '../lib/realtime/eventLog.js';
+import { publishEventsToPlayers } from '../lib/realtime/publish.js';
+import type { GameStateStore } from '../lib/realtime/stateStore.js';
+import type { RealtimePublisher } from '../lib/realtime/upstash.js';
 
 export interface TickRequestBody {
   roomId: string;

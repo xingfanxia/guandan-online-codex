@@ -1,6 +1,6 @@
-import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
-import { UpstashRedis } from '../realtime/upstashRest';
-import { MemoryModerationStore, UpstashModerationStore } from './reports';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv.js';
+import { UpstashRedis } from '../realtime/upstashRest.js';
+import { MemoryModerationStore, UpstashModerationStore } from './reports.js';
 
 export type ModerationStoreEnv = UpstashRestEnv;
 

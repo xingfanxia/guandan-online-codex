@@ -1,7 +1,7 @@
-import { defaultRoomStore } from '../../../lib/room/defaultStore';
-import { kickRoomPlayer, publicRoom, type RoomStore } from '../../../lib/room/lifecycle';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit';
-import type { RoomCodeParams } from './join';
+import { defaultRoomStore } from '../../../lib/room/defaultStore.js';
+import { kickRoomPlayer, publicRoom, type RoomStore } from '../../../lib/room/lifecycle.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit.js';
+import type { RoomCodeParams } from './join.js';
 
 export function createKickRoomHandler({ store, rateLimiter }: { store: RoomStore; rateLimiter?: RequestRateLimiter }): (request: Request, params: RoomCodeParams) => Promise<Response> {
   return async function handleKickRoom(request: Request, params: RoomCodeParams): Promise<Response> {

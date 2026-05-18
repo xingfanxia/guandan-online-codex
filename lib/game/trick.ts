@@ -1,5 +1,5 @@
-import type { PlayerId, PlayingState } from './state';
-import { nextActivePlayer, partnerOf } from './turn';
+import type { PlayerId, PlayingState } from './state.js';
+import { nextActivePlayer, partnerOf } from './turn.js';
 
 export function activePlayerIds(state: PlayingState): Set<PlayerId> {
   return new Set(

@@ -1,8 +1,8 @@
-import type { GameState, PlayerId } from '../game/state';
-import type { EventLog, LoggedEvent } from './eventLog';
-import type { ServerEvent } from './messages';
-import { buildClientPayload } from './payload';
-import { playerChannel, type RealtimePublisher } from './upstash';
+import type { GameState, PlayerId } from '../game/state.js';
+import type { EventLog, LoggedEvent } from './eventLog.js';
+import type { ServerEvent } from './messages.js';
+import { buildClientPayload } from './payload.js';
+import { playerChannel, type RealtimePublisher } from './upstash.js';
 
 export interface PublishDeps {
   eventLog: EventLog;

@@ -1,5 +1,5 @@
-import { cardKey, naturalRankValue, type Card, type Rank } from './cards';
-import type { PlayerId } from './state';
+import { cardKey, naturalRankValue, type Card, type Rank } from './cards.js';
+import type { PlayerId } from './state.js';
 
 export type ExchangeVoteChoice = 'yes' | 'no';
 export type ExchangeVoteThreshold = 'majority' | 'unanimous';

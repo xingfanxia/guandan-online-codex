@@ -1,11 +1,11 @@
-import { rankValue } from '../../game/cards';
-import { isBombKind } from '../../game/bomb';
+import { rankValue } from '../../game/cards.js';
+import { isBombKind } from '../../game/bomb.js';
 import {
   enumerateLegalMoves,
   moveSortValue,
   type LegalMove,
   type PlayerView,
-} from '../engine';
+} from '../engine.js';
 
 export interface EasyBotOptions {
   random?: () => number;

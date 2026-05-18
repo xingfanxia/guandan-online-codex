@@ -1,17 +1,17 @@
-import type { Card } from './cards';
-import { dealCards } from './deal';
-import type { TeamStructure } from './tribute';
-import { checkAntiTribute, computeTributePlan } from './tribute';
+import type { Card } from './cards.js';
+import { dealCards } from './deal.js';
+import type { TeamStructure } from './tribute.js';
+import { checkAntiTribute, computeTributePlan } from './tribute.js';
 import type {
   ExchangeVotePendingState,
   GameState,
   PlayingState,
   RoundEndState,
   TributePendingState,
-} from './state';
-import type { ServerEvent } from '../realtime/messages';
-import { MessageType } from '../realtime/messages';
-import type { RoomRules } from '../room/rules';
+} from './state.js';
+import type { ServerEvent } from '../realtime/messages.js';
+import { MessageType } from '../realtime/messages.js';
+import type { RoomRules } from '../room/rules.js';
 
 export interface StartNextRoundFlowInput {
   roundEnd: RoundEndState;

@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { normalizeHandle, validateHandle } from '../auth/handle';
-import type { PlayerConnectionStatus } from '../game/state';
-import type { GameMode } from '../game/mode';
-import { generateRoomCode } from './code';
-import { normalizeRoomVisibility, type RoomVisibility } from './access';
-import { sameRoomIpWarning, type SameRoomIpWarning } from './ipWarning';
-import { normalizeRoomRules, type RoomRules } from './rules';
+import { normalizeHandle, validateHandle } from '../auth/handle.js';
+import type { PlayerConnectionStatus } from '../game/state.js';
+import type { GameMode } from '../game/mode.js';
+import { generateRoomCode } from './code.js';
+import { normalizeRoomVisibility, type RoomVisibility } from './access.js';
+import { sameRoomIpWarning, type SameRoomIpWarning } from './ipWarning.js';
+import { normalizeRoomRules, type RoomRules } from './rules.js';
 
 type MaybePromise<T> = T | Promise<T>;
 

@@ -1,7 +1,7 @@
-import type { Card } from '../game/cards';
-import type { PlayerId } from '../game/state';
-import type { TeamKey } from '../game/mode';
-import type { ExchangeDirection } from '../game/exchange';
+import type { Card } from '../game/cards.js';
+import type { PlayerId } from '../game/state.js';
+import type { TeamKey } from '../game/mode.js';
+import type { ExchangeDirection } from '../game/exchange.js';
 
 export enum MessageType {
   RoomJoined = 'room_joined',

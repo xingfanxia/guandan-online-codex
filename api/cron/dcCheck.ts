@@ -1,12 +1,12 @@
-import { runBotTurns } from '../../lib/ai/chain';
-import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
-import type { EventLog } from '../../lib/realtime/eventLog';
-import { publishEventsToPlayers } from '../../lib/realtime/publish';
-import type { GameStateStore } from '../../lib/realtime/stateStore';
-import type { RealtimePublisher } from '../../lib/realtime/upstash';
-import { applyBotTakeovers } from '../../lib/room/botTakeover';
-import { defaultRoomStore } from '../../lib/room/defaultStore';
-import type { RoomStore } from '../../lib/room/lifecycle';
+import { runBotTurns } from '../../lib/ai/chain.js';
+import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
+import type { EventLog } from '../../lib/realtime/eventLog.js';
+import { publishEventsToPlayers } from '../../lib/realtime/publish.js';
+import type { GameStateStore } from '../../lib/realtime/stateStore.js';
+import type { RealtimePublisher } from '../../lib/realtime/upstash.js';
+import { applyBotTakeovers } from '../../lib/room/botTakeover.js';
+import { defaultRoomStore } from '../../lib/room/defaultStore.js';
+import type { RoomStore } from '../../lib/room/lifecycle.js';
 
 export interface DcCheckHandlerDeps {
   roomStore: RoomStore;

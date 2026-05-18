@@ -1,9 +1,9 @@
-import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
-import type { EventLog, LoggedEvent } from '../../lib/realtime/eventLog';
-import { defaultRoomStore } from '../../lib/room/defaultStore';
-import { markRoomPlayerSeen } from '../../lib/room/dcDetection';
-import type { RoomStore } from '../../lib/room/lifecycle';
-import { authorizeRoomPlayer } from '../../lib/room/playerAuth';
+import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
+import type { EventLog, LoggedEvent } from '../../lib/realtime/eventLog.js';
+import { defaultRoomStore } from '../../lib/room/defaultStore.js';
+import { markRoomPlayerSeen } from '../../lib/room/dcDetection.js';
+import type { RoomStore } from '../../lib/room/lifecycle.js';
+import { authorizeRoomPlayer } from '../../lib/room/playerAuth.js';
 
 export interface PollRouteParams {
   roomId: string;

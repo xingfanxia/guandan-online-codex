@@ -1,4 +1,4 @@
-import type { Card } from './cards';
+import type { Card } from './cards.js';
 import type {
   ExchangeVotePendingState,
   GameState,
@@ -6,14 +6,14 @@ import type {
   PlayingState,
   ReturnPendingState,
   TributePendingState,
-} from './state';
+} from './state.js';
 import {
   applyTributeExchange,
   validatePlayerReturnCard,
   validatePlayerTributeCard,
-} from './tribute';
-import { MessageType, type ServerEvent } from '../realtime/messages';
-import type { RoomRules } from '../room/rules';
+} from './tribute.js';
+import { MessageType, type ServerEvent } from '../realtime/messages.js';
+import type { RoomRules } from '../room/rules.js';
 
 export type TributeFlowError =
   | 'ERR_NOT_TRIBUTE_PENDING'

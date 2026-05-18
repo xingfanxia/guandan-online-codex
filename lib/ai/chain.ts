@@ -1,10 +1,10 @@
-import { applyMove, type MoveCommand } from '../game/move';
-import type { Card } from '../game/cards';
-import type { GameState, PlayerId, PlayingState } from '../game/state';
-import { MessageType, type ServerEvent } from '../realtime/messages';
-import { easyBotMove } from './bots/easy';
-import { mediumBotMove } from './bots/medium';
-import { buildPlayerView, type LegalMove } from './engine';
+import { applyMove, type MoveCommand } from '../game/move.js';
+import type { Card } from '../game/cards.js';
+import type { GameState, PlayerId, PlayingState } from '../game/state.js';
+import { MessageType, type ServerEvent } from '../realtime/messages.js';
+import { easyBotMove } from './bots/easy.js';
+import { mediumBotMove } from './bots/medium.js';
+import { buildPlayerView, type LegalMove } from './engine.js';
 
 export interface BotTurnOptions {
   maxMoves?: number;

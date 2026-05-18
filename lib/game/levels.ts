@@ -1,5 +1,5 @@
-import { maxRankForMode, type GameMode, type TeamKey } from './mode';
-import type { LevelRank } from './cards';
+import { maxRankForMode, type GameMode, type TeamKey } from './mode.js';
+import type { LevelRank } from './cards.js';
 
 export interface ALevelInput {
   mode: GameMode;

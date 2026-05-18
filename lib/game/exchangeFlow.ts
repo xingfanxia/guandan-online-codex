@@ -1,20 +1,20 @@
-import type { Card } from './cards';
+import type { Card } from './cards.js';
 import {
   applyCardExchange,
   resolveExchangeVote,
   validateExchangeSelection,
   type ExchangeDirection,
   type ExchangeVoteChoice,
-} from './exchange';
+} from './exchange.js';
 import type {
   ExchangeSelectPendingState,
   ExchangeVotePendingState,
   GameState,
   PlayerId,
   PlayingState,
-} from './state';
-import { MessageType, type ServerEvent } from '../realtime/messages';
-import type { RoomRules } from '../room/rules';
+} from './state.js';
+import { MessageType, type ServerEvent } from '../realtime/messages.js';
+import type { RoomRules } from '../room/rules.js';
 
 export type ExchangeFlowError =
   | 'ERR_NOT_EXCHANGE_VOTE_PENDING'

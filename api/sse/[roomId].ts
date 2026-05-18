@@ -1,11 +1,11 @@
-import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
-import { MemoryEventLog, type EventLog } from '../../lib/realtime/eventLog';
-import { MessageType } from '../../lib/realtime/messages';
-import { serializeSseComment, serializeSseEvent } from '../../lib/realtime/sse';
-import { defaultRoomStore } from '../../lib/room/defaultStore';
-import { markRoomPlayerSeen } from '../../lib/room/dcDetection';
-import { authorizeRoomPlayer } from '../../lib/room/playerAuth';
-import type { RoomStore } from '../../lib/room/lifecycle';
+import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
+import { MemoryEventLog, type EventLog } from '../../lib/realtime/eventLog.js';
+import { MessageType } from '../../lib/realtime/messages.js';
+import { serializeSseComment, serializeSseEvent } from '../../lib/realtime/sse.js';
+import { defaultRoomStore } from '../../lib/room/defaultStore.js';
+import { markRoomPlayerSeen } from '../../lib/room/dcDetection.js';
+import { authorizeRoomPlayer } from '../../lib/room/playerAuth.js';
+import type { RoomStore } from '../../lib/room/lifecycle.js';
 
 export interface SseRouteParams {
   roomId: string;

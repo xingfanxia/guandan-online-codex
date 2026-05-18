@@ -1,6 +1,6 @@
-import { defaultLatencyStore } from '../../lib/telemetry/defaultLatencyStore';
-import { recordLatencySample, type LatencyStore } from '../../lib/telemetry/latency';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit';
+import { defaultLatencyStore } from '../../lib/telemetry/defaultLatencyStore.js';
+import { recordLatencySample, type LatencyStore } from '../../lib/telemetry/latency.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
 
 export interface LatencyTelemetryDeps {
   store: LatencyStore;

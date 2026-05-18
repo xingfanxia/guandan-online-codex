@@ -1,5 +1,5 @@
-import type { PlayerId } from '../game/state';
-import type { RoomRecord, RoomStore } from './lifecycle';
+import type { PlayerId } from '../game/state.js';
+import type { RoomRecord, RoomStore } from './lifecycle.js';
 
 export type MarkSeenResult =
   | { ok: true; room: RoomRecord }

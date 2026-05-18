@@ -1,6 +1,6 @@
-import { defaultLatencyStore } from '../../lib/telemetry/defaultLatencyStore';
-import { aggregateLatency, type LatencyStore } from '../../lib/telemetry/latency';
-import { enforceAdminToken } from './_auth';
+import { defaultLatencyStore } from '../../lib/telemetry/defaultLatencyStore.js';
+import { aggregateLatency, type LatencyStore } from '../../lib/telemetry/latency.js';
+import { enforceAdminToken } from './_auth.js';
 
 export interface AdminLatencyDeps {
   store: LatencyStore;

@@ -1,9 +1,9 @@
-import { MemoryEventLog, type EventLog } from './eventLog';
-import { MemoryIdempotencyStore, type IdempotencyStore } from './idempotency';
-import { MemoryGameStateStore, type GameStateStore } from './stateStore';
-import { resolveUpstashRestConfig, type UpstashRestEnv } from './upstashEnv';
-import { UpstashEventLog, UpstashGameStateStore, UpstashIdempotencyStore, UpstashPublisher, UpstashRedis } from './upstashRest';
-import type { RealtimePublisher } from './upstash';
+import { MemoryEventLog, type EventLog } from './eventLog.js';
+import { MemoryIdempotencyStore, type IdempotencyStore } from './idempotency.js';
+import { MemoryGameStateStore, type GameStateStore } from './stateStore.js';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from './upstashEnv.js';
+import { UpstashEventLog, UpstashGameStateStore, UpstashIdempotencyStore, UpstashPublisher, UpstashRedis } from './upstashRest.js';
+import type { RealtimePublisher } from './upstash.js';
 
 export type RealtimeEnv = UpstashRestEnv;
 

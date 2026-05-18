@@ -1,8 +1,8 @@
-import type { Card } from '../game/cards';
-import { dealCards } from '../game/deal';
-import { createDefaultProgression, createPlayers, type Player, type PlayingState } from '../game/state';
-import { botIdentityForSeat } from '../ai/names';
-import type { RoomRecord } from './lifecycle';
+import type { Card } from '../game/cards.js';
+import { dealCards } from '../game/deal.js';
+import { createDefaultProgression, createPlayers, type Player, type PlayingState } from '../game/state.js';
+import { botIdentityForSeat } from '../ai/names.js';
+import type { RoomRecord } from './lifecycle.js';
 
 export interface StartRoomGameOptions {
   deck: readonly Card[];

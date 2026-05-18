@@ -1,4 +1,4 @@
-import type { Player } from '../game/state';
+import type { Player } from '../game/state.js';
 
 type BotDifficulty = NonNullable<Player['botDifficulty']>;
 

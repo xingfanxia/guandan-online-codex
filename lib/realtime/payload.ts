@@ -1,10 +1,10 @@
-import { type Card } from '../game/cards';
-import type { ExchangeVoteChoice } from '../game/exchange';
-import { type GameState, type Placement, type PlayerId } from '../game/state';
-import type { LevelRank } from '../game/cards';
-import type { TeamKey } from '../game/mode';
-import type { TributeObligation } from '../game/tribute';
-import { type ServerEvent } from './messages';
+import { type Card } from '../game/cards.js';
+import type { ExchangeVoteChoice } from '../game/exchange.js';
+import { type GameState, type Placement, type PlayerId } from '../game/state.js';
+import type { LevelRank } from '../game/cards.js';
+import type { TeamKey } from '../game/mode.js';
+import type { TributeObligation } from '../game/tribute.js';
+import { type ServerEvent } from './messages.js';
 
 export interface PublicTrickView {
   leader?: PlayerId;

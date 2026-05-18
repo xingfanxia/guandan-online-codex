@@ -1,4 +1,4 @@
-import type { Pattern } from './patterns';
+import type { Pattern } from './patterns.js';
 
 export function isBombKind(pattern: Pattern): boolean {
   return pattern.kind === 'bomb' || pattern.kind === 'straightFlush' || pattern.kind === 'jokerBomb';

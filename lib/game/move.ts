@@ -1,15 +1,15 @@
-import { cardKey, type Card } from './cards';
-import { expectedTeamRankCount, maxRankForMode } from './mode';
-import { analyzeHand, canBeat } from './patterns';
+import { cardKey, type Card } from './cards.js';
+import { expectedTeamRankCount, maxRankForMode } from './mode.js';
+import { analyzeHand, canBeat } from './patterns.js';
 import {
   buildRoundEndState,
   type GameState,
   type Placement,
   type PlayerId,
   type PlayingState,
-} from './state';
-import { activePlayerIds, nextLeaderAfterCompletedTrick, trickIsComplete } from './trick';
-import { nextActivePlayer } from './turn';
+} from './state.js';
+import { activePlayerIds, nextLeaderAfterCompletedTrick, trickIsComplete } from './trick.js';
+import { nextActivePlayer } from './turn.js';
 
 export type MoveError =
   | 'ERR_NOT_PLAYING'

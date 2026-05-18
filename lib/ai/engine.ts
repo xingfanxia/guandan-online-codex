@@ -8,10 +8,10 @@ import {
   type LevelRank,
   type NaturalRank,
   type Rank,
-} from '../game/cards';
-import type { TeamKey } from '../game/mode';
-import { canBeat, analyzeHand, type Pattern } from '../game/patterns';
-import type { PlayedCards, Player, PlayerId, PlayingState } from '../game/state';
+} from '../game/cards.js';
+import type { TeamKey } from '../game/mode.js';
+import { canBeat, analyzeHand, type Pattern } from '../game/patterns.js';
+import type { PlayedCards, Player, PlayerId, PlayingState } from '../game/state.js';
 
 export type LegalMove =
   | { type: 'pass' }

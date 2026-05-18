@@ -1,4 +1,4 @@
-import type { MessageType } from './messages';
+import type { MessageType } from './messages.js';
 
 export interface SseEvent {
   id?: string;

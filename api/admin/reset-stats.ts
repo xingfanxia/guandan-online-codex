@@ -1,6 +1,6 @@
-import { defaultModerationStore } from '../../lib/security/defaultModerationStore';
-import { resetPlayerStats, type ModerationStore } from '../../lib/security/reports';
-import { enforceAdminToken } from './_auth';
+import { defaultModerationStore } from '../../lib/security/defaultModerationStore.js';
+import { resetPlayerStats, type ModerationStore } from '../../lib/security/reports.js';
+import { enforceAdminToken } from './_auth.js';
 
 export interface AdminResetStatsDeps {
   store: ModerationStore;

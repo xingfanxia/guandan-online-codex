@@ -1,13 +1,13 @@
-import { defaultPlayerProfileStore } from '../../lib/auth/defaultPlayerProfileStore';
-import { normalizeHandle, validateHandle } from '../../lib/auth/handle';
-import type { PlayerProfileStore } from '../../lib/auth/playerProfile';
-import { defaultIpThrottleStore } from '../../lib/security/defaultIpThrottleStore';
+import { defaultPlayerProfileStore } from '../../lib/auth/defaultPlayerProfileStore.js';
+import { normalizeHandle, validateHandle } from '../../lib/auth/handle.js';
+import type { PlayerProfileStore } from '../../lib/auth/playerProfile.js';
+import { defaultIpThrottleStore } from '../../lib/security/defaultIpThrottleStore.js';
 import {
   checkIpThrottle,
   ipThrottleResponse,
   type IpThrottleStore,
-} from '../../lib/security/ipThrottle';
-import { clientIpFromRequest } from '../../lib/security/requestIp';
+} from '../../lib/security/ipThrottle.js';
+import { clientIpFromRequest } from '../../lib/security/requestIp.js';
 
 export interface CreateHandleDeps {
   profiles: PlayerProfileStore;

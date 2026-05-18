@@ -1,9 +1,9 @@
-import type { LevelRank } from './cards';
-import { evaluateALevel } from './levels';
-import type { GameMode, TeamKey } from './mode';
-import { computeRoundEnd } from './roundEnd';
-import type { Placement } from './state';
-import { nextLevel } from './upgrade';
+import type { LevelRank } from './cards.js';
+import { evaluateALevel } from './levels.js';
+import type { GameMode, TeamKey } from './mode.js';
+import { computeRoundEnd } from './roundEnd.js';
+import type { Placement } from './state.js';
+import { nextLevel } from './upgrade.js';
 
 export interface RoundProgressionInput {
   mode: GameMode;

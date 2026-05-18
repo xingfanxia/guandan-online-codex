@@ -1,11 +1,11 @@
-import { suggestMove } from '../../lib/ai/assist';
-import type { LegalMove } from '../../lib/ai/engine';
-import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
-import type { GameStateStore } from '../../lib/realtime/stateStore';
-import { defaultRoomStore } from '../../lib/room/defaultStore';
-import type { RoomStore } from '../../lib/room/lifecycle';
-import { authorizeRoomPlayer } from '../../lib/room/playerAuth';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit';
+import { suggestMove } from '../../lib/ai/assist.js';
+import type { LegalMove } from '../../lib/ai/engine.js';
+import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
+import type { GameStateStore } from '../../lib/realtime/stateStore.js';
+import { defaultRoomStore } from '../../lib/room/defaultStore.js';
+import type { RoomStore } from '../../lib/room/lifecycle.js';
+import { authorizeRoomPlayer } from '../../lib/room/playerAuth.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
 
 export interface SuggestMoveBody {
   roomId: string;

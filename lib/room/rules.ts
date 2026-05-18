@@ -1,5 +1,5 @@
-import type { AntiTributeCondition, ReturnCardCap } from '../game/tribute';
-import type { ExchangeVoteThreshold } from '../game/exchange';
+import type { AntiTributeCondition, ReturnCardCap } from '../game/tribute.js';
+import type { ExchangeVoteThreshold } from '../game/exchange.js';
 
 export type TributeSelection = 'auto_pick' | 'player_picks';
 export type ReturnSelection = 'player_picks' | 'auto_pick_lowest';

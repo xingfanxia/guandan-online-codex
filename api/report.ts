@@ -1,7 +1,7 @@
-import { defaultModerationStore } from '../lib/security/defaultModerationStore';
-import { enforceBotId } from '../lib/security/botId';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../lib/security/rateLimit';
-import { submitReport, type ModerationStore, type SubmitReportInput } from '../lib/security/reports';
+import { defaultModerationStore } from '../lib/security/defaultModerationStore.js';
+import { enforceBotId } from '../lib/security/botId.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../lib/security/rateLimit.js';
+import { submitReport, type ModerationStore, type SubmitReportInput } from '../lib/security/reports.js';
 
 export interface ReportHandlerDeps {
   store: ModerationStore;

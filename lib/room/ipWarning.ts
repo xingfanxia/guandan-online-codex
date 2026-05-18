@@ -1,4 +1,4 @@
-import type { RoomRecord } from './lifecycle';
+import type { RoomRecord } from './lifecycle.js';
 
 export interface SameRoomIpWarning {
   type: 'same_ip';

@@ -1,4 +1,4 @@
-import { normalizeHandle, validateHandle } from '../auth/handle';
+import { normalizeHandle, validateHandle } from '../auth/handle.js';
 
 type MaybePromise<T> = T | Promise<T>;
 

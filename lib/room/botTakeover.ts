@@ -1,6 +1,6 @@
-import { MessageType, type ServerEvent } from '../realtime/messages';
-import type { GameState, Player, PlayerConnectionStatus, PlayerId } from '../game/state';
-import type { RoomPlayer, RoomRecord } from './lifecycle';
+import { MessageType, type ServerEvent } from '../realtime/messages.js';
+import type { GameState, Player, PlayerConnectionStatus, PlayerId } from '../game/state.js';
+import type { RoomPlayer, RoomRecord } from './lifecycle.js';
 
 export const DEFAULT_DISCONNECT_TIMEOUT_MS = 60_000;
 export const DEFAULT_RECLAIM_WINDOW_MS = 300_000;

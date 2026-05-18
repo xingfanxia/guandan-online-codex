@@ -1,6 +1,6 @@
-import { DEFAULT_MODE_RULES, type GameMode, type TeamKey } from './mode';
-import type { Placement } from './state';
-import { calculateUpgrade } from './upgrade';
+import { DEFAULT_MODE_RULES, type GameMode, type TeamKey } from './mode.js';
+import type { Placement } from './state.js';
+import { calculateUpgrade } from './upgrade.js';
 
 export interface RoundEndResult {
   winnerTeam: TeamKey;

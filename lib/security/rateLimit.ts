@@ -1,6 +1,6 @@
-import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv';
-import { UpstashRedis } from '../realtime/upstashRest';
-import { clientIpFromRequest } from './requestIp';
+import { resolveUpstashRestConfig, type UpstashRestEnv } from '../realtime/upstashEnv.js';
+import { UpstashRedis } from '../realtime/upstashRest.js';
+import { clientIpFromRequest } from './requestIp.js';
 
 export interface RateLimitResult {
   allowed: boolean;

@@ -1,26 +1,26 @@
-import { applyMove, type MoveCommand } from '../lib/game/move';
-import type { Card } from '../lib/game/cards';
-import type { PlayerId } from '../lib/game/state';
-import { runBotTurns, type BotTurnOptions } from '../lib/ai/chain';
-import { type EventLog } from '../lib/realtime/eventLog';
+import { applyMove, type MoveCommand } from '../lib/game/move.js';
+import type { Card } from '../lib/game/cards.js';
+import type { PlayerId } from '../lib/game/state.js';
+import { runBotTurns, type BotTurnOptions } from '../lib/ai/chain.js';
+import { type EventLog } from '../lib/realtime/eventLog.js';
 import {
   completeIdempotentOperation,
   startIdempotentOperation,
   type IdempotencyStore,
-} from '../lib/realtime/idempotency';
-import { defaultRealtimePersistence } from '../lib/realtime/defaults';
-import { MessageType, type ServerEvent } from '../lib/realtime/messages';
-import { buildClientPayload } from '../lib/realtime/payload';
-import { publishEventsToPlayers } from '../lib/realtime/publish';
-import { type GameStateStore } from '../lib/realtime/stateStore';
-import { type RealtimePublisher } from '../lib/realtime/upstash';
-import { defaultRoomStore } from '../lib/room/defaultStore';
-import type { RoomStore } from '../lib/room/lifecycle';
-import { authorizeRoomPlayer } from '../lib/room/playerAuth';
-import { enforceBotId } from '../lib/security/botId';
-import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../lib/security/rateLimit';
+} from '../lib/realtime/idempotency.js';
+import { defaultRealtimePersistence } from '../lib/realtime/defaults.js';
+import { MessageType, type ServerEvent } from '../lib/realtime/messages.js';
+import { buildClientPayload } from '../lib/realtime/payload.js';
+import { publishEventsToPlayers } from '../lib/realtime/publish.js';
+import { type GameStateStore } from '../lib/realtime/stateStore.js';
+import { type RealtimePublisher } from '../lib/realtime/upstash.js';
+import { defaultRoomStore } from '../lib/room/defaultStore.js';
+import type { RoomStore } from '../lib/room/lifecycle.js';
+import { authorizeRoomPlayer } from '../lib/room/playerAuth.js';
+import { enforceBotId } from '../lib/security/botId.js';
+import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../lib/security/rateLimit.js';
 
-export { MemoryGameStateStore, type GameStateStore } from '../lib/realtime/stateStore';
+export { MemoryGameStateStore, type GameStateStore } from '../lib/realtime/stateStore.js';
 
 export interface MoveRequestBody {
   roomId: string;

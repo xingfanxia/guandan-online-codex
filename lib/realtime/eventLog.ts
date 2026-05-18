@@ -1,5 +1,5 @@
-import type { PlayerId } from '../game/state';
-import type { ClientPayload } from './payload';
+import type { PlayerId } from '../game/state.js';
+import type { ClientPayload } from './payload.js';
 
 type MaybePromise<T> = T | Promise<T>;
 

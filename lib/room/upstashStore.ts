@@ -1,5 +1,5 @@
-import type { RoomRecord, RoomStore } from './lifecycle';
-import type { UpstashRedis } from '../realtime/upstashRest';
+import type { RoomRecord, RoomStore } from './lifecycle.js';
+import type { UpstashRedis } from '../realtime/upstashRest.js';
 
 export class UpstashRoomStore implements RoomStore {
   constructor(private readonly redis: UpstashRedis) {}

@@ -1,5 +1,5 @@
-import { DEFAULT_MODE_RULES, type GameMode, type ModeRules, expectedTeamRankCount } from './mode';
-import type { LevelRank } from './cards';
+import { DEFAULT_MODE_RULES, type GameMode, type ModeRules, expectedTeamRankCount } from './mode.js';
+import type { LevelRank } from './cards.js';
 
 export const LEVELS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
 

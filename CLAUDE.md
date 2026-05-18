@@ -24,7 +24,8 @@ Implementation should follow the P0 milestone order from `docs/plan/PLAN.md`, wi
 8. UI-1 / UI-2 / UI-3 / SEC-3 UI foundation exists as a Vite/React app shell with required local player-handle setup, card, hand, trick, avatar, first game-table screen, CSS rotate orientation wrapper, typed profile/room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens with 4P/6P/8P picker, active-room loading state, waiting-room kick controls, tokenless public-room join, report button, admin dashboard wiring, tribute/exchange phase overlays, round-end placement/next-round panel, filtered SSE state consumption, local active-room reconnect persistence, disconnect takeover badge, table-side `理牌` / `提示` controls, and active-room move/round/phase/assist POST wiring. Real-device orientation validation and live deployed table validation are still pending.
 9. Validate the bounded SSE polling loop against real Upstash/Vercel latency before treating the realtime defaults as production-ready.
 10. Full-game API integration coverage exists for all-human and human+bot 4P/8P games through create/join/start/move/round/tribute APIs to `game-end`; live browser production validation is still a separate gate.
-11. Later phases remain gated by the acceptance criteria in `docs/plan/PLAN.md`.
+11. Server-side `api/` and `lib/` imports intentionally use explicit `.js` specifiers. Do not remove them; Vercel's frameworkless TypeScript functions run as Node ESM after emit and production API routes fail without fully specified imports.
+12. Later phases remain gated by the acceptance criteria in `docs/plan/PLAN.md`.
 
 ## Domain references
 

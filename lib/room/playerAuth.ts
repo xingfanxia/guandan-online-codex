@@ -1,6 +1,6 @@
-import type { PlayerId } from '../game/state';
-import { normalizeHandle } from '../auth/handle';
-import type { RoomStore } from './lifecycle';
+import type { PlayerId } from '../game/state.js';
+import { normalizeHandle } from '../auth/handle.js';
+import type { RoomStore } from './lifecycle.js';
 
 export type RoomPlayerAuthResult =
   | { ok: true }

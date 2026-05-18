@@ -2,16 +2,16 @@ import {
   autoPickExchangeCards,
   pickExchangeDirection,
   type ExchangeDirection,
-} from './exchange';
-import { submitExchangeSelection, submitExchangeVote } from './exchangeFlow';
-import type { GameState, PlayerId } from './state';
+} from './exchange.js';
+import { submitExchangeSelection, submitExchangeVote } from './exchangeFlow.js';
+import type { GameState, PlayerId } from './state.js';
 import {
   autoPickReturnCard,
   autoPickTributeCard,
-} from './tribute';
-import { submitReturnSelection, submitTributeSelection } from './tributeFlow';
-import type { ServerEvent } from '../realtime/messages';
-import type { RoomRules } from '../room/rules';
+} from './tribute.js';
+import { submitReturnSelection, submitTributeSelection } from './tributeFlow.js';
+import type { ServerEvent } from '../realtime/messages.js';
+import type { RoomRules } from '../room/rules.js';
 
 export type AutomaticPhaseActionType =
   | 'tribute'

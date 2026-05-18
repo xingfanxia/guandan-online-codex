@@ -8,9 +8,9 @@ import {
   type NaturalRank,
   type Rank,
   type Suit,
-} from './cards';
-import { expectedTeamRankCount, maxRankForMode, type GameMode } from './mode';
-import type { Placement, PlayerId } from './state';
+} from './cards.js';
+import { expectedTeamRankCount, maxRankForMode, type GameMode } from './mode.js';
+import type { Placement, PlayerId } from './state.js';
 
 export type TeamStructure = '2-teams-of-n' | 'teams-of-2';
 export type TributeKind = 'none' | 'single' | 'double' | 'sweep';

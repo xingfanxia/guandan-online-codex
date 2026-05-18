@@ -1,6 +1,6 @@
-import { defaultModerationStore } from '../../lib/security/defaultModerationStore';
-import type { ModerationStore, ReportStatus } from '../../lib/security/reports';
-import { enforceAdminToken } from './_auth';
+import { defaultModerationStore } from '../../lib/security/defaultModerationStore.js';
+import type { ModerationStore, ReportStatus } from '../../lib/security/reports.js';
+import { enforceAdminToken } from './_auth.js';
 
 export interface AdminReportsDeps {
   store: ModerationStore;
