@@ -193,6 +193,21 @@ describe('App shell', () => {
     expect(screen.getByText('已设置 @momo')).toBeInTheDocument();
   });
 
+  test('lets an existing or throttled anonymous handle enter locally', async () => {
+    const api = profileApi({
+      createHandle: async () => ({ ok: false, error: 'ERR_HANDLE_TAKEN' }),
+    });
+
+    render(<App profileApi={api} />);
+
+    fireEvent.change(screen.getByRole('textbox', { name: '玩家名' }), { target: { value: '@ax' } });
+    fireEvent.click(screen.getByRole('button', { name: '进入牌桌' }));
+
+    expect(await screen.findByLabelText('Guandan table')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('gdo:player-profile:v1') ?? '{}')).toMatchObject({ handle: 'ax' });
+    expect(screen.getByText('已设置 @ax')).toBeInTheDocument();
+  });
+
   test('uses the stored player handle for room creation', async () => {
     localStorage.setItem('gdo:player-profile:v1', JSON.stringify({ handle: 'momo' }));
     const created: unknown[] = [];

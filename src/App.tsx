@@ -476,12 +476,14 @@ export function App({
     try {
       const result = await profileApi.createHandle({ handle: input.handle });
       if (!result.ok) {
-        setError(result.error);
-        return;
+        if (result.error !== 'ERR_HANDLE_TAKEN' && result.error !== 'ERR_IP_THROTTLED') {
+          setError(result.error);
+          return;
+        }
       }
       const profile = {
-        handle: normalizeClientHandle(result.profile.handle),
-        createdAt: result.profile.createdAt,
+        handle: normalizeClientHandle(result.ok ? result.profile.handle : input.handle),
+        ...(result.ok ? { createdAt: result.profile.createdAt } : {}),
       };
       setStoredProfile(profile);
       writeStoredPlayerProfile(profile);
