@@ -30,14 +30,15 @@ Implemented in this clone:
 - Production live UI smoke: Playwright covers two real browser contexts on the deployed Vercel URL creating/joining a room, starting, playing a card, and observing the other browser sync through SSE/replay. The smoke uses the server's friendly automation user agent so BotID remains enabled for normal headless clients while the game path can be exercised in CI/manual ops.
 - Gameplay rule audit fixes: first-hand leader is now selected by a random revealed dealt-card index instead of always `p1`; `api/room/start` immediately continues bot play when that revealed leader is a bot; tribute resolution now gives first lead to the single tributer / largest tribute card, with same-rank ties going to head player's next seat; multi-player teammate wind now hands lead to the next active teammate instead of an arbitrary first teammate.
 - Replay contract audit fix: `/api/move` now returns `eventIds` as `Record<playerId, string[]>`, matching the other mutation routes and preserving every per-player event id when a human move chains bot events.
+- Exchange-order audit fix: optional 换牌 now follows the locked S22/S23 flow: the losing team votes immediately after the round advances to the next hand; if tribute is owed, the vote result is carried through 进贡/还贡, and only a passed vote opens 3-card exchange selection after returns complete.
 
 Verification after the update:
-- `npm test` — 93 files / 407 tests passing
+- `npm test` — 93 files / 411 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.78% statements / 93.56% lines
+- `npm run test:coverage` — 90.88% statements / 93.64% lines
 - `npm run security:no-leak` — passing
-- `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
+- `npm run bench:ai -- 1 4 300 && npm run bench:ai -- 1 6 300 && npm run bench:ai -- 1 8 300` — 4P/6P/8P Easy self-play rounds completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
 - `vercel build --prod --scope panpanmao` — passing; generated Vercel output successfully
 - Production API smoke passed: create handle, create room, list room, start 4P with bots, long-poll replay, SSE first chunk, and authenticated move POST

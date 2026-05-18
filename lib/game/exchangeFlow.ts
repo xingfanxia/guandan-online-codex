@@ -10,8 +10,10 @@ import type {
   ExchangeSelectPendingState,
   ExchangeVotePendingState,
   GameState,
+  PendingTributeAfterExchangeVote,
   PlayerId,
   PlayingState,
+  TributePendingState,
 } from './state.js';
 import { MessageType, type ServerEvent } from '../realtime/messages.js';
 import type { RoomRules } from '../room/rules.js';
@@ -52,6 +54,10 @@ export function submitExchangeVote(
   });
 
   if (vote.passed) {
+    if (state.pendingTribute) {
+      return tributeStateAfterVote(state, state.pendingTribute, true, vote.yes, vote.required);
+    }
+
     const selectState: ExchangeSelectPendingState = {
       phase: 'exchange-select-pending',
       mode: state.mode,
@@ -84,6 +90,10 @@ export function submitExchangeVote(
   }
 
   if (vote.yes + vote.no === state.eligibleVoters.length) {
+    if (state.pendingTribute) {
+      return tributeStateAfterVote(state, state.pendingTribute, false, vote.yes, vote.required);
+    }
+
     return {
       ok: true,
       state: playingState(state, cloneHands(state.hands)),
@@ -172,6 +182,42 @@ function playingState(
   };
 }
 
+function tributeStateAfterVote(
+  state: ExchangeVotePendingState,
+  pendingTribute: PendingTributeAfterExchangeVote,
+  passed: boolean,
+  yes: number,
+  required: number,
+): { ok: true; state: TributePendingState; events: ServerEvent[] } {
+  const tributeState: TributePendingState = {
+    phase: 'tribute-pending',
+    mode: state.mode,
+    levelRank: state.levelRank,
+    players: state.players.map((player) => ({ ...player })),
+    hands: cloneHands(state.hands),
+    undealt: state.undealt.map(cloneCard),
+    obligations: pendingTribute.obligations.map((obligation) => ({ ...obligation })),
+    selectedTributes: {},
+    firstLeader: pendingTribute.firstLeader,
+    deadlineAt: pendingTribute.deadlineAt,
+    exchangeVotePassed: passed,
+    ...(state.progression ? { progression: state.progression } : {}),
+    version: state.version + 1,
+  };
+  return {
+    ok: true,
+    state: tributeState,
+    events: [
+      { type: MessageType.ExchangeVoteResolved, passed, yes, required },
+      ...tributeState.obligations.map((obligation) => ({
+        type: MessageType.TributePending,
+        playerId: obligation.from,
+        toPlayerId: obligation.to,
+      }) satisfies ServerEvent),
+    ],
+  };
+}
+
 function cloneVoteState(state: ExchangeVotePendingState): ExchangeVotePendingState {
   return {
     ...state,
@@ -180,6 +226,15 @@ function cloneVoteState(state: ExchangeVotePendingState): ExchangeVotePendingSta
     undealt: state.undealt.map(cloneCard),
     eligibleVoters: [...state.eligibleVoters],
     votes: { ...state.votes },
+    ...(state.pendingTribute
+      ? {
+          pendingTribute: {
+            obligations: state.pendingTribute.obligations.map((obligation) => ({ ...obligation })),
+            firstLeader: state.pendingTribute.firstLeader,
+            deadlineAt: state.pendingTribute.deadlineAt,
+          },
+        }
+      : {}),
   };
 }
 

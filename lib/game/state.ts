@@ -111,6 +111,7 @@ export interface TributePendingState {
   selectedTributes: Partial<Record<PlayerId, Card>>;
   firstLeader: PlayerId;
   deadlineAt: string;
+  exchangeVotePassed?: boolean;
   progression?: LevelProgression;
   version: number;
 }
@@ -126,8 +127,15 @@ export interface ReturnPendingState {
   selectedReturns: Partial<Record<PlayerId, Card>>;
   firstLeader: PlayerId;
   deadlineAt: string;
+  exchangeVotePassed?: boolean;
   progression?: LevelProgression;
   version: number;
+}
+
+export interface PendingTributeAfterExchangeVote {
+  obligations: TributeObligation[];
+  firstLeader: PlayerId;
+  deadlineAt: string;
 }
 
 export interface ExchangeVotePendingState {
@@ -141,6 +149,7 @@ export interface ExchangeVotePendingState {
   votes: Partial<Record<PlayerId, 'yes' | 'no'>>;
   firstLeader: PlayerId;
   deadlineAt: string;
+  pendingTribute?: PendingTributeAfterExchangeVote;
   progression?: LevelProgression;
   version: number;
 }

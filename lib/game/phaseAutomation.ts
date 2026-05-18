@@ -98,6 +98,7 @@ export function runAutomaticPhaseActions(
         card: autoPickReturnCard(hand, { returnCardCap: rules.returnCardCap }),
         rules,
         deadlineAt: exchangeDeadlineAt(),
+        exchangeDirection: exchangeDirection(),
       });
       if (!result.ok) break;
       actions.push({

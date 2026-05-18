@@ -245,4 +245,78 @@ describe('tribute flow transitions', () => {
       ],
     });
   });
+
+  test('opens exchange selection after returns when the post-round vote already passed', () => {
+    const returnPending = {
+      ...submitBothTributes(),
+      exchangeVotePassed: true,
+    };
+    const first = submitReturnSelection(returnPending, {
+      playerId: 'p3',
+      card: c('7'),
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      deadlineAt: '2026-05-18T00:00:45.000Z',
+      exchangeDirection: 'clockwise',
+    });
+    if (!first.ok || first.state.phase !== 'return-pending') throw new Error('expected partial return state');
+
+    const second = submitReturnSelection(first.state, {
+      playerId: 'p1',
+      card: c('5'),
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      deadlineAt: '2026-05-18T00:00:45.000Z',
+      exchangeDirection: 'clockwise',
+    });
+
+    expect(second).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'exchange-select-pending',
+        direction: 'clockwise',
+        cardCount: 3,
+        firstLeader: 'p2',
+        deadlineAt: '2026-05-18T00:00:45.000Z',
+        version: 14,
+      },
+      events: [
+        { type: 'tribute_resolved', firstLeader: 'p2' },
+        { type: 'exchange_select_required', playerId: 'p1', direction: 'clockwise' },
+        { type: 'exchange_select_required', playerId: 'p2', direction: 'clockwise' },
+        { type: 'exchange_select_required', playerId: 'p3', direction: 'clockwise' },
+        { type: 'exchange_select_required', playerId: 'p4', direction: 'clockwise' },
+      ],
+    });
+  });
+
+  test('starts normal play after returns when the post-round exchange vote failed', () => {
+    const returnPending = {
+      ...submitBothTributes(),
+      exchangeVotePassed: false,
+    };
+    const first = submitReturnSelection(returnPending, {
+      playerId: 'p3',
+      card: c('7'),
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      deadlineAt: '2026-05-18T00:00:45.000Z',
+    });
+    if (!first.ok || first.state.phase !== 'return-pending') throw new Error('expected partial return state');
+
+    const second = submitReturnSelection(first.state, {
+      playerId: 'p1',
+      card: c('5'),
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      deadlineAt: '2026-05-18T00:00:45.000Z',
+    });
+
+    expect(second).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'playing',
+        currentTurn: 'p2',
+        currentTrick: { leader: 'p2', passes: [] },
+        version: 14,
+      },
+      events: [{ type: 'tribute_resolved', firstLeader: 'p2' }],
+    });
+  });
 });

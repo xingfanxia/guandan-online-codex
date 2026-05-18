@@ -9,6 +9,7 @@ import {
   validatePlayerTributeCard,
   type ReturnCardCap,
 } from '../../lib/game/tribute.js';
+import { pickExchangeDirection, type ExchangeDirection } from '../../lib/game/exchange.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import type { EventLog } from '../../lib/realtime/eventLog.js';
 import { MessageType, type ServerEvent } from '../../lib/realtime/messages.js';
@@ -64,6 +65,8 @@ export interface TributeSelectHandlerDeps {
   rulesForRoom?: (roomId: string) => RoomRules | Promise<RoomRules>;
   returnDeadlineAt?: (rules: RoomRules) => string;
   exchangeDeadlineAt?: (rules: RoomRules) => string;
+  exchangeDirection?: (roomId: string) => ExchangeDirection;
+  random?: () => number;
   botChain?: BotTurnOptions | false;
   rateLimiter?: RequestRateLimiter;
 }
@@ -139,6 +142,7 @@ async function handleStatefulTributeSelect(
           card,
           rules,
           deadlineAt: deps.exchangeDeadlineAt?.(rules) ?? deadlineFromNow(rules.exchangeVoteDurationSeconds),
+          exchangeDirection: deps.exchangeDirection?.(roomId) ?? pickExchangeDirection(deps.random),
         })
       : { ok: false as const, error: 'ERR_NOT_TRIBUTE_PHASE' as const };
 

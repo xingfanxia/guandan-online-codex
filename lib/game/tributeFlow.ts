@@ -1,5 +1,7 @@
 import { compareCardRanks, type Card } from './cards.js';
+import { pickExchangeDirection, type ExchangeDirection } from './exchange.js';
 import type {
+  ExchangeSelectPendingState,
   ExchangeVotePendingState,
   GameState,
   PlayerId,
@@ -83,6 +85,7 @@ export function submitTributeSelection(
       selectedReturns: {},
       firstLeader,
       deadlineAt,
+      ...(state.exchangeVotePassed !== undefined ? { exchangeVotePassed: state.exchangeVotePassed } : {}),
       ...(state.progression ? { progression: state.progression } : {}),
       version: state.version + 1,
     } satisfies ReturnPendingState,
@@ -112,11 +115,13 @@ export function submitReturnSelection(
     card,
     rules,
     deadlineAt,
+    exchangeDirection,
   }: {
     playerId: PlayerId;
     card: Card;
     rules: RoomRules;
     deadlineAt: string;
+    exchangeDirection?: ExchangeDirection;
   },
 ): TributeFlowResult {
   if (state.phase !== 'return-pending') return { ok: false, error: 'ERR_NOT_RETURN_PENDING' };
@@ -164,6 +169,31 @@ export function submitReturnSelection(
     exchanges: resolved,
     firstLeader: state.firstLeader,
   };
+  if (state.exchangeVotePassed) {
+    const selectState = exchangeSelectState(state, hands, deadlineAt, exchangeDirection ?? pickExchangeDirection(), rules);
+    return {
+      ok: true,
+      state: selectState,
+      events: [
+        tributeResolved,
+        ...selectState.players.map((player) => ({
+          type: MessageType.ExchangeSelectRequired,
+          playerId: player.id,
+          cardCount: selectState.cardCount,
+          direction: selectState.direction,
+          deadlineAt,
+        }) satisfies ServerEvent),
+      ],
+    };
+  }
+  if (state.exchangeVotePassed === false) {
+    return {
+      ok: true,
+      state: playingState(state, hands),
+      events: [tributeResolved],
+    };
+  }
+
   if (rules.cardExchange) {
     const voteState = exchangeVoteState(state, hands, deadlineAt);
     return {
@@ -220,6 +250,30 @@ function exchangeVoteState(
       .filter((player) => player.team !== winnerTeam)
       .map((player) => player.id),
     votes: {},
+    firstLeader: state.firstLeader,
+    deadlineAt,
+    ...(state.progression ? { progression: state.progression } : {}),
+    version: state.version + 1,
+  };
+}
+
+function exchangeSelectState(
+  state: ReturnPendingState,
+  hands: Record<PlayerId, Card[]>,
+  deadlineAt: string,
+  direction: ExchangeDirection,
+  rules: RoomRules,
+): ExchangeSelectPendingState {
+  return {
+    phase: 'exchange-select-pending',
+    mode: state.mode,
+    levelRank: state.levelRank,
+    players: state.players.map((player) => ({ ...player })),
+    hands,
+    undealt: state.undealt.map(cloneCard),
+    direction,
+    cardCount: rules.exchangeCardCount,
+    selections: {},
     firstLeader: state.firstLeader,
     deadlineAt,
     ...(state.progression ? { progression: state.progression } : {}),

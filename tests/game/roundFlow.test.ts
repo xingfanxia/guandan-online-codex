@@ -71,6 +71,35 @@ describe('post-round flow', () => {
     expect(result.events.map((event) => event.type)).toEqual(['tribute_pending', 'tribute_pending']);
   });
 
+  test('opens exchange vote before tribute selection when exchange is enabled', () => {
+    const result = startNextRoundFlow({
+      roundEnd: roundEnd(),
+      deck: deck([
+        c('A'), c('2'), c('3'), c('4'),
+        c('K'), c('5'), c('6'), c('7'),
+      ]),
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      deadlineAt: '2026-05-18T00:00:15.000Z',
+      exchangeDeadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+
+    expect(result.state).toMatchObject({
+      phase: 'exchange-vote-pending',
+      eligibleVoters: ['p2', 'p4'],
+      pendingTribute: {
+        obligations: [
+          { from: 'p2', to: 'p3' },
+          { from: 'p4', to: 'p1' },
+        ],
+        deadlineAt: '2026-05-18T00:00:15.000Z',
+      },
+      deadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+    expect(result.events).toEqual([
+      { type: 'exchange_vote_required', voterIds: ['p2', 'p4'], deadlineAt: '2026-05-18T00:00:30.000Z' },
+    ]);
+  });
+
   test('anti-tribute skips tribute and starts exchange vote when exchange is enabled', () => {
     const result = startNextRoundFlow({
       roundEnd: roundEnd(),

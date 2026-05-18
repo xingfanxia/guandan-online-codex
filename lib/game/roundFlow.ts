@@ -66,6 +66,28 @@ export function startNextRoundFlow({
         firstLeader: tributePlan.firstPlacePlayerId,
       });
     } else {
+      if (rules.cardExchange) {
+        const state: ExchangeVotePendingState = {
+          phase: 'exchange-vote-pending',
+          ...base,
+          eligibleVoters: losingVoters(roundEnd),
+          votes: {},
+          firstLeader: tributePlan.firstPlacePlayerId,
+          deadlineAt: exchangeDeadlineAt,
+          pendingTribute: {
+            obligations: tributePlan.obligations.map((obligation) => ({ ...obligation })),
+            firstLeader: tributePlan.firstPlacePlayerId,
+            deadlineAt,
+          },
+        };
+        events.push({
+          type: MessageType.ExchangeVoteRequired,
+          voterIds: [...state.eligibleVoters],
+          deadlineAt: exchangeDeadlineAt,
+        });
+        return { state, events };
+      }
+
       const state: TributePendingState = {
         phase: 'tribute-pending',
         ...base,
@@ -87,10 +109,7 @@ export function startNextRoundFlow({
     const state: ExchangeVotePendingState = {
       phase: 'exchange-vote-pending',
       ...base,
-      eligibleVoters: roundEnd.placements
-        .filter((placement) => placement.team !== roundEnd.winnerTeam)
-        .sort((a, b) => a.position - b.position)
-        .map((placement) => placement.playerId),
+      eligibleVoters: losingVoters(roundEnd),
       votes: {},
       firstLeader: tributePlan.firstPlacePlayerId,
       deadlineAt: exchangeDeadlineAt,
@@ -141,4 +160,11 @@ function tributeTeam(roundEnd: RoundEndState, playerIds: readonly string[]): Rou
   const playerId = playerIds[0];
   return roundEnd.players.find((player) => player.id === playerId)?.team
     ?? (roundEnd.winnerTeam === 't1' ? 't2' : 't1');
+}
+
+function losingVoters(roundEnd: RoundEndState): string[] {
+  return roundEnd.placements
+    .filter((placement) => placement.team !== roundEnd.winnerTeam)
+    .sort((a, b) => a.position - b.position)
+    .map((placement) => placement.playerId);
 }

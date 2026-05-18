@@ -120,6 +120,53 @@ describe('exchange flow transitions', () => {
     });
   });
 
+  test('carries exchange vote result into pending tribute before exchange selection', () => {
+    const state = voteState();
+    state.pendingTribute = {
+      obligations: [
+        { from: 'p2', to: 'p3', fromPosition: 3, toPosition: 2 },
+        { from: 'p4', to: 'p1', fromPosition: 4, toPosition: 1 },
+      ],
+      firstLeader: 'p1',
+      deadlineAt: '2026-05-18T00:00:45.000Z',
+    };
+    const first = submitExchangeVote(state, {
+      playerId: 'p2',
+      choice: 'yes',
+      rules: DEFAULT_ROOM_RULES,
+      direction: 'clockwise',
+      deadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+    if (!first.ok || first.state.phase !== 'exchange-vote-pending') throw new Error('expected vote-pending state');
+
+    const second = submitExchangeVote(first.state, {
+      playerId: 'p4',
+      choice: 'yes',
+      rules: DEFAULT_ROOM_RULES,
+      direction: 'clockwise',
+      deadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+
+    expect(second).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'tribute-pending',
+        exchangeVotePassed: true,
+        obligations: [
+          { from: 'p2', to: 'p3' },
+          { from: 'p4', to: 'p1' },
+        ],
+        deadlineAt: '2026-05-18T00:00:45.000Z',
+        version: 22,
+      },
+      events: [
+        { type: 'exchange_vote_resolved', passed: true, yes: 2, required: 2 },
+        { type: 'tribute_pending', playerId: 'p2', toPlayerId: 'p3' },
+        { type: 'tribute_pending', playerId: 'p4', toPlayerId: 'p1' },
+      ],
+    });
+  });
+
   test('records selections and starts play with exchanged hands when all players select', () => {
     let state = selectState();
     for (const [playerId, cards] of [
