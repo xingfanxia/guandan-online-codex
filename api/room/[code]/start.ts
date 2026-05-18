@@ -1,3 +1,4 @@
+import { universalHandler, roomCodeParams } from '../../_node.js';
 import { generateDoubleDeck, shuffleDeck, type Card } from '../../../lib/game/cards.js';
 import { defaultRealtimePersistence } from '../../../lib/realtime/defaults.js';
 import type { EventLog } from '../../../lib/realtime/eventLog.js';
@@ -79,10 +80,12 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createStartRoomHandler({
+const defaultHandler = createStartRoomHandler({
   roomStore: defaultRoomStore,
   stateStore: defaultRealtimePersistence.stateStore,
   eventLog: defaultRealtimePersistence.eventLog,
   publisher: defaultRealtimePersistence.publisher,
   rateLimiter: createDefaultRateLimiter({ scope: 'room-start', limit: 20, windowMs: 60_000 }),
 });
+
+export default universalHandler(defaultHandler, roomCodeParams('code'));

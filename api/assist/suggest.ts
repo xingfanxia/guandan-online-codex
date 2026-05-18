@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { suggestMove } from '../../lib/ai/assist.js';
 import type { LegalMove } from '../../lib/ai/engine.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
@@ -59,8 +60,10 @@ function json(payload: SuggestMoveResponse | { ok: false; error: string }, statu
   });
 }
 
-export default createSuggestMoveHandler({
+const defaultHandler = createSuggestMoveHandler({
   stateStore: defaultRealtimePersistence.stateStore,
   roomStore: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'assist-suggest', limit: 20, windowMs: 5_000 }),
 });
+
+export default universalHandler(defaultHandler);

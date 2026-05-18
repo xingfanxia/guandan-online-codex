@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { generateDoubleDeck, shuffleDeck, type Card } from '../../lib/game/cards.js';
 import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
 import { startNextRoundFlow } from '../../lib/game/roundFlow.js';
@@ -161,4 +162,4 @@ const defaultHandler = createNextRoundHandler({
   rateLimiter: createDefaultRateLimiter({ scope: 'round-next', limit: 20, windowMs: 5_000 }),
 });
 
-export default defaultHandler;
+export default universalHandler(defaultHandler);

@@ -1,3 +1,4 @@
+import { universalHandler, roomIdParams } from '../_node.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import { MemoryEventLog, type EventLog } from '../../lib/realtime/eventLog.js';
 import { MessageType } from '../../lib/realtime/messages.js';
@@ -110,4 +111,4 @@ const defaultHandler = createSseHandler({
   maxDurationMs: 270_000,
 });
 
-export default defaultHandler;
+export default universalHandler(defaultHandler, roomIdParams('roomId'));

@@ -1,3 +1,4 @@
+import { universalHandler, roomCodeParams } from '../../_node.js';
 import { defaultRoomStore } from '../../../lib/room/defaultStore.js';
 import { leaveRoom, type RoomStore } from '../../../lib/room/lifecycle.js';
 import { authorizeRoomHandle } from '../../../lib/room/playerAuth.js';
@@ -32,7 +33,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createLeaveRoomHandler({
+const defaultHandler = createLeaveRoomHandler({
   store: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'room-leave', limit: 30, windowMs: 60_000 }),
 });
+
+export default universalHandler(defaultHandler, roomCodeParams('code'));

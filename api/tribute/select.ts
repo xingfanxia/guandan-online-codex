@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import type { Card, LevelRank } from '../../lib/game/cards.js';
 import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation.js';
 import type { PlayerId } from '../../lib/game/state.js';
@@ -199,10 +200,12 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createTributeSelectHandler({
+const defaultHandler = createTributeSelectHandler({
   stateStore: defaultRealtimePersistence.stateStore,
   eventLog: defaultRealtimePersistence.eventLog,
   publisher: defaultRealtimePersistence.publisher,
   roomStore: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'tribute-select', limit: 30, windowMs: 5_000 }),
 });
+
+export default universalHandler(defaultHandler);

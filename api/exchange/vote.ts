@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import {
   pickExchangeDirection,
   resolveExchangeVote,
@@ -211,10 +212,12 @@ function statusForError(error: string): number {
   return 409;
 }
 
-export default createExchangeVoteHandler({
+const defaultHandler = createExchangeVoteHandler({
   stateStore: defaultRealtimePersistence.stateStore,
   eventLog: defaultRealtimePersistence.eventLog,
   publisher: defaultRealtimePersistence.publisher,
   roomStore: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'exchange-vote', limit: 30, windowMs: 5_000 }),
 });
+
+export default universalHandler(defaultHandler);

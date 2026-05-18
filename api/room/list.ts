@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { defaultRoomStore } from '../../lib/room/defaultStore.js';
 import { listPublicRooms, type RoomStore } from '../../lib/room/lifecycle.js';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
@@ -25,7 +26,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createListRoomHandler({
+const defaultHandler = createListRoomHandler({
   store: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'room-list', limit: 60, windowMs: 60_000 }),
 });
+
+export default universalHandler(defaultHandler);

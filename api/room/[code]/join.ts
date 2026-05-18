@@ -1,3 +1,4 @@
+import { universalHandler, roomCodeParams } from '../../_node.js';
 import { defaultRoomStore } from '../../../lib/room/defaultStore.js';
 import { joinRoom, publicRoom, publicRoomPlayer, type RoomStore } from '../../../lib/room/lifecycle.js';
 import { defaultModerationStore } from '../../../lib/security/defaultModerationStore.js';
@@ -57,8 +58,10 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createJoinRoomHandler({
+const defaultHandler = createJoinRoomHandler({
   store: defaultRoomStore,
   moderationStore: defaultModerationStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'room-join', limit: 30, windowMs: 60_000 }),
 });
+
+export default universalHandler(defaultHandler, roomCodeParams('code'));

@@ -1,3 +1,4 @@
+import { universalHandler, roomIdParams } from '../_node.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import type { EventLog, LoggedEvent } from '../../lib/realtime/eventLog.js';
 import { defaultRoomStore } from '../../lib/room/defaultStore.js';
@@ -75,7 +76,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createPollHandler({
+const defaultHandler = createPollHandler({
   eventLog: defaultRealtimePersistence.eventLog,
   roomStore: defaultRoomStore,
 });
+
+export default universalHandler(defaultHandler, roomIdParams('roomId'));

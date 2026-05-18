@@ -22,17 +22,17 @@ Implemented in this clone:
 - DEPLOY-2 telemetry foundation: `api/telemetry/latency`, `api/admin/latency`, latency sample validation, memory/Upstash telemetry store, p50/p95/p99 aggregation helper, client-side measured POST beacon helper, and admin latency panel
 - UI-1 / UI-2 / UI-3 / SEC-3 UI foundation: Vite/React app shell, required local player-handle setup with profile persistence, first game-table screen, card/hand/trick/avatar primitives, locked token imports, CSS rotate orientation wrapper/prompt, typed profile/room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens with 4P/6P/8P picker, waiting-room host kick controls, public-room tokenless join flow, report button, admin dashboard wiring, latency admin panel, tribute/exchange phase modals, round-end placement/next-round panel, filtered-view table + phase overlay adapters, active-room loading state, local active-room reconnect persistence, table-side `理牌` / `提示` controls, disconnect takeover badge, active-room play/pass/round/tribute/exchange/assist POST wiring, component tests, and production build script
 - Full-game API integration coverage for all-human and human+bot 4P/8P games from create/join/start through move, round-next, tribute return, and `game-end`, including player-token authorization and hidden-state replay checks
-- Production API runtime fix: server-side `api/` and `lib/` imports use explicit `.js` specifiers so Vercel's frameworkless TypeScript functions resolve under Node ESM
+- Production API runtime fixes: server-side `api/` and `lib/` imports use explicit `.js` specifiers so Vercel's frameworkless TypeScript functions resolve under Node ESM; default API exports are wrapped by `api/_node.ts` so Vercel Node `(req, res)` invocations are adapted into the app's Web `Request`/`Response` handlers
 
 Verification after the update:
-- `npm test` — 90 files / 356 tests passing
+- `npm test` — 91 files / 361 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
 - `npm run test:coverage` — 90.36% statements / 93.37% lines
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
-- `vercel build --prod --scope panpanmao` — passing; generated `api/room/list` imports under Node ESM
+- `vercel build --prod --scope panpanmao` — passing; generated `api/auth/createHandle`, `api/room/create`, `api/poll/[roomId]`, `api/sse/[roomId]`, and `api/move` functions import under Node ESM
 
 Still not complete:
 - AUTH-2 scorer key migration is superseded for this Codex build. The online game now owns an independent `go:player:*` namespace and must use a dedicated Redis/Upstash project.
@@ -41,6 +41,7 @@ Still not complete:
 - Full-game route-handler integration is covered locally, and Vercel Authentication has been disabled for this project. Live Vercel SSE+POST validation with two browser tabs still needs a post-deploy pass.
 - SSE uses bounded polling over the per-player event log; tune `pollMs`/duration against real Upstash/Vercel latency before production.
 - `api/round/next` is the explicit server transition from `round-end` into the next hand; `api/move` still stops at `round-end` so the UI can show the round summary before advancing.
+- API unit tests may call route defaults directly with Web `Request`; Vercel production calls the same defaults as Node functions through `universalHandler`. Keep `tests/api/nodeAdapter.test.ts` green before deploying API changes.
 - AI WASM solver, Elo-rated benchmark league, live BotID production verification, real-device orientation validation, live deployed table validation, and deployment milestones remain pending per `docs/plan/PLAN.md`.
 
 ---

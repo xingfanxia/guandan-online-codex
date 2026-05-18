@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { defaultModerationStore } from '../../lib/security/defaultModerationStore.js';
 import { resetPlayerStats, type ModerationStore } from '../../lib/security/reports.js';
 import { enforceAdminToken } from './_auth.js';
@@ -37,7 +38,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createAdminResetStatsHandler({
+const defaultHandler = createAdminResetStatsHandler({
   store: defaultModerationStore,
   adminToken: process.env.ADMIN_TOKEN,
 });
+
+export default universalHandler(defaultHandler);

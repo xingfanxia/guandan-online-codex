@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { defaultLatencyStore } from '../../lib/telemetry/defaultLatencyStore.js';
 import { recordLatencySample, type LatencyStore } from '../../lib/telemetry/latency.js';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
@@ -42,7 +43,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createLatencyTelemetryHandler({
+const defaultHandler = createLatencyTelemetryHandler({
   store: defaultLatencyStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'telemetry-latency', limit: 120, windowMs: 60_000 }),
 });
+
+export default universalHandler(defaultHandler);

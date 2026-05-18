@@ -1,3 +1,4 @@
+import { universalHandler } from './_node.js';
 import { applyMove, type MoveCommand } from '../lib/game/move.js';
 import type { Card } from '../lib/game/cards.js';
 import type { PlayerId } from '../lib/game/state.js';
@@ -178,4 +179,4 @@ const defaultHandler = createMoveHandler({
   rateLimiter: createDefaultRateLimiter({ scope: 'move', limit: 60, windowMs: 5_000 }),
 });
 
-export default defaultHandler;
+export default universalHandler(defaultHandler);

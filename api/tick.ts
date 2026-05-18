@@ -1,3 +1,4 @@
+import { universalHandler } from './_node.js';
 import { runBotTurns } from '../lib/ai/chain.js';
 import { defaultRealtimePersistence } from '../lib/realtime/defaults.js';
 import type { EventLog } from '../lib/realtime/eventLog.js';
@@ -76,4 +77,6 @@ const defaultDeps: TickHandlerDeps = {
   ...(process.env.INTERNAL_TICK_SECRET ? { internalSecret: process.env.INTERNAL_TICK_SECRET } : {}),
 };
 
-export default createTickHandler(defaultDeps);
+const defaultHandler = createTickHandler(defaultDeps);
+
+export default universalHandler(defaultHandler);

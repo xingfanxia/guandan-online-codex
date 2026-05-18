@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import type { Card } from '../../lib/game/cards.js';
 import { applyCardExchange, validateExchangeSelection, type ExchangeDirection } from '../../lib/game/exchange.js';
 import { submitExchangeSelection } from '../../lib/game/exchangeFlow.js';
@@ -192,10 +193,12 @@ function statusForError(error: string): number {
   return 409;
 }
 
-export default createExchangeSelectHandler({
+const defaultHandler = createExchangeSelectHandler({
   stateStore: defaultRealtimePersistence.stateStore,
   eventLog: defaultRealtimePersistence.eventLog,
   publisher: defaultRealtimePersistence.publisher,
   roomStore: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'exchange-select', limit: 30, windowMs: 5_000 }),
 });
+
+export default universalHandler(defaultHandler);

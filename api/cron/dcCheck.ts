@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { runBotTurns } from '../../lib/ai/chain.js';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults.js';
 import type { EventLog } from '../../lib/realtime/eventLog.js';
@@ -77,10 +78,12 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createDcCheckHandler({
+const defaultHandler = createDcCheckHandler({
   roomStore: defaultRoomStore,
   stateStore: defaultRealtimePersistence.stateStore,
   eventLog: defaultRealtimePersistence.eventLog,
   publisher: defaultRealtimePersistence.publisher,
   ...(process.env.INTERNAL_TICK_SECRET ? { internalSecret: process.env.INTERNAL_TICK_SECRET } : {}),
 });
+
+export default universalHandler(defaultHandler);

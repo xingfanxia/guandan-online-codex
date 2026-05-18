@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { defaultLatencyStore } from '../../lib/telemetry/defaultLatencyStore.js';
 import { aggregateLatency, type LatencyStore } from '../../lib/telemetry/latency.js';
 import { enforceAdminToken } from './_auth.js';
@@ -33,7 +34,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createAdminLatencyHandler({
+const defaultHandler = createAdminLatencyHandler({
   store: defaultLatencyStore,
   adminToken: process.env.ADMIN_TOKEN,
 });
+
+export default universalHandler(defaultHandler);

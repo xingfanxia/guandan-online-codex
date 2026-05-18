@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { createRoom, publicRoom, type RoomStore } from '../../lib/room/lifecycle.js';
 import { defaultRoomStore } from '../../lib/room/defaultStore.js';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit.js';
@@ -55,7 +56,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createCreateRoomHandler({
+const defaultHandler = createCreateRoomHandler({
   store: defaultRoomStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'room-create', limit: 10, windowMs: 60_000 }),
 });
+
+export default universalHandler(defaultHandler);

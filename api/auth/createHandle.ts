@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { defaultPlayerProfileStore } from '../../lib/auth/defaultPlayerProfileStore.js';
 import { normalizeHandle, validateHandle } from '../../lib/auth/handle.js';
 import type { PlayerProfileStore } from '../../lib/auth/playerProfile.js';
@@ -60,7 +61,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createCreateHandleHandler({
+const defaultHandler = createCreateHandleHandler({
   profiles: defaultPlayerProfileStore,
   throttleStore: defaultIpThrottleStore,
 });
+
+export default universalHandler(defaultHandler);

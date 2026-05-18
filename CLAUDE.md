@@ -25,7 +25,8 @@ Implementation should follow the P0 milestone order from `docs/plan/PLAN.md`, wi
 9. Validate the bounded SSE polling loop against real Upstash/Vercel latency before treating the realtime defaults as production-ready.
 10. Full-game API integration coverage exists for all-human and human+bot 4P/8P games through create/join/start/move/round/tribute APIs to `game-end`; live browser production validation is still a separate gate.
 11. Server-side `api/` and `lib/` imports intentionally use explicit `.js` specifiers. Do not remove them; Vercel's frameworkless TypeScript functions run as Node ESM after emit and production API routes fail without fully specified imports.
-12. Later phases remain gated by the acceptance criteria in `docs/plan/PLAN.md`.
+12. Route default exports are intentionally wrapped with `api/_node.ts` `universalHandler`. Unit tests call them with Web `Request`; Vercel invokes them as Node `(req, res)`, so both paths must remain covered by `tests/api/nodeAdapter.test.ts`.
+13. Later phases remain gated by the acceptance criteria in `docs/plan/PLAN.md`.
 
 ## Domain references
 
@@ -54,4 +55,4 @@ Follow the global file-organization rules from `~/.claude/CLAUDE.md`:
 
 ## Last updated
 
-2026-05-18 — P0/P1 foundation implementation in progress in the isolated `guandan-online-codex` clone; selectable 4P/6P/8P rooms, required local player-handle setup, started-room locking, stable seat-id allocation, local active-room reconnect persistence, server-side tribute/exchange progression with default tribute auto-pick and bot phase automation, self-hydrating filtered mutation responses, Easy/Medium bot foundations, server-side assist suggestions, deterministic local self-play and benchmark CLI, full-game 4P/8P API integration tests, disconnect bot takeover, backend anti-abuse controls, per-player room-token auth, telemetry backend/admin panel, room/admin UI wiring, S20-S23 phase overlays, round-end advance panel, filtered SSE hook, and active-room table actions are wired.
+2026-05-18 — P0/P1 foundation implementation in progress in the isolated `guandan-online-codex` clone; selectable 4P/6P/8P rooms, required local player-handle setup, started-room locking, stable seat-id allocation, local active-room reconnect persistence, server-side tribute/exchange progression with default tribute auto-pick and bot phase automation, self-hydrating filtered mutation responses, Easy/Medium bot foundations, server-side assist suggestions, deterministic local self-play and benchmark CLI, full-game 4P/8P API integration tests, Vercel Node API adapter coverage, disconnect bot takeover, backend anti-abuse controls, per-player room-token auth, telemetry backend/admin panel, room/admin UI wiring, S20-S23 phase overlays, round-end advance panel, filtered SSE hook, and active-room table actions are wired.

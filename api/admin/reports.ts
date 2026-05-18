@@ -1,3 +1,4 @@
+import { universalHandler } from '../_node.js';
 import { defaultModerationStore } from '../../lib/security/defaultModerationStore.js';
 import type { ModerationStore, ReportStatus } from '../../lib/security/reports.js';
 import { enforceAdminToken } from './_auth.js';
@@ -43,7 +44,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createAdminReportsHandler({
+const defaultHandler = createAdminReportsHandler({
   store: defaultModerationStore,
   adminToken: process.env.ADMIN_TOKEN,
 });
+
+export default universalHandler(defaultHandler);

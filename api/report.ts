@@ -1,3 +1,4 @@
+import { universalHandler } from './_node.js';
 import { defaultModerationStore } from '../lib/security/defaultModerationStore.js';
 import { enforceBotId } from '../lib/security/botId.js';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../lib/security/rateLimit.js';
@@ -40,7 +41,9 @@ function json(payload: unknown, status: number): Response {
   });
 }
 
-export default createReportHandler({
+const defaultHandler = createReportHandler({
   store: defaultModerationStore,
   rateLimiter: createDefaultRateLimiter({ scope: 'report', limit: 3, windowMs: 86_400_000 }),
 });
+
+export default universalHandler(defaultHandler);
