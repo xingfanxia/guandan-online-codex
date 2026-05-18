@@ -37,12 +37,17 @@ test('two browser contexts can join, start, and sync a live room', async ({ brow
     await expect(host.getByLabel('Your hand').getByRole('button')).toHaveCount(27);
     await expect(guest.getByLabel('Your hand').getByRole('button')).toHaveCount(27);
 
+    const hostVersionBefore = await tableVersion(host);
     const guestVersionBefore = await tableVersion(guest);
-    await host.getByLabel('Your hand').getByRole('button').first().click();
-    await host.getByRole('button', { name: /出牌 · 1 张/ }).click();
+    const { actor, observer } = await playFromFirstEnabled([
+      { actor: host, observer: guest },
+      { actor: guest, observer: host },
+    ]);
+    const observerVersionBefore = observer === host ? hostVersionBefore : guestVersionBefore;
 
-    await expect.poll(() => tableVersion(guest), { timeout: 10_000 }).toBeGreaterThan(guestVersionBefore);
-    await expect(guest.getByLabel('Current trick')).toBeVisible();
+    await expect.poll(() => tableVersion(observer), { timeout: 10_000 }).toBeGreaterThan(observerVersionBefore);
+    await expect(actor.getByLabel('Current trick')).toBeVisible();
+    await expect(observer.getByLabel('Current trick')).toBeVisible();
   } finally {
     await hostContext.close();
     await guestContext.close();
@@ -53,6 +58,45 @@ async function seedProfile(context: import('@playwright/test').BrowserContext, h
   await context.addInitScript((storedHandle) => {
     window.localStorage.setItem('gdo:player-profile:v1', JSON.stringify({ handle: storedHandle }));
   }, handle);
+}
+
+async function playFromFirstEnabled(
+  candidates: Array<{ actor: import('@playwright/test').Page; observer: import('@playwright/test').Page }>,
+): Promise<{ actor: import('@playwright/test').Page; observer: import('@playwright/test').Page }> {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    for (const candidate of candidates) {
+      const suggest = candidate.actor.getByRole('button', { name: '提示' });
+      if (!(await suggest.isEnabled())) continue;
+
+      await suggest.click();
+      const play = candidate.actor.getByRole('button', { name: /出牌 · [1-9]\d* 张/ });
+      const pass = candidate.actor.getByRole('button', { name: '不要' });
+      await waitForCommand(candidate.actor, play, pass);
+      if (await play.isEnabled()) {
+        await play.click();
+        return candidate;
+      }
+      if (await pass.isEnabled()) {
+        await pass.click();
+        return candidate;
+      }
+    }
+    await candidates[0]!.actor.waitForTimeout(250);
+  }
+  throw new Error('No human player received the current turn within 10s');
+}
+
+async function waitForCommand(
+  page: import('@playwright/test').Page,
+  play: import('@playwright/test').Locator,
+  pass: import('@playwright/test').Locator,
+): Promise<void> {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    if ((await play.isEnabled()) || (await pass.isEnabled())) return;
+    await page.waitForTimeout(100);
+  }
 }
 
 async function tableVersion(page: import('@playwright/test').Page): Promise<number> {

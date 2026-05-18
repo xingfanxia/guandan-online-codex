@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { generateDeckForMode, generateDoubleDeck } from '../../lib/game/cards';
-import { dealCards } from '../../lib/game/deal';
+import { dealCards, selectFirstHandLeader } from '../../lib/game/deal';
 import { createPlayers } from '../../lib/game/state';
 
 describe('dealing', () => {
@@ -27,5 +27,13 @@ describe('dealing', () => {
 
   test('rejects a deck that cannot deal the whole table', () => {
     expect(() => dealCards('4', createPlayers('4'), generateDoubleDeck().slice(0, 4))).toThrow('ERR_NOT_ENOUGH_CARDS');
+  });
+
+  test('selects the first-hand leader from the revealed dealt-card index', () => {
+    const players = createPlayers('4');
+
+    expect(selectFirstHandLeader('4', players, () => 0)).toBe('p1');
+    expect(selectFirstHandLeader('4', players, () => 0.5)).toBe('p3');
+    expect(selectFirstHandLeader('4', players, () => 0.999)).toBe('p4');
   });
 });

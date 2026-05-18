@@ -157,6 +157,34 @@ describe('applyMove', () => {
     });
   });
 
+  test('applies teammate wind to the next active teammate in multi-player teams', () => {
+    let game = multiplayerState({
+      mode: '6',
+      players: playersFor('6'),
+      hands: {
+        p1: [c('A')],
+        p2: [c('3', 'hearts')],
+        p3: [],
+        p4: [c('4', 'diamonds')],
+        p5: [c('5', 'clubs')],
+        p6: [c('6', 'clubs')],
+      },
+      finished: [{ playerId: 'p3', position: 1, team: 't1' }],
+      currentTurn: 'p1',
+    });
+
+    game = expectPlaying(applyMove(game, { type: 'play', playerId: 'p1', cards: [c('A')] }));
+    game = expectPlaying(applyMove(game, { type: 'pass', playerId: 'p2' }));
+    game = expectPlaying(applyMove(game, { type: 'pass', playerId: 'p4' }));
+    game = expectPlaying(applyMove(game, { type: 'pass', playerId: 'p5' }));
+    const result = applyMove(game, { type: 'pass', playerId: 'p6' });
+
+    expect(result).toMatchObject({
+      ok: true,
+      state: { phase: 'playing', currentTurn: 'p5', currentTrick: { leader: 'p5' } },
+    });
+  });
+
   test('ends a 4P round immediately when one team finishes first and second', () => {
     let game = state({
       p1: [c('A')],

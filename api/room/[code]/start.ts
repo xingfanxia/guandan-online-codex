@@ -1,4 +1,5 @@
 import { universalHandler, roomCodeParams } from '../../_node.js';
+import { runBotTurns, type BotTurnOptions } from '../../../lib/ai/chain.js';
 import { generateDeckForMode, shuffleDeck, type Card } from '../../../lib/game/cards.js';
 import { defaultRealtimePersistence } from '../../../lib/realtime/defaults.js';
 import type { EventLog } from '../../../lib/realtime/eventLog.js';
@@ -19,6 +20,8 @@ export interface StartRoomDeps {
   eventLog: EventLog;
   publisher: RealtimePublisher;
   deckForRoom?: (code: string) => readonly Card[];
+  firstLeaderRandom?: () => number;
+  botChain?: BotTurnOptions | false;
   rateLimiter?: RequestRateLimiter;
 }
 
@@ -42,14 +45,19 @@ export function createStartRoomHandler(deps: StartRoomDeps): (request: Request, 
     if (room.status === 'playing') return json({ ok: false, error: 'ERR_ROOM_STARTED' }, 409);
 
     try {
-      const state = startRoomGame(room, {
+      const startedState = startRoomGame(room, {
         deck: deps.deckForRoom?.(params.code) ?? shuffleDeck(generateDeckForMode(room.mode)),
         fillBots: body.fillBots ?? true,
         botDifficulty: body.botDifficulty ?? 'easy',
+        ...(deps.firstLeaderRandom ? { firstLeaderRandom: deps.firstLeaderRandom } : {}),
       });
+      const botTurns = deps.botChain === false
+        ? { state: startedState, events: [] as ServerEvent[] }
+        : runBotTurns(startedState, deps.botChain ?? {});
+      const state = botTurns.state;
       await deps.stateStore.set(params.code, state);
       await markRoomStarted(deps.roomStore, params.code, { hostToken: body.hostToken });
-      const events: ServerEvent[] = [{ type: MessageType.StateResync, reason: 'room-start' }];
+      const events: ServerEvent[] = [{ type: MessageType.StateResync, reason: 'room-start' }, ...botTurns.events];
       const logged = await publishEventsToPlayers(deps, params.code, state, events);
       const eventIds = Object.fromEntries(
         state.players.map((player) => [

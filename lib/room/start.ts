@@ -1,5 +1,5 @@
 import type { Card } from '../game/cards.js';
-import { dealCards } from '../game/deal.js';
+import { dealCards, selectFirstHandLeader } from '../game/deal.js';
 import { createDefaultProgression, createPlayers, type Player, type PlayingState } from '../game/state.js';
 import { botIdentityForSeat } from '../ai/names.js';
 import type { RoomRecord } from './lifecycle.js';
@@ -8,9 +8,10 @@ export interface StartRoomGameOptions {
   deck: readonly Card[];
   fillBots: boolean;
   botDifficulty: 'easy' | 'medium';
+  firstLeaderRandom?: () => number;
 }
 
-export function startRoomGame(room: RoomRecord, { deck, fillBots, botDifficulty }: StartRoomGameOptions): PlayingState {
+export function startRoomGame(room: RoomRecord, { deck, fillBots, botDifficulty, firstLeaderRandom }: StartRoomGameOptions): PlayingState {
   const seats = createPlayers(room.mode, room.rules.teamStructure);
   if (!fillBots && room.players.length < seats.length) throw new Error('ERR_NOT_ENOUGH_PLAYERS');
 
@@ -28,6 +29,7 @@ export function startRoomGame(room: RoomRecord, { deck, fillBots, botDifficulty 
     return { ...seatPlayer, kind: 'bot', ...botIdentityForSeat(index, botDifficulty) };
   });
   const deal = dealCards(room.mode, players, deck);
+  const leader = selectFirstHandLeader(room.mode, players, firstLeaderRandom);
 
   return {
     phase: 'playing',
@@ -37,8 +39,8 @@ export function startRoomGame(room: RoomRecord, { deck, fillBots, botDifficulty 
     hands: deal.hands,
     undealt: deal.undealt,
     finished: [],
-    currentTurn: players[0]!.id,
-    currentTrick: { leader: players[0]!.id, passes: [] },
+    currentTurn: leader,
+    currentTrick: { leader, passes: [] },
     progression: createDefaultProgression('2'),
     version: 1,
   };

@@ -1,5 +1,5 @@
 import type { PlayerId, PlayingState } from './state.js';
-import { nextActivePlayer, partnerOf } from './turn.js';
+import { nextActivePlayer, nextActiveTeammate } from './turn.js';
 
 export function activePlayerIds(state: PlayingState): Set<PlayerId> {
   return new Set(
@@ -25,8 +25,8 @@ export function nextLeaderAfterCompletedTrick(state: PlayingState): PlayerId {
   const active = activePlayerIds(state);
   if (active.has(currentPlay.playerId)) return currentPlay.playerId;
 
-  const partner = partnerOf(state.players, currentPlay.playerId);
-  if (partner && active.has(partner)) return partner;
+  const teammate = nextActiveTeammate(state.players, currentPlay.playerId, active);
+  if (teammate) return teammate;
 
   return nextActivePlayer(state.players, currentPlay.playerId, active);
 }

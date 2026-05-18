@@ -28,9 +28,10 @@ Implemented in this clone:
 - Playability fixes after implementation audit: browser SSE now subscribes to named server event types instead of only `message`, table hydration chooses the newest view by state version so POST responses are not hidden behind stale SSE snapshots, 8P bot stretches use a dynamic bot-turn budget instead of a 3-move cap, and the hidden-state publish guard now catches direct `publisher.publish(...)` calls outside the filtered publish path
 - Bot continuation fix after live playability audit: `api/round/next`, tribute, and exchange phase endpoints now run the same immediate bot-turn continuation as `api/move` after they resolve back to `playing`, so human+bot rooms do not stall until cron when a bot becomes the next leader. `api/tick` uses the same shared continuation path.
 - Production live UI smoke: Playwright covers two real browser contexts on the deployed Vercel URL creating/joining a room, starting, playing a card, and observing the other browser sync through SSE/replay. The smoke uses the server's friendly automation user agent so BotID remains enabled for normal headless clients while the game path can be exercised in CI/manual ops.
+- Gameplay rule audit fixes: first-hand leader is now selected by a random revealed dealt-card index instead of always `p1`; `api/room/start` immediately continues bot play when that revealed leader is a bot; tribute resolution now gives first lead to the single tributer / largest tribute card, with same-rank ties going to head player's next seat; multi-player teammate wind now hands lead to the next active teammate instead of an arbitrary first teammate.
 
 Verification after the update:
-- `npm test` — 93 files / 389 tests passing
+- `npm test` — 93 files / 407 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
 - `npm run test:coverage` — 90.75% statements / 93.58% lines

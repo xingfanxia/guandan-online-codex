@@ -16,6 +16,7 @@ describe('room start', () => {
       deck: generateDoubleDeck(),
       fillBots: true,
       botDifficulty: 'easy',
+      firstLeaderRandom: () => 0,
     });
 
     expect(result).toMatchObject({
@@ -51,11 +52,13 @@ describe('room start', () => {
       deck: generateDeckForMode('6'),
       fillBots: true,
       botDifficulty: 'medium',
+      firstLeaderRandom: () => 0,
     });
     const eightResult = startRoomGame(eight.room, {
       deck: generateDeckForMode('8'),
       fillBots: true,
       botDifficulty: 'easy',
+      firstLeaderRandom: () => 0,
     });
 
     expect(sixResult.mode).toBe('6');
@@ -89,11 +92,13 @@ describe('room start', () => {
       deck: generateDeckForMode('6'),
       fillBots: true,
       botDifficulty: 'easy',
+      firstLeaderRandom: () => 0,
     });
     const eightResult = startRoomGame(eight.room, {
       deck: generateDeckForMode('8'),
       fillBots: true,
       botDifficulty: 'easy',
+      firstLeaderRandom: () => 0,
     });
 
     expect(sixResult.players.map((player) => player.team)).toEqual(['t1', 't2', 't3', 't1', 't2', 't3']);
@@ -115,6 +120,7 @@ describe('room start', () => {
       deck: generateDoubleDeck(),
       fillBots: true,
       botDifficulty: 'easy',
+      firstLeaderRandom: () => 0,
     });
 
     expect(result.players).toMatchObject([
@@ -123,6 +129,21 @@ describe('room start', () => {
       { id: 'p3', kind: 'human', handle: 'doudou' },
       { id: 'p4', kind: 'bot' },
     ]);
+  });
+
+  test('uses revealed-card first leader instead of always starting from the host', async () => {
+    const store = new MemoryRoomStore();
+    const created = await createRoom(store, { hostHandle: '@Fufu', random: () => 0 });
+
+    const result = startRoomGame(created.room, {
+      deck: generateDoubleDeck(),
+      fillBots: true,
+      botDifficulty: 'easy',
+      firstLeaderRandom: () => 0.5,
+    });
+
+    expect(result.currentTurn).toBe('p3');
+    expect(result.currentTrick).toMatchObject({ leader: 'p3', passes: [] });
   });
 
   test('rejects starting without enough humans when bot fill is disabled', async () => {

@@ -34,6 +34,7 @@ describe('room start API handler', () => {
       eventLog,
       publisher,
       deckForRoom: () => generateDoubleDeck(),
+      firstLeaderRandom: () => 0,
     });
 
     const response = await handler(request({
@@ -79,6 +80,7 @@ describe('room start API handler', () => {
       eventLog: new MemoryEventLog(),
       publisher: { async publish() {} },
       deckForRoom: () => generateDoubleDeck(),
+      firstLeaderRandom: () => 0,
     });
 
     expect((await handler(request({ hostToken: created.hostToken, fillBots: true }), { code: created.room.code })).status).toBe(200);
@@ -105,6 +107,7 @@ describe('room start API handler', () => {
         },
       },
       deckForRoom: () => generateDeckForMode('8'),
+      firstLeaderRandom: () => 0,
     });
 
     const response = await handler(request({
@@ -140,6 +143,7 @@ describe('room start API handler', () => {
       stateStore: new MemoryGameStateStore(),
       eventLog: new MemoryEventLog(),
       publisher: { async publish() {} },
+      firstLeaderRandom: () => 0,
     });
 
     const response = await handler(request({
@@ -165,6 +169,7 @@ describe('room start API handler', () => {
       eventLog: new MemoryEventLog(),
       publisher: { async publish() {} },
       deckForRoom: () => generateDoubleDeck(),
+      firstLeaderRandom: () => 0,
     });
 
     expect(await (await handler(request({}, 'GET'), { code: created.room.code })).json()).toEqual({
@@ -175,5 +180,49 @@ describe('room start API handler', () => {
       ok: false,
       error: 'ERR_INVALID_HOST_TOKEN',
     });
+  });
+
+  test('continues bot play immediately when the revealed first leader is a bot', async () => {
+    const roomStore = new MemoryRoomStore();
+    const created = await createRoom(roomStore, {
+      hostHandle: '@Fufu',
+      random: () => 0,
+      nowIso: () => '2026-05-18T00:00:00.000Z',
+    });
+    const stateStore = new MemoryGameStateStore();
+    const eventLog = new MemoryEventLog();
+    const handler = createStartRoomHandler({
+      roomStore,
+      stateStore,
+      eventLog,
+      publisher: { async publish() {} },
+      deckForRoom: () => generateDoubleDeck(),
+      firstLeaderRandom: () => 1 / 108,
+      botChain: { maxMoves: 1, random: () => 0.9 },
+    });
+
+    const response = await handler(request({
+      hostToken: created.hostToken,
+      fillBots: true,
+      botDifficulty: 'easy',
+    }), { code: created.room.code });
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      ok: true,
+      phase: 'playing',
+      version: 2,
+      view: { phase: 'playing', currentTurn: 'p3' },
+      events: ['state_resync', 'move_played'],
+    });
+    expect(await stateStore.get(created.room.code)).toMatchObject({
+      phase: 'playing',
+      currentTurn: 'p3',
+      currentTrick: { leader: 'p2' },
+    });
+    expect(eventLog.replayAfter(created.room.code, 'p1').map((entry) => entry.payload.type)).toEqual([
+      'state_resync',
+      'move_played',
+    ]);
   });
 });

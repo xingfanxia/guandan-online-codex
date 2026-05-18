@@ -8,7 +8,7 @@ function c(rank: Rank, suit: Suit = 'spades', deck = 1): Card {
   return { rank, suit, deck: deck as 1 | 2 };
 }
 
-function tributeState(): TributePendingState {
+function tributeState(overrides: Partial<TributePendingState> = {}): TributePendingState {
   return {
     phase: 'tribute-pending',
     mode: '4',
@@ -34,6 +34,7 @@ function tributeState(): TributePendingState {
     firstLeader: 'p1',
     deadlineAt: '2026-05-18T00:00:15.000Z',
     version: 10,
+    ...overrides,
   };
 }
 
@@ -87,7 +88,7 @@ describe('tribute flow transitions', () => {
           { from: 'p4', to: 'p1', tributeCard: c('K') },
         ],
         selectedReturns: {},
-        firstLeader: 'p1',
+        firstLeader: 'p2',
         version: 12,
       },
       events: [
@@ -124,8 +125,8 @@ describe('tribute flow transitions', () => {
       ok: true,
       state: {
         phase: 'playing',
-        currentTurn: 'p1',
-        currentTrick: { leader: 'p1', passes: [] },
+        currentTurn: 'p2',
+        currentTrick: { leader: 'p2', passes: [] },
         hands: {
           p1: [c('6'), c('K')],
           p2: [c('3'), c('7')],
@@ -134,7 +135,81 @@ describe('tribute flow transitions', () => {
         },
         version: 14,
       },
-      events: [{ type: 'tribute_resolved', firstLeader: 'p1' }],
+      events: [{ type: 'tribute_resolved', firstLeader: 'p2' }],
+    });
+  });
+
+  test('single tribute gives the first lead to the tributer', () => {
+    const single = tributeState({
+      obligations: [{ from: 'p4', to: 'p1', fromPosition: 4, toPosition: 1 }],
+      hands: {
+        p1: [c('5'), c('6')],
+        p2: [c('A'), c('3')],
+        p3: [c('7'), c('8')],
+        p4: [c('K'), c('4')],
+      },
+    });
+    const tribute = submitTributeSelection(single, {
+      playerId: 'p4',
+      card: c('K'),
+      rules: DEFAULT_ROOM_RULES,
+      deadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+    if (!tribute.ok || tribute.state.phase !== 'return-pending') throw new Error('expected return-pending state');
+
+    const returned = submitReturnSelection(tribute.state, {
+      playerId: 'p1',
+      card: c('5'),
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: false },
+      deadlineAt: '2026-05-18T00:00:45.000Z',
+    });
+
+    expect(returned).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'playing',
+        currentTurn: 'p4',
+        currentTrick: { leader: 'p4', passes: [] },
+      },
+      events: [{ type: 'tribute_resolved', firstLeader: 'p4' }],
+    });
+  });
+
+  test('same-rank double tribute gives the first lead to head players next seat', () => {
+    const tied = tributeState({
+      obligations: [
+        { from: 'p2', to: 'p1', fromPosition: 3, toPosition: 2 },
+        { from: 'p4', to: 'p3', fromPosition: 4, toPosition: 1 },
+      ],
+      firstLeader: 'p3',
+      hands: {
+        p1: [c('5'), c('6')],
+        p2: [c('K'), c('3')],
+        p3: [c('7'), c('8')],
+        p4: [c('K', 'hearts'), c('4')],
+      },
+    });
+
+    const first = submitTributeSelection(tied, {
+      playerId: 'p2',
+      card: c('K'),
+      rules: DEFAULT_ROOM_RULES,
+      deadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+    if (!first.ok || first.state.phase !== 'tribute-pending') throw new Error('expected partial tribute state');
+    const second = submitTributeSelection(first.state, {
+      playerId: 'p4',
+      card: c('K', 'hearts'),
+      rules: DEFAULT_ROOM_RULES,
+      deadlineAt: '2026-05-18T00:00:30.000Z',
+    });
+
+    expect(second).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'return-pending',
+        firstLeader: 'p4',
+      },
     });
   });
 
@@ -165,7 +240,7 @@ describe('tribute flow transitions', () => {
         version: 14,
       },
       events: [
-        { type: 'tribute_resolved', firstLeader: 'p1' },
+        { type: 'tribute_resolved', firstLeader: 'p2' },
         { type: 'exchange_vote_required', voterIds: ['p2', 'p4'] },
       ],
     });

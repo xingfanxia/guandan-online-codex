@@ -1,5 +1,5 @@
-import { generateDoubleDeck, shuffleDeck } from '../game/cards.js';
-import type { TeamKey } from '../game/mode.js';
+import { generateDeckForMode, shuffleDeck } from '../game/cards.js';
+import type { GameMode, TeamKey } from '../game/mode.js';
 import type { Player } from '../game/state.js';
 import { createDeterministicRandom } from './timing.js';
 import { runBotRound, startBotRound } from './selfPlay.js';
@@ -7,6 +7,7 @@ import { runBotRound, startBotRound } from './selfPlay.js';
 export interface BotBenchmarkOptions {
   rounds?: number;
   seed?: number;
+  mode?: GameMode;
   botDifficulty?: NonNullable<Player['botDifficulty']>;
   maxMovesPerRound?: number;
 }
@@ -18,6 +19,7 @@ export interface BotBenchmarkFailure {
 
 export interface BotBenchmarkResult {
   rounds: number;
+  mode: GameMode;
   completed: number;
   failed: number;
   botDifficulty: NonNullable<Player['botDifficulty']>;
@@ -30,6 +32,7 @@ export interface BotBenchmarkResult {
 export function runBotBenchmark({
   rounds = 20,
   seed = 1,
+  mode = '4',
   botDifficulty = 'easy',
   maxMovesPerRound = 300,
 }: BotBenchmarkOptions = {}): BotBenchmarkResult {
@@ -41,8 +44,8 @@ export function runBotBenchmark({
 
   for (let index = 0; index < safeRounds; index++) {
     const random = createDeterministicRandom(seed + index);
-    const deck = shuffleDeck(generateDoubleDeck(), random);
-    const initial = startBotRound({ deck, botDifficulty });
+    const deck = shuffleDeck(generateDeckForMode(mode), random);
+    const initial = startBotRound({ mode, deck, botDifficulty });
 
     try {
       const result = runBotRound(initial, { maxMoves: maxMovesPerRound, random });
@@ -60,6 +63,7 @@ export function runBotBenchmark({
 
   return {
     rounds: safeRounds,
+    mode,
     completed,
     failed: failures.length,
     botDifficulty,

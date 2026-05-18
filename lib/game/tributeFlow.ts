@@ -1,4 +1,4 @@
-import type { Card } from './cards.js';
+import { compareCardRanks, type Card } from './cards.js';
 import type {
   ExchangeVotePendingState,
   GameState,
@@ -12,6 +12,7 @@ import {
   validatePlayerReturnCard,
   validatePlayerTributeCard,
 } from './tribute.js';
+import { nextPlayerId } from './turn.js';
 import { MessageType, type ServerEvent } from '../realtime/messages.js';
 import type { RoomRules } from '../room/rules.js';
 
@@ -68,6 +69,7 @@ export function submitTributeSelection(
     to: candidate.to,
     tributeCard: cloneCard(selectedTributes[candidate.from]!),
   }));
+  const firstLeader = resolveFirstLeaderAfterTribute(state, selectedTributes);
   return {
     ok: true,
     state: {
@@ -79,7 +81,7 @@ export function submitTributeSelection(
       undealt: state.undealt.map(cloneCard),
       exchanges,
       selectedReturns: {},
-      firstLeader: state.firstLeader,
+      firstLeader,
       deadlineAt,
       ...(state.progression ? { progression: state.progression } : {}),
       version: state.version + 1,
@@ -206,7 +208,7 @@ function exchangeVoteState(
   hands: Record<PlayerId, Card[]>,
   deadlineAt: string,
 ): ExchangeVotePendingState {
-  const winnerTeam = state.players.find((player) => player.id === state.firstLeader)?.team;
+  const winnerTeam = state.players.find((player) => player.id === state.exchanges[0]?.to)?.team;
   return {
     phase: 'exchange-vote-pending',
     mode: state.mode,
@@ -223,6 +225,32 @@ function exchangeVoteState(
     ...(state.progression ? { progression: state.progression } : {}),
     version: state.version + 1,
   };
+}
+
+function resolveFirstLeaderAfterTribute(
+  state: TributePendingState,
+  selectedTributes: Partial<Record<PlayerId, Card>>,
+): PlayerId {
+  if (state.obligations.length === 0) return state.firstLeader;
+  if (state.obligations.length === 1) return state.obligations[0]!.from;
+
+  let leadingTributer = state.obligations[0]!.from;
+  let leadingCard = selectedTributes[leadingTributer]!;
+  let topRankTied = false;
+
+  for (const obligation of state.obligations.slice(1)) {
+    const candidate = selectedTributes[obligation.from]!;
+    const comparison = compareCardRanks(candidate.rank, leadingCard.rank, state.levelRank);
+    if (comparison > 0) {
+      leadingTributer = obligation.from;
+      leadingCard = candidate;
+      topRankTied = false;
+    } else if (comparison === 0) {
+      topRankTied = true;
+    }
+  }
+
+  return topRankTied ? nextPlayerId(state.players, state.firstLeader) : leadingTributer;
 }
 
 function cloneTributeState(state: TributePendingState): TributePendingState {

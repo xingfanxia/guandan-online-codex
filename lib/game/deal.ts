@@ -37,3 +37,15 @@ export function dealCards(mode: GameMode, players: readonly Player[], deck: read
     undealt: deck.slice(dealCount).map((card) => ({ ...card })),
   };
 }
+
+export function selectFirstHandLeader(
+  mode: GameMode,
+  players: readonly Player[],
+  random: () => number = Math.random,
+): PlayerId {
+  if (players.length === 0) throw new Error('ERR_NO_PLAYERS');
+  const dealCount = handSizeForMode(mode) * players.length;
+  const value = Math.max(0, random());
+  const revealIndex = Math.min(dealCount - 1, Math.floor(value * dealCount));
+  return players[revealIndex % players.length]!.id;
+}

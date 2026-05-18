@@ -166,7 +166,7 @@ describe('tribute select API handler', () => {
     });
     expect(await stateStore.get('K7M2P9')).toMatchObject({
       phase: 'playing',
-      currentTurn: 'p1',
+      currentTurn: 'p2',
       hands: {
         p1: [c('6'), c('K')],
         p2: [c('3'), c('7')],

@@ -11,6 +11,30 @@ export function partnerOf(players: readonly Player[], playerId: PlayerId): Playe
   return players.find((candidate) => candidate.id !== playerId && candidate.team === player.team)?.id;
 }
 
+export function nextPlayerId(players: readonly Player[], currentPlayerId: PlayerId): PlayerId {
+  const currentIndex = Math.max(0, players.findIndex((player) => player.id === currentPlayerId));
+  return players[(currentIndex + 1) % players.length]!.id;
+}
+
+export function nextActiveTeammate(
+  players: readonly Player[],
+  currentPlayerId: PlayerId,
+  activePlayerIds: ReadonlySet<PlayerId>,
+): PlayerId | undefined {
+  const currentPlayer = players.find((player) => player.id === currentPlayerId);
+  if (!currentPlayer) return undefined;
+
+  const currentIndex = Math.max(0, players.findIndex((player) => player.id === currentPlayerId));
+  for (let offset = 1; offset <= players.length; offset++) {
+    const candidate = players[(currentIndex + offset) % players.length]!;
+    if (candidate.id !== currentPlayerId && candidate.team === currentPlayer.team && activePlayerIds.has(candidate.id)) {
+      return candidate.id;
+    }
+  }
+
+  return undefined;
+}
+
 export function nextActivePlayer(
   players: readonly Player[],
   currentPlayerId: PlayerId,

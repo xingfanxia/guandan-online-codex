@@ -1,5 +1,5 @@
 import type { Card, LevelRank } from './cards.js';
-import { dealCards } from './deal.js';
+import { dealCards, selectFirstHandLeader } from './deal.js';
 import type { ExchangeDirection } from './exchange.js';
 import { DEFAULT_MODE_RULES, type GameMode, type TeamKey, type TeamStructure } from './mode.js';
 import type { TributeObligation } from './tribute.js';
@@ -209,9 +209,9 @@ export function createInitialState({ mode, levelRank }: { mode: GameMode; levelR
   };
 }
 
-export function startRound(state: WaitingState, deck: readonly Card[]): PlayingState {
+export function startRound(state: WaitingState, deck: readonly Card[], firstLeaderRandom: () => number = Math.random): PlayingState {
   const deal = dealCards(state.mode, state.players, deck);
-  const leader = state.players[0]!.id;
+  const leader = selectFirstHandLeader(state.mode, state.players, firstLeaderRandom);
   return {
     phase: 'playing',
     mode: state.mode,
