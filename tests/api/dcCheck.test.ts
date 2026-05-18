@@ -34,6 +34,7 @@ function room(): RoomRecord {
       lastSeenAt: '2026-05-18T00:00:00.000Z',
     }],
     rules: DEFAULT_ROOM_RULES,
+    mode: '4',
     visibility: 'public',
     createdAt: '2026-05-18T00:00:00.000Z',
     updatedAt: '2026-05-18T00:00:00.000Z',

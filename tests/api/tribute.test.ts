@@ -118,6 +118,7 @@ describe('tribute select API handler', () => {
       ok: true,
       phase: 'tribute-pending',
       version: 11,
+      view: { phase: 'tribute-pending', self: { playerId: 'p2' } },
       events: [MessageType.StateResync],
     });
     expect(await (await handler(request({ roomId: 'K7M2P9', playerId: 'p4', card: c('K') }))).json()).toMatchObject({

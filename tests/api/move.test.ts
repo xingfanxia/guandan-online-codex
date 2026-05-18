@@ -87,7 +87,7 @@ describe('api/move handler', () => {
     const secondJson = await second.json();
 
     expect(first.status).toBe(200);
-    expect(firstJson).toMatchObject({ ok: true, version: 2 });
+    expect(firstJson).toMatchObject({ ok: true, version: 2, view: { phase: 'playing', self: { playerId: 'p1' } } });
     expect(second.status).toBe(200);
     expect(secondJson).toEqual(firstJson);
     expect((await stateStore.get('K7M2P9'))?.version).toBe(2);

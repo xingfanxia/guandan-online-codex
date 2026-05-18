@@ -112,6 +112,9 @@ export function GameTableScreen({
         {view.phase === 'round-end' ? (
           <RoundEndPanel view={view} onAdvanceRound={onAdvanceRound} />
         ) : null}
+        {view.phase === 'game-end' ? (
+          <GameEndPanel view={view} />
+        ) : null}
         <GamePhaseOverlay
           view={view}
           currentPlayerId={currentPlayerId}
@@ -142,7 +145,7 @@ function RoundEndPanel({
     <section className="gdo-round-end" aria-label="Round end">
       <div className="gdo-round-end__head">
         <span>本局结束</span>
-        <strong>下一局打 {view.levelRank}</strong>
+        <strong>下一局打 {view.nextLevelRank ?? view.levelRank}</strong>
       </div>
       <div className="gdo-round-end__placements">
         {placements.map((placement) => (
@@ -154,6 +157,26 @@ function RoundEndPanel({
       <button className="gdo-command gdo-command--primary" type="button" onClick={onAdvanceRound}>
         下一局
       </button>
+    </section>
+  );
+}
+
+function GameEndPanel({ view }: { view: ClientStateView }): React.ReactElement {
+  const placements = view.placements ?? [];
+  const winnerTeam = view.winnerTeam ?? placements[0]?.team;
+  return (
+    <section className="gdo-round-end gdo-round-end--victory" aria-label="Game end">
+      <div className="gdo-round-end__head">
+        <span>比赛结束</span>
+        <strong>{winnerTeam ? `胜方 ${winnerTeam.toUpperCase()}` : '胜负已定'}</strong>
+      </div>
+      <div className="gdo-round-end__placements">
+        {placements.map((placement) => (
+          <span key={placement.playerId}>
+            #{placement.position} {displayName(view.players.find((player) => player.id === placement.playerId))}
+          </span>
+        ))}
+      </div>
     </section>
   );
 }

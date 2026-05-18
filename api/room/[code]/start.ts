@@ -2,6 +2,7 @@ import { generateDoubleDeck, shuffleDeck, type Card } from '../../../lib/game/ca
 import { defaultRealtimePersistence } from '../../../lib/realtime/defaults';
 import type { EventLog } from '../../../lib/realtime/eventLog';
 import { MessageType, type ServerEvent } from '../../../lib/realtime/messages';
+import { buildClientPayload } from '../../../lib/realtime/payload';
 import { publishEventsToPlayers } from '../../../lib/realtime/publish';
 import type { GameStateStore } from '../../../lib/realtime/stateStore';
 import type { RealtimePublisher } from '../../../lib/realtime/upstash';
@@ -56,8 +57,10 @@ export function createStartRoomHandler(deps: StartRoomDeps): (request: Request, 
       return json({
         ok: true,
         phase: state.phase,
+        mode: state.mode,
         version: state.version,
         players: state.players.map((player) => ({ ...player })),
+        view: buildClientPayload(state.players[0]!.id, events[0]!, state).view,
         events: events.map((event) => event.type),
         eventIds,
       }, 200);

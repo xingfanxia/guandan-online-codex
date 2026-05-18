@@ -8,6 +8,8 @@ import {
 } from '../../lib/game/tribute';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
 import type { EventLog } from '../../lib/realtime/eventLog';
+import { MessageType, type ServerEvent } from '../../lib/realtime/messages';
+import { buildClientPayload } from '../../lib/realtime/payload';
 import { publishEventsToPlayers } from '../../lib/realtime/publish';
 import type { GameStateStore } from '../../lib/realtime/stateStore';
 import type { RealtimePublisher } from '../../lib/realtime/upstash';
@@ -150,9 +152,14 @@ async function handleStatefulTributeSelect(
     ok: true,
     phase: result.state.phase,
     version: result.state.version,
+    view: buildClientPayload(playerId, firstEvent(result.events), result.state).view,
     events: result.events.map((event) => event.type),
     eventIds,
   }, 200);
+}
+
+function firstEvent(events: readonly ServerEvent[]): ServerEvent {
+  return events[0] ?? { type: MessageType.StateResync, reason: 'phase-action' };
 }
 
 function key(roomId: string, playerId: PlayerId): string {

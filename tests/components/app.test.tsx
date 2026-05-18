@@ -22,6 +22,7 @@ function baseRoom(): PublicRoomDto {
     code: 'K7M2P9',
     hostHandle: 'fufu',
     players: [{ id: 'p1', handle: 'fufu', role: 'host' as const }],
+    mode: '4',
     maxPlayers: 4,
     visibility: 'public' as const,
     updatedAt: '2026-05-18T00:00:00.000Z',
@@ -66,6 +67,44 @@ function moderationApi(overrides: Partial<AppModerationApi> = {}): AppModeration
     banHandle: async () => ({ ok: true, player: { handle: 'momo', banned: true } }),
     resetStats: async () => ({ ok: true, player: { handle: 'momo', statsResetAt: '2026-05-18T00:05:00.000Z' } }),
     ...overrides,
+  };
+}
+
+function playingView(): ClientStateView {
+  return {
+    phase: 'playing',
+    mode: '4',
+    levelRank: '5',
+    version: 9,
+    players: [
+      { id: 'p1', seat: 'east', team: 't1', displayName: '@fufu' },
+      { id: 'p2', seat: 'south', team: 't2', displayName: '@momo' },
+      { id: 'p3', seat: 'west', team: 't1', displayName: '@doudou' },
+      { id: 'p4', seat: 'north', team: 't2', displayName: '@xiaoyu' },
+    ],
+    currentTurn: 'p2',
+    handCounts: { p1: 10, p2: 17, p3: 18, p4: 20 },
+    self: {
+      playerId: 'p1',
+      hand: [
+        c('3'),
+        c('3', 'hearts'),
+        c('5', 'hearts'),
+        c('7', 'clubs'),
+        c('9', 'diamonds'),
+        c('J'),
+        c('Q', 'hearts'),
+        c('A'),
+        c('BJ', 'joker'),
+        c('RJ', 'joker'),
+      ],
+    },
+    currentTrick: {
+      leader: 'p2',
+      currentPlay: { playerId: 'p2', cards: [c('A', 'diamonds', 2)], kind: 'single' },
+      passes: [],
+    },
+    finished: [],
   };
 }
 
@@ -131,7 +170,7 @@ describe('App shell', () => {
   test('creates a room through the app shell and opens the waiting room', async () => {
     const api = roomApi({
       createRoom: async (input) => {
-        expect(input).toMatchObject({ hostHandle: 'fufu', rules: { cardExchange: true }, visibility: 'public' });
+        expect(input).toMatchObject({ hostHandle: 'fufu', mode: '4', rules: { cardExchange: true }, visibility: 'public' });
         return { ok: true, room: room(), hostToken: 'host-token', joinToken: 'join-token', playerToken: 'player-token-p1' };
       },
     });
@@ -147,7 +186,7 @@ describe('App shell', () => {
     expect(screen.getByText('已创建房间 K7M2P9')).toBeInTheDocument();
   });
 
-  test('starts the current room with the stored host token', async () => {
+  test('starts the current room with the stored host token and waits for live state', async () => {
     const started: unknown[] = [];
     const api = roomApi({
       startRoom: async (input) => {
@@ -164,8 +203,25 @@ describe('App shell', () => {
     await waitFor(() => expect(started).toEqual([
       { code: 'K7M2P9', hostToken: 'host-token', fillBots: true, botDifficulty: 'easy' },
     ]));
-    expect(screen.getByLabelText('Guandan table')).toBeInTheDocument();
-    expect(screen.getByText('K7M2P9')).toBeInTheDocument();
+    expect(screen.getByLabelText('Game loading')).toBeInTheDocument();
+    expect(screen.getByText('同步牌局中')).toBeInTheDocument();
+    expect(screen.queryByText('打 5')).not.toBeInTheDocument();
+  });
+
+  test('hydrates the table from the start-room response when a filtered view is returned', async () => {
+    const api = roomApi({
+      startRoom: async () => ({ ok: true, phase: 'playing', mode: '4', version: 9, players: [], view: playingView() }),
+    });
+
+    render(<App roomApi={api} playerHandle="fufu" />);
+    fireEvent.click(screen.getByRole('button', { name: '开房' }));
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+    fireEvent.click(await screen.findByRole('button', { name: '开始' }));
+
+    expect(await screen.findByLabelText('Guandan table')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Game loading')).not.toBeInTheDocument();
+    expect(screen.getByText('打 5')).toBeInTheDocument();
+    expect(screen.getByLabelText('3 of spades')).toBeInTheDocument();
   });
 
   test('lets the host kick a waiting-room player', async () => {
@@ -206,7 +262,7 @@ describe('App shell', () => {
     const moveApi: AppMoveApi = {
       submitMove: async (input) => {
         moves.push(input);
-        return { ok: true, version: 2, events: ['move_played'] };
+        return { ok: true, version: 2, events: ['move_played'], view: playingView() };
       },
     };
 
@@ -214,6 +270,7 @@ describe('App shell', () => {
       <App
         roomApi={roomApi()}
         moveApi={moveApi}
+        gameView={playingView()}
         playerHandle="fufu"
         createMoveId={() => 'move-fixed'}
       />,
@@ -231,6 +288,7 @@ describe('App shell', () => {
       moveId: 'move-fixed',
       command: { type: 'play', cards: [c('3')] },
     }]));
+    expect(screen.getByLabelText('Guandan table')).toBeInTheDocument();
   });
 
   test('uses assistance APIs to sort and select a suggested move', async () => {
@@ -249,7 +307,7 @@ describe('App shell', () => {
       },
     };
 
-    render(<App roomApi={roomApi()} assistApi={assistApi} playerHandle="fufu" />);
+    render(<App roomApi={roomApi()} assistApi={assistApi} gameView={playingView()} playerHandle="fufu" />);
     fireEvent.click(screen.getByRole('button', { name: '开房' }));
     fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
     fireEvent.click(await screen.findByRole('button', { name: '开始' }));
@@ -268,7 +326,7 @@ describe('App shell', () => {
     const phaseApi: AppPhaseApi = {
       submitTributeSelection: async (input) => {
         selections.push(input);
-        return { ok: true, phase: 'return-pending', version: 11 };
+        return { ok: true, phase: 'playing', version: 11, view: playingView() };
       },
       submitExchangeVote: async () => ({ ok: true, phase: 'exchange-select-pending' }),
       submitExchangeSelection: async () => ({ ok: true, completed: false }),
@@ -295,6 +353,7 @@ describe('App shell', () => {
       token: 'player-token-p1',
       card: c('A'),
     }]));
+    expect(screen.queryByLabelText('Tribute phase')).not.toBeInTheDocument();
   });
 
   test('advances a completed round through the round API with the stored player token', async () => {
@@ -302,7 +361,7 @@ describe('App shell', () => {
     const roundApi: AppRoundApi = {
       advanceRound: async (input) => {
         advances.push(input);
-        return { ok: true, phase: 'tribute-pending', version: 11 };
+        return { ok: true, phase: 'tribute-pending', version: 11, view: tributeView() };
       },
     };
 
@@ -326,6 +385,7 @@ describe('App shell', () => {
       token: 'player-token-p1',
       transitionId: 'round-fixed',
     }]));
+    expect(screen.getByLabelText('Tribute phase')).toBeInTheDocument();
   });
 
   test('loads public rooms and joins without a token from the browser', async () => {

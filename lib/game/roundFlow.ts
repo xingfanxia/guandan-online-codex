@@ -38,10 +38,11 @@ export function startNextRoundFlow({
   const deal = dealCards(roundEnd.mode, roundEnd.players, deck);
   const base = {
     mode: roundEnd.mode,
-    levelRank: roundEnd.levelRank,
+    levelRank: roundEnd.nextLevelRank ?? roundEnd.levelRank,
     players: roundEnd.players.map((player) => ({ ...player })),
     hands: deal.hands,
     undealt: deal.undealt,
+    ...(roundEnd.progression ? { progression: roundEnd.progression } : {}),
     version: roundEnd.version + 1,
   };
   const tributePlan = computeTributePlan({

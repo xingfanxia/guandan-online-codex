@@ -160,6 +160,7 @@ describe('exchange API handlers', () => {
       ok: true,
       phase: 'exchange-vote-pending',
       version: 21,
+      view: { phase: 'exchange-vote-pending', self: { playerId: 'p2' } },
       events: [MessageType.StateResync],
     });
     expect(await (await handler(request({ roomId: 'K7M2P9', playerId: 'p4', choice: 'yes' }))).json()).toMatchObject({
@@ -206,6 +207,7 @@ describe('exchange API handlers', () => {
       ok: true,
       phase: 'playing',
       version: 26,
+      view: { phase: 'playing', self: { playerId: 'p4' } },
       events: [MessageType.ExchangeCompleted],
     });
     expect(await stateStore.get('K7M2P9')).toMatchObject({

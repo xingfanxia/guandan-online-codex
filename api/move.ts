@@ -10,6 +10,7 @@ import {
 } from '../lib/realtime/idempotency';
 import { defaultRealtimePersistence } from '../lib/realtime/defaults';
 import { MessageType, type ServerEvent } from '../lib/realtime/messages';
+import { buildClientPayload } from '../lib/realtime/payload';
 import { publishEventsToPlayers } from '../lib/realtime/publish';
 import { type GameStateStore } from '../lib/realtime/stateStore';
 import { type RealtimePublisher } from '../lib/realtime/upstash';
@@ -99,6 +100,9 @@ export function createMoveHandler(deps: MoveHandlerDeps): (request: Request) => 
       ...(result.state.phase === 'round-end'
         ? [{ type: MessageType.RoundEnd, winnerTeam: result.state.winnerTeam } satisfies ServerEvent]
         : []),
+      ...(result.state.phase === 'game-end'
+        ? [{ type: MessageType.GameEnd, winnerTeam: result.state.winnerTeam } satisfies ServerEvent]
+        : []),
     ];
     const botTurns = deps.botChain === false ? { state: finalState, events: [], moves: [] } : runBotTurns(finalState, deps.botChain ?? {});
     finalState = botTurns.state;
@@ -109,6 +113,7 @@ export function createMoveHandler(deps: MoveHandlerDeps): (request: Request) => 
     const response = {
       ok: true,
       version: finalState.version,
+      view: buildClientPayload(body.playerId, events[0]!, finalState).view,
       events: events.map((event) => event.type),
       ...(botTurns.moves.length > 0 ? { botMoves: botTurns.moves } : {}),
       eventIds: Object.fromEntries(logged.map(({ playerId, event: loggedEvent }) => [playerId, loggedEvent.id])),

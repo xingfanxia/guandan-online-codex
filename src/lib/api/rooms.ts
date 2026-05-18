@@ -1,4 +1,6 @@
 import { postWithLatencyBeacon } from '../telemetry/beacon';
+import type { GameMode } from '../../../lib/game/mode';
+import type { ClientStateView } from '../../../lib/realtime/payload';
 
 export interface RoomPlayerDto {
   id: string;
@@ -11,6 +13,7 @@ export interface PublicRoomDto {
   code: string;
   hostHandle: string;
   players: RoomPlayerDto[];
+  mode: GameMode;
   maxPlayers: number;
   visibility: 'public' | 'unlisted' | 'invite-only';
   updatedAt: string;
@@ -28,8 +31,10 @@ export type JoinRoomResult = {
 export type StartRoomResult = {
   ok: true;
   phase: 'playing' | string;
+  mode?: GameMode;
   version: number;
   players: unknown[];
+  view?: ClientStateView;
   events?: string[];
   eventIds?: Record<string, string[]>;
 } | RoomApiError;
@@ -39,6 +44,7 @@ export type ListRoomsResult = { ok: true; rooms: PublicRoomDto[] } | RoomApiErro
 
 export interface CreateRoomInput {
   hostHandle: string;
+  mode?: GameMode;
   rules?: Record<string, unknown>;
   visibility?: PublicRoomDto['visibility'];
   fetcher?: typeof fetch;
@@ -84,13 +90,14 @@ export interface ListRoomsInput {
 
 export async function createRoom({
   hostHandle,
+  mode = '4',
   rules = {},
   visibility = 'public',
   fetcher,
   nowMs,
 }: CreateRoomInput): Promise<CreateRoomResult> {
   const response = await postWithLatencyBeacon('/api/room/create', {
-    body: { hostHandle, rules, visibility },
+    body: { hostHandle, mode, rules, visibility },
     ...(fetcher ? { fetcher } : {}),
     ...(nowMs ? { nowMs } : {}),
   });

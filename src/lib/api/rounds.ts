@@ -1,10 +1,12 @@
 import { postWithLatencyBeacon } from '../telemetry/beacon';
+import type { ClientStateView } from '../../../lib/realtime/payload';
 
 export type RoundApiError = { ok: false; error: string };
 export type AdvanceRoundResult = {
   ok: true;
   phase: string;
   version: number;
+  view?: ClientStateView;
   events?: string[];
   eventIds?: Record<string, string[]>;
 } | RoundApiError;

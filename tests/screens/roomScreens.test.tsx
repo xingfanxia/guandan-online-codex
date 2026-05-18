@@ -11,11 +11,13 @@ describe('room screens', () => {
     const onCreate = vi.fn();
     render(<CreateRoomScreen hostHandle="@Fufu" onCreate={onCreate} />);
 
+    fireEvent.click(screen.getByRole('button', { name: '8P' }));
     fireEvent.click(screen.getByRole('button', { name: '换牌' }));
     fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
 
     expect(onCreate).toHaveBeenCalledWith({
       hostHandle: '@Fufu',
+      mode: '8',
       rules: { cardExchange: true },
       visibility: 'public',
     });
@@ -57,6 +59,7 @@ describe('room screens', () => {
           code: 'K7M2P9',
           hostHandle: 'fufu',
           players: [{ id: 'p1', handle: 'fufu', role: 'host' }],
+          mode: '4',
           maxPlayers: 4,
           visibility: 'public',
           updatedAt: '2026-05-18T00:00:00.000Z',

@@ -84,8 +84,14 @@ describe('api/round/next handler', () => {
       ok: true,
       phase: 'tribute-pending',
       version: 10,
+      view: {
+        phase: 'tribute-pending',
+        mode: '4',
+        self: { playerId: 'p1' },
+      },
       events: [MessageType.TributePending, MessageType.TributePending],
     });
+    expect(firstJson.view.self.hand).toHaveLength(27);
     expect(await second.json()).toEqual(firstJson);
     expect((await d.stateStore.get('K7M2P9'))?.phase).toBe('tribute-pending');
     expect(d.published).toHaveLength(8);
@@ -138,6 +144,7 @@ describe('api/round/next handler', () => {
     expect(await response.json()).toMatchObject({
       ok: true,
       phase: 'playing',
+      view: { phase: 'playing', self: { playerId: 'p1' } },
       events: [MessageType.StateResync],
     });
     expect(d.eventLog.replayAfter('K7M2P9', 'p1').map((entry) => entry.payload.type)).toEqual([MessageType.StateResync]);

@@ -28,6 +28,7 @@ function room(): RoomRecord {
     joinToken: 'join_A2A2A2_secret',
     players: [{ id: 'p1', handle: 'fufu', role: 'host', playerToken: 'player_A2A2A2_secret' }],
     rules: DEFAULT_ROOM_RULES,
+    mode: '4',
     visibility: 'public',
     createdAt: '2026-05-18T00:00:00.000Z',
     updatedAt: '2026-05-18T00:00:00.000Z',

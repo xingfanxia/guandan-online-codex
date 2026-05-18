@@ -1,10 +1,12 @@
 import type { Card } from '../../../lib/game/cards';
+import type { ClientStateView } from '../../../lib/realtime/payload';
 import { postWithLatencyBeacon } from '../telemetry/beacon';
 
 export type MoveApiError = { ok: false; error: string };
 export type SubmitMoveResult = {
   ok: true;
   version: number;
+  view?: ClientStateView;
   events?: string[];
   eventIds?: Record<string, string[]>;
   botMoves?: unknown[];

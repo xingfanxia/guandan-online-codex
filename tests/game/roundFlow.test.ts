@@ -103,6 +103,24 @@ describe('post-round flow', () => {
     expect(result.events).toEqual([]);
   });
 
+  test('deals the next hand at the upgraded level after a round win', () => {
+    const result = startNextRoundFlow({
+      roundEnd: roundEnd({
+        levelRank: '5',
+        upgrade: 2,
+        nextLevelRank: '7',
+      }),
+      deck: deck([c('A'), c('2'), c('3'), c('4')]),
+      rules: { ...DEFAULT_ROOM_RULES, tributeEnabled: false, cardExchange: false },
+      deadlineAt: '2026-05-18T00:00:15.000Z',
+    });
+
+    expect(result.state).toMatchObject({
+      phase: 'playing',
+      levelRank: '7',
+    });
+  });
+
   test('6P sweep round opens multi-pair tribute pending', () => {
     const result = startNextRoundFlow({
       roundEnd: roundEnd({

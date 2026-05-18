@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { normalizeHandle, validateHandle } from '../auth/handle';
 import type { PlayerConnectionStatus } from '../game/state';
+import type { GameMode } from '../game/mode';
 import { generateRoomCode } from './code';
 import { normalizeRoomVisibility, type RoomVisibility } from './access';
 import { sameRoomIpWarning, type SameRoomIpWarning } from './ipWarning';
@@ -28,6 +29,7 @@ export interface RoomRecord {
   joinToken: string;
   players: RoomPlayer[];
   rules: RoomRules;
+  mode: GameMode;
   visibility: RoomVisibility;
   createdAt: string;
   updatedAt: string;
@@ -79,6 +81,7 @@ export async function createRoom(
     random,
     nowIso = () => new Date().toISOString(),
     rules,
+    mode,
     visibility,
     clientIp,
   }: {
@@ -86,6 +89,7 @@ export async function createRoom(
     random?: () => number;
     nowIso?: () => string;
     rules?: unknown;
+    mode?: unknown;
     visibility?: unknown;
     clientIp?: string;
   },
@@ -93,6 +97,7 @@ export async function createRoom(
   const handle = normalizeHandle(hostHandle);
   if (!validateHandle(handle)) throw new Error('ERR_INVALID_HANDLE');
 
+  const roomMode = normalizeRoomMode(mode);
   const code = await allocateCode(store, random ?? Math.random);
   const hostToken = makeRoomToken('host', code, random);
   const joinToken = makeRoomToken('join', code, random);
@@ -113,10 +118,11 @@ export async function createRoom(
       ...(clientIp ? { clientIp } : {}),
     }],
     rules: normalizeRoomRules(rules),
+    mode: roomMode,
     visibility: normalizeRoomVisibility(visibility),
     createdAt: now,
     updatedAt: now,
-    maxPlayers: 4,
+    maxPlayers: Number(roomMode),
   };
   await store.set(code, room);
   return { room: cloneRoom(room), hostToken, joinToken, playerToken };
@@ -266,6 +272,12 @@ function makeRoomToken(prefix: string, code: string, random?: () => number): str
     ? Math.floor(random() * 1_000_000).toString(36).padStart(4, '0')
     : randomBytes(24).toString('base64url');
   return `${prefix}_${code}_${suffix}`;
+}
+
+function normalizeRoomMode(mode: unknown): GameMode {
+  if (mode === undefined) return '4';
+  if (mode === '4' || mode === '6' || mode === '8') return mode;
+  throw new Error('ERR_INVALID_ROOM_MODE');
 }
 
 function cloneRoom(room: RoomRecord): RoomRecord {

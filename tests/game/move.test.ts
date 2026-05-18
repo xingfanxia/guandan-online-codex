@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { applyMove } from '../../lib/game/move';
 import { type Card } from '../../lib/game/cards';
-import { type Player, type PlayingState } from '../../lib/game/state';
+import { createPlayers, type Player, type PlayingState } from '../../lib/game/state';
 import type { GameMode } from '../../lib/game/mode';
 
 function c(rank: Card['rank'], suit: Card['suit'] = 'spades', deck = 1): Card {
@@ -180,6 +180,43 @@ describe('applyMove', () => {
           { playerId: 'p4', position: 4, team: 't2' },
         ],
         upgrade: 3,
+      },
+    });
+  });
+
+  test('returns game-end when the A-level owner wins a clean own-A round', () => {
+    const game: PlayingState = {
+      phase: 'playing',
+      mode: '4',
+      levelRank: 'A',
+      progression: {
+        levels: { t1: 'A', t2: 'K' },
+        aFails: { t1: 0, t2: 0 },
+        roundOwner: 't1',
+        strictA: true,
+      },
+      players: createPlayers('4'),
+      hands: {
+        p1: [],
+        p2: [c('4')],
+        p3: [c('3')],
+        p4: [c('5')],
+      },
+      undealt: [],
+      finished: [{ playerId: 'p1', position: 1, team: 't1' }],
+      currentTurn: 'p3',
+      currentTrick: { leader: 'p3', passes: [] },
+      version: 7,
+    };
+
+    const gameEnd = applyMove(game, { type: 'play', playerId: 'p3', cards: [c('3')] });
+
+    expect(gameEnd).toMatchObject({
+      ok: true,
+      state: {
+        phase: 'game-end',
+        winnerTeam: 't1',
+        version: 9,
       },
     });
   });

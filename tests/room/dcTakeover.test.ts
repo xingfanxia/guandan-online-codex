@@ -27,6 +27,7 @@ function room(): RoomRecord {
       },
     ],
     rules: DEFAULT_ROOM_RULES,
+    mode: '4',
     visibility: 'public',
     createdAt: '2026-05-18T00:00:00.000Z',
     updatedAt: '2026-05-18T00:00:00.000Z',

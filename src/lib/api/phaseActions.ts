@@ -1,5 +1,6 @@
 import type { Card } from '../../../lib/game/cards';
 import type { ExchangeVoteChoice } from '../../../lib/game/exchange';
+import type { ClientStateView } from '../../../lib/realtime/payload';
 import { postWithLatencyBeacon } from '../telemetry/beacon';
 
 export type PhaseActionError = { ok: false; error: string };
@@ -7,6 +8,7 @@ export type TributeSelectionResult = {
   ok: true;
   phase?: string;
   version?: number;
+  view?: ClientStateView;
   events?: string[];
   eventIds?: Record<string, string[]>;
   kind?: 'tribute' | 'return';
@@ -16,6 +18,7 @@ export type ExchangeVoteResult = {
   ok: true;
   phase?: string;
   version?: number;
+  view?: ClientStateView;
   events?: string[];
   eventIds?: Record<string, string[]>;
   result?: { passed: boolean; yes: number; no: number; required: number; direction?: string };
@@ -24,6 +27,7 @@ export type ExchangeSelectionResult = {
   ok: true;
   phase?: string;
   version?: number;
+  view?: ClientStateView;
   events?: string[];
   eventIds?: Record<string, string[]>;
   completed?: boolean;

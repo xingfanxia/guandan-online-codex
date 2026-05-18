@@ -64,6 +64,7 @@ export function submitExchangeVote(
       selections: {},
       firstLeader: state.firstLeader,
       deadlineAt,
+      ...(state.progression ? { progression: state.progression } : {}),
       version: state.version + 1,
     };
     return {
@@ -166,6 +167,7 @@ function playingState(
     finished: [],
     currentTurn: state.firstLeader,
     currentTrick: { leader: state.firstLeader, passes: [] },
+    ...(state.progression ? { progression: state.progression } : {}),
     version: state.version + 1,
   };
 }

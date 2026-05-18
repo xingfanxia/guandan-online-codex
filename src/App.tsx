@@ -191,6 +191,7 @@ export function App({
   const [activePlayerId, setActivePlayerId] = useState(currentPlayerId);
   const [handOrder, setHandOrder] = useState<Card[] | undefined>();
   const [currentRoom, setCurrentRoom] = useState<PublicRoomDto | undefined>();
+  const [serverGameView, setServerGameView] = useState<ClientStateView | undefined>();
   const [rooms, setRooms] = useState<PublicRoomDto[]>([]);
   const [reports, setReports] = useState<ReportRecordDto[]>([]);
   const [latencyAggregates, setLatencyAggregates] = useState<LatencyAggregateDto[]>([]);
@@ -214,9 +215,9 @@ export function App({
       EventSourceCtor: stream?.EventSourceCtor,
     }),
   });
-  const tableView = liveStream.view ?? gameView ?? demoGameView(playerHandle);
-  const orderedTableView = applyHandOrder(tableView, activePlayerId, handOrder);
-  const selectedCards = cardsFromSelection(orderedTableView, activePlayerId, selected);
+  const tableView = liveStream.view ?? serverGameView ?? gameView ?? (currentRoom ? undefined : demoGameView(playerHandle));
+  const orderedTableView = tableView ? applyHandOrder(tableView, activePlayerId, handOrder) : undefined;
+  const selectedCards = orderedTableView ? cardsFromSelection(orderedTableView, activePlayerId, selected) : [];
 
   useEffect(() => {
     setActivePlayerId(currentPlayerId);
@@ -224,7 +225,7 @@ export function App({
 
   useEffect(() => {
     setHandOrder(undefined);
-  }, [activePlayerId, tableView.version]);
+  }, [activePlayerId, tableView?.version]);
 
   async function handleCreate(input: Parameters<CreateRoomScreenProps['onCreate']>[0]): Promise<void> {
     setBusy(true);
@@ -237,6 +238,7 @@ export function App({
         return;
       }
       setCurrentRoom(result.room);
+      setServerGameView(undefined);
       setHostToken(result.hostToken);
       setPlayerToken(result.playerToken);
       setActivePlayerId(playerIdForHandle(result.room.players, playerHandle) ?? currentPlayerId);
@@ -276,6 +278,7 @@ export function App({
         return;
       }
       setCurrentRoom(result.room);
+      setServerGameView(undefined);
       setPlayerToken(result.playerToken);
       setActivePlayerId(result.player.id);
       setNotice(`已加入房间 ${result.room.code}`);
@@ -405,6 +408,7 @@ export function App({
         setError(result.error);
         return;
       }
+      setServerGameView(result.view);
       setNotice('游戏已开始');
       setView('table');
     } finally {
@@ -430,6 +434,7 @@ export function App({
   }
 
   function handleSortHand(): void {
+    if (!tableView) return;
     const hand = tableView.self?.playerId === activePlayerId ? tableView.self.hand : undefined;
     if (!hand) return;
     setHandOrder(sortHand(hand, tableView.levelRank));
@@ -483,6 +488,7 @@ export function App({
         return;
       }
       setSelected(new Set());
+      setServerGameView(result.view);
       setNotice(command.type === 'pass' ? '不要' : `出牌 · ${command.cards.length} 张`);
     } finally {
       setBusy(false);
@@ -515,6 +521,7 @@ export function App({
         return;
       }
       setSelected(new Set());
+      setServerGameView(result.view);
       setNotice(label);
     } finally {
       setBusy(false);
@@ -540,6 +547,7 @@ export function App({
         setError(result.error);
         return;
       }
+      setServerGameView(result.view);
       setNotice(choice === 'yes' ? '同意换牌' : '不换');
     } finally {
       setBusy(false);
@@ -567,6 +575,7 @@ export function App({
         return;
       }
       setSelected(new Set());
+      setServerGameView(result.view);
       setNotice('已确认换牌');
     } finally {
       setBusy(false);
@@ -593,6 +602,7 @@ export function App({
         return;
       }
       setSelected(new Set());
+      setServerGameView(result.view);
       setNotice('进入下一局');
     } finally {
       setBusy(false);
@@ -631,6 +641,22 @@ export function App({
   }
 
   function renderTable(): React.ReactElement {
+    if (!orderedTableView) {
+      return (
+        <section className="gdo-table gdo-table--loading" aria-label="Game loading">
+          <div className="gdo-topbar">
+            <div className="gdo-room-code">{roomCode}</div>
+            <div className="gdo-level">等待同步</div>
+            <div className="gdo-round">{liveStream.connected ? '已连接' : '连接中'}</div>
+          </div>
+          <div className="gdo-table-loading">
+            <span className="gdo-table-loading__title">同步牌局中</span>
+            <span className="gdo-table-loading__body">等待服务器下发你的手牌和当前局面</span>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <GameTableScreen
         roomCode={roomCode}

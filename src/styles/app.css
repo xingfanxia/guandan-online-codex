@@ -236,6 +236,30 @@
   pointer-events: auto;
 }
 
+.gdo-table--loading {
+  display: grid;
+  place-items: center;
+}
+
+.gdo-table-loading {
+  display: grid;
+  gap: var(--s-2);
+  justify-items: center;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+.gdo-table-loading__title {
+  color: var(--ink-1);
+  font-size: var(--t-xl);
+  font-weight: 750;
+}
+
+.gdo-table-loading__body {
+  max-width: 280px;
+  font-size: var(--t-sm);
+}
+
 @media (max-width: 700px) {
   .gdo-app {
     padding: var(--s-2);

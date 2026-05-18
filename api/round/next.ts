@@ -10,6 +10,7 @@ import {
   type IdempotencyStore,
 } from '../../lib/realtime/idempotency';
 import { MessageType, type ServerEvent } from '../../lib/realtime/messages';
+import { buildClientPayload } from '../../lib/realtime/payload';
 import { publishEventsToPlayers } from '../../lib/realtime/publish';
 import type { GameStateStore } from '../../lib/realtime/stateStore';
 import type { RealtimePublisher } from '../../lib/realtime/upstash';
@@ -115,6 +116,7 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
       ok: true,
       phase: flow.state.phase,
       version: flow.state.version,
+      view: buildClientPayload(body.playerId ?? flow.state.players[0]!.id, events[0]!, flow.state).view,
       events: events.map((event) => event.type),
       eventIds,
     };

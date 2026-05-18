@@ -83,4 +83,33 @@ describe('bot turn chain', () => {
     expect(result.state).toMatchObject({ phase: 'round-end', winnerTeam: 't1' });
     expect(result.events.map((event) => event.type)).toEqual(['move_played', 'round_end']);
   });
+
+  test('emits game_end when a bot move wins the final A round', () => {
+    const result = runBotTurns(state({
+      levelRank: 'A',
+      players: [
+        { id: 'p1', seat: 'east', team: 't1' },
+        { id: 'p2', seat: 'south', team: 't2' },
+        { id: 'p3', seat: 'west', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+        { id: 'p4', seat: 'north', team: 't2' },
+      ],
+      hands: {
+        p1: [],
+        p2: [c('4')],
+        p3: [c('5')],
+        p4: [c('6')],
+      },
+      finished: [{ playerId: 'p1', position: 1, team: 't1' }],
+      currentTurn: 'p3',
+      progression: {
+        levels: { t1: 'A', t2: 'K' },
+        aFails: { t1: 0, t2: 0 },
+        roundOwner: 't1',
+        strictA: true,
+      },
+    }), { maxMoves: 1, random: () => 0.9 });
+
+    expect(result.state).toMatchObject({ phase: 'game-end', winnerTeam: 't1' });
+    expect(result.events.map((event) => event.type)).toEqual(['move_played', 'game_end']);
+  });
 });

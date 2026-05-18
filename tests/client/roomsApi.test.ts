@@ -25,7 +25,7 @@ describe('room API client', () => {
     })).resolves.toMatchObject({ ok: true, room: { code: 'K7M2P9' } });
     expect(fetcher).toHaveBeenNthCalledWith(1, '/api/room/create', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ hostHandle: '@Fufu', rules: { cardExchange: true }, visibility: 'public' }),
+      body: JSON.stringify({ hostHandle: '@Fufu', mode: '4', rules: { cardExchange: true }, visibility: 'public' }),
     }));
   });
 

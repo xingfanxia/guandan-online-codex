@@ -44,6 +44,23 @@ describe('room lifecycle', () => {
     expect(created.playerToken).toBe('player_A2A2A2_0000');
   });
 
+  test('creates rooms with selected 6P/8P capacity and rejects invalid modes', async () => {
+    const store = new MemoryRoomStore();
+    const created = await createRoom(store, { hostHandle: 'fufu', random: () => 0, mode: '8' });
+
+    expect(created.room).toMatchObject({ mode: '8', maxPlayers: 8 });
+
+    for (const handle of ['a11', 'a22', 'a33', 'a44', 'a55', 'a66', 'a77']) {
+      expect((await joinRoom(store, created.room.code, { handle })).ok).toBe(true);
+    }
+    await expect(joinRoom(store, created.room.code, { handle: 'a88' })).resolves.toEqual({
+      ok: false,
+      error: 'ERR_ROOM_FULL',
+    });
+
+    await expect(createRoom(new MemoryRoomStore(), { hostHandle: 'fufu', mode: '5' })).rejects.toThrow('ERR_INVALID_ROOM_MODE');
+  });
+
   test('rejects invalid join tokens and full rooms', async () => {
     const store = new MemoryRoomStore();
     const created = await createRoom(store, { hostHandle: 'host', random: () => 0.1, visibility: 'invite-only' });

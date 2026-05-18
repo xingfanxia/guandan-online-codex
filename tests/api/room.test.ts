@@ -54,6 +54,21 @@ describe('room API handlers', () => {
     expect(await leftResponse.json()).toEqual({ ok: true });
   });
 
+  test('creates rooms with selected mode through API handlers', async () => {
+    const store = new MemoryRoomStore();
+    const create = createCreateRoomHandler({ store, random: () => 0, nowIso: () => '2026-05-18T00:00:00.000Z' });
+
+    const createdResponse = await create(request({ hostHandle: '@Fufu', mode: '8' }));
+    const created = await createdResponse.json();
+
+    expect(createdResponse.status).toBe(200);
+    expect(created).toMatchObject({ ok: true, room: { mode: '8', maxPlayers: 8 } });
+
+    const rejected = await create(request({ hostHandle: '@Momo', mode: '5' }));
+    expect(rejected.status).toBe(400);
+    expect(await rejected.json()).toEqual({ ok: false, error: 'ERR_INVALID_ROOM_MODE' });
+  });
+
   test('allows public-room joins without exposing join tokens', async () => {
     const store = new MemoryRoomStore();
     const create = createCreateRoomHandler({ store, random: () => 0, nowIso: () => '2026-05-18T00:00:00.000Z' });

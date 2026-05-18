@@ -12,23 +12,23 @@
 Implemented in this clone:
 - TypeScript/Vitest project scaffolding (`package.json`, `tsconfig.json`, `vitest.config.ts`)
 - AUTH-1 helpers: handle normalization and online ownership-token validation using the scorer's token-hash pattern
-- CORE-1 / CORE-2 / CORE-3 foundation: card model, patterns, bombs, wildcard counting, mode constants, deal, turn/trick flow, move validation, round-end and 4P game-end progression
+- CORE-1 / CORE-2 / CORE-3 foundation: card model, patterns, bombs, wildcard counting, mode constants, deal, turn/trick flow, move validation, round-end, level progression, and game-end progression
 - NET-1 / NET-2 / NET-3 scaffolding: move POST handler, bounded SSE stream polling + replay framing, long-poll replay fallback, message union, Upstash REST client/publish wrapper, Redis-backed state/idempotency/event-log adapters, client reconnect helper, React filtered-view stream hook, hidden-state payload filter for both live publish and replay, CI grep guard
-- ROOM-1 / ROOM-3 scaffold: room code generation, async lifecycle store, Upstash-backed room store, create/join/leave/list/kick/start route handlers, public room payload projection, non-public room filtering, host-controlled room start with bot fill and waiting-room kick controls, crypto-backed room tokens, per-player room tokens with public payload redaction
+- ROOM-1 / ROOM-3 scaffold: room code generation, async lifecycle store, Upstash-backed room store, create/join/leave/list/kick/start route handlers, 4P/6P/8P room mode and capacity selection, public room payload projection, non-public room filtering, host-controlled room start with bot fill and waiting-room kick controls, crypto-backed room tokens, per-player room tokens with public payload redaction
 - ROOM-2 / TRIBUTE-1 / EXCHANGE-1 core slices: room rule axes, 4P/6P/8P tribute planning including 2-team sweep pairings, anti-tribute checks, tribute/return card validation, exchange vote/select/swap helpers, tribute/exchange state-node payload filtering, `api/round/next`, `api/tribute/select`, `api/exchange/vote`, `api/exchange/select`
-- Server-side round progression: 6P/8P round-end detection, post-round transition into tribute/anti-tribute/exchange vote/normal play, tribute selection into return selection, return selection into exchange vote or play, exchange vote into selection or play, and exchange selection into play
+- Server-side round progression: 6P/8P round-end detection, post-round transition into tribute/anti-tribute/exchange vote/normal play, tribute selection into return selection, return selection into exchange vote or play, exchange vote into selection or play, and exchange selection into play. Gameplay mutation routes now return the acting player's filtered `view` so the UI can hydrate immediately while SSE replay catches up.
 - AI-1 / AI-3 / AI-4 foundation: legal-move enumeration, Easy/Medium bot policies, hand sorting / move suggestions, token-protected server-side assist suggestions, stable bot identities, human-like timing helpers, `runBotTurns`, deterministic local `runBotRound` and `runBotBenchmark` harnesses, bounded inline bot chaining in `api/move`, `api/tick` continuation, and `api/cron/dcCheck` disconnect takeover guarded by `INTERNAL_TICK_SECRET` when configured
 - SEC foundation: shared memory / Upstash fixed-window rate limiter wired into core mutation routes with 429 coverage; `api/auth/createHandle` online profile creation with 5-per-IP daily throttle; same-room same-IP warning detection with public payload IP stripping; per-player room-token authorization on default SSE/move/round-next/leave/tribute/exchange/assist routes; report storage/dedupe, `api/report`, `api/admin/reports`, `api/admin/ban`, `api/admin/reset-stats`, ban enforcement on room join, official `botid` server verification plus header fallback on `api/move` / `api/report`, and browser-side BotID init for those protected POST routes
 - DEPLOY-2 telemetry foundation: `api/telemetry/latency`, `api/admin/latency`, latency sample validation, memory/Upstash telemetry store, p50/p95/p99 aggregation helper, client-side measured POST beacon helper, and admin latency panel
-- UI-1 / UI-2 / UI-3 / SEC-3 UI foundation: Vite/React app shell, first game-table screen, card/hand/trick/avatar primitives, locked token imports, CSS rotate orientation wrapper/prompt, typed room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens, waiting-room host kick controls, public-room tokenless join flow, report button, admin dashboard wiring, latency admin panel, tribute/exchange phase modals, round-end placement/next-round panel, filtered-view table + phase overlay adapters, table-side `理牌` / `提示` controls, disconnect takeover badge, active-room play/pass/round/tribute/exchange/assist POST wiring, component tests, and production build script
+- UI-1 / UI-2 / UI-3 / SEC-3 UI foundation: Vite/React app shell, first game-table screen, card/hand/trick/avatar primitives, locked token imports, CSS rotate orientation wrapper/prompt, typed room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens with 4P/6P/8P picker, waiting-room host kick controls, public-room tokenless join flow, report button, admin dashboard wiring, latency admin panel, tribute/exchange phase modals, round-end placement/next-round panel, filtered-view table + phase overlay adapters, active-room loading state, table-side `理牌` / `提示` controls, disconnect takeover badge, active-room play/pass/round/tribute/exchange/assist POST wiring, component tests, and production build script
 
 Verification after the update:
-- `npm test` — 86 files / 324 tests passing
+- `npm test` — 87 files / 337 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.08% statements / 92.95% lines
+- `npm run test:coverage` — 90.07% statements / 92.89% lines
 - `npm run security:no-leak` — passing
-- `npm run bench:ai -- 2 7 300` — 2/2 Easy self-play rounds completed
+- `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
 
 Still not complete:

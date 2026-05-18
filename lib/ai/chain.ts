@@ -48,6 +48,9 @@ export function runBotTurns(initialState: GameState, { maxMoves = 3, random = Ma
     if (result.state.phase === 'round-end') {
       events.push({ type: MessageType.RoundEnd, winnerTeam: result.state.winnerTeam });
     }
+    if (result.state.phase === 'game-end') {
+      events.push({ type: MessageType.GameEnd, winnerTeam: result.state.winnerTeam });
+    }
     state = result.state;
   }
 

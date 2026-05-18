@@ -16,9 +16,9 @@ export function createCreateRoomHandler(deps: CreateRoomDeps): (request: Request
     const rateLimited = await enforceRateLimit(request, deps.rateLimiter, Date.now());
     if (rateLimited) return rateLimited;
 
-    let body: { hostHandle?: string; rules?: unknown; visibility?: unknown };
+    let body: { hostHandle?: string; rules?: unknown; mode?: unknown; visibility?: unknown };
     try {
-      body = await request.json() as { hostHandle?: string };
+      body = await request.json() as { hostHandle?: string; rules?: unknown; mode?: unknown; visibility?: unknown };
     } catch {
       return json({ ok: false, error: 'ERR_INVALID_JSON' }, 400);
     }
@@ -29,6 +29,7 @@ export function createCreateRoomHandler(deps: CreateRoomDeps): (request: Request
       if (deps.random) options.random = deps.random;
       if (deps.nowIso) options.nowIso = deps.nowIso;
       if (body.rules) options.rules = body.rules;
+      if (body.mode) options.mode = body.mode;
       if (body.visibility) options.visibility = body.visibility;
       const clientIp = clientIpFromRequest(request);
       if (clientIp !== 'unknown') options.clientIp = clientIp;

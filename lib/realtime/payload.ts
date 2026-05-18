@@ -1,6 +1,8 @@
 import { type Card } from '../game/cards';
 import type { ExchangeVoteChoice } from '../game/exchange';
 import { type GameState, type Placement, type PlayerId } from '../game/state';
+import type { LevelRank } from '../game/cards';
+import type { TeamKey } from '../game/mode';
 import type { TributeObligation } from '../game/tribute';
 import { type ServerEvent } from './messages';
 
@@ -43,6 +45,9 @@ export interface ClientStateView {
   currentTrick?: PublicTrickView;
   finished?: unknown[];
   placements?: Placement[];
+  winnerTeam?: TeamKey;
+  nextLevelRank?: LevelRank;
+  levels?: Record<TeamKey, LevelRank>;
   tribute?: ClientTributeView;
   exchange?: ClientExchangeView;
 }
@@ -86,6 +91,20 @@ function buildClientStateView(playerId: PlayerId, state: GameState): ClientState
       handCounts,
       ...(self ? { self } : {}),
       placements: state.placements.map((placement) => ({ ...placement })),
+      winnerTeam: state.winnerTeam,
+      ...(state.nextLevelRank ? { nextLevelRank: state.nextLevelRank } : {}),
+      ...(state.progression ? { levels: { ...state.progression.levels } } : {}),
+    };
+  }
+
+  if (state.phase === 'game-end') {
+    return {
+      ...base,
+      handCounts,
+      ...(self ? { self } : {}),
+      placements: state.placements.map((placement) => ({ ...placement })),
+      winnerTeam: state.winnerTeam,
+      levels: { ...state.progression.levels },
     };
   }
 

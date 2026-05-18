@@ -81,6 +81,7 @@ export function submitTributeSelection(
       selectedReturns: {},
       firstLeader: state.firstLeader,
       deadlineAt,
+      ...(state.progression ? { progression: state.progression } : {}),
       version: state.version + 1,
     } satisfies ReturnPendingState,
     events: [
@@ -195,6 +196,7 @@ function playingState(state: ReturnPendingState, hands: Record<PlayerId, Card[]>
     finished: [],
     currentTurn: state.firstLeader,
     currentTrick: { leader: state.firstLeader, passes: [] },
+    ...(state.progression ? { progression: state.progression } : {}),
     version: state.version + 1,
   };
 }
@@ -218,6 +220,7 @@ function exchangeVoteState(
     votes: {},
     firstLeader: state.firstLeader,
     deadlineAt,
+    ...(state.progression ? { progression: state.progression } : {}),
     version: state.version + 1,
   };
 }

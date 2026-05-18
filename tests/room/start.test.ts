@@ -34,6 +34,42 @@ describe('room start', () => {
     expect(result.hands.p4).toHaveLength(27);
   });
 
+  test('uses the room mode when starting 6P and 8P rooms', async () => {
+    const store = new MemoryRoomStore();
+    const six = await createRoom(store, {
+      hostHandle: '@Fufu',
+      random: () => 0,
+      mode: '6',
+    });
+    const eight = await createRoom(store, {
+      hostHandle: '@Momo',
+      random: () => 0.1,
+      mode: '8',
+    });
+
+    const sixResult = startRoomGame(six.room, {
+      deck: generateDoubleDeck(),
+      fillBots: true,
+      botDifficulty: 'medium',
+    });
+    const eightResult = startRoomGame(eight.room, {
+      deck: generateDoubleDeck(),
+      fillBots: true,
+      botDifficulty: 'easy',
+    });
+
+    expect(sixResult.mode).toBe('6');
+    expect(sixResult.players).toHaveLength(6);
+    expect(Object.values(sixResult.hands).map((hand) => hand.length)).toEqual([18, 18, 18, 18, 18, 18]);
+    expect(sixResult.players[5]).toMatchObject({ id: 'p6', kind: 'bot', botDifficulty: 'medium' });
+
+    expect(eightResult.mode).toBe('8');
+    expect(eightResult.players).toHaveLength(8);
+    expect(Object.values(eightResult.hands).map((hand) => hand.length)).toEqual([13, 13, 13, 13, 13, 13, 13, 13]);
+    expect(eightResult.undealt).toHaveLength(4);
+    expect(eightResult.players[7]).toMatchObject({ id: 'p8', kind: 'bot', botDifficulty: 'easy' });
+  });
+
   test('rejects starting without enough humans when bot fill is disabled', async () => {
     const store = new MemoryRoomStore();
     const created = await createRoom(store, { hostHandle: '@Fufu', random: () => 0 });
