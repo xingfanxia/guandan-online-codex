@@ -37,8 +37,10 @@ function roomApi(overrides: Partial<AppRoomApi> = {}): AppRoomApi {
   ];
   return {
     createRoom: async () => ({ ok: true, room: room(), hostToken: 'host-token', joinToken: 'join-token', playerToken: 'player-token-p1' }),
+    getRoomStatus: async () => ({ ok: true, room: room() }),
     joinRoom: async () => ({ ok: true, room: room({ players: joinedPlayers }), player: joinedPlayers[1]!, playerToken: 'player-token-p2' }),
     kickPlayer: async () => ({ ok: true, room: room() }),
+    reclaimPlayer: async () => ({ ok: true, reclaimed: false, room: room({ status: 'playing' }), phase: 'playing', version: 1 }),
     startRoom: async () => ({ ok: true, phase: 'playing', version: 1, players: [] }),
     listRooms: async () => ({ ok: true, rooms: [room()] }),
     ...overrides,
@@ -318,6 +320,56 @@ describe('App shell', () => {
     expect(screen.queryByText('@momo')).not.toBeInTheDocument();
   });
 
+  test('refreshes waiting-room players from room status polling', async () => {
+    const polledPlayers: RoomPlayerDto[] = [
+      { id: 'p1', handle: 'fufu', role: 'host' },
+      { id: 'p2', handle: 'momo', role: 'player' },
+    ];
+    const statusCalls: unknown[] = [];
+    const api = roomApi({
+      createRoom: async () => ({
+        ok: true,
+        room: room(),
+        hostToken: 'host-token',
+        joinToken: 'join-token',
+        playerToken: 'player-token-p1',
+      }),
+      getRoomStatus: async (input) => {
+        statusCalls.push(input);
+        return { ok: true, room: room({ players: polledPlayers }) };
+      },
+    });
+
+    render(<App roomApi={api} playerHandle="fufu" waitingRoomPollMs={1} />);
+    fireEvent.click(screen.getByRole('button', { name: '开房' }));
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+
+    expect(await screen.findByLabelText('Waiting room')).toBeInTheDocument();
+    expect(screen.queryByText('@momo')).not.toBeInTheDocument();
+
+    await waitFor(() => expect(statusCalls).toEqual([{
+      code: 'K7M2P9',
+      playerId: 'p1',
+      token: 'player-token-p1',
+    }]));
+    expect(screen.getByText('@momo')).toBeInTheDocument();
+  });
+
+  test('moves from waiting room to table when polling sees the game started', async () => {
+    const api = roomApi({
+      getRoomStatus: async () => ({ ok: true, room: room({ status: 'playing' }) }),
+    });
+
+    render(<App roomApi={api} playerHandle="fufu" waitingRoomPollMs={1} />);
+    fireEvent.click(screen.getByRole('button', { name: '开房' }));
+    fireEvent.click(screen.getByRole('button', { name: '创建房间' }));
+
+    expect(await screen.findByLabelText('Waiting room')).toBeInTheDocument();
+
+    expect(await screen.findByLabelText('Game loading')).toBeInTheDocument();
+    expect(screen.getByText('游戏已开始')).toBeInTheDocument();
+  });
+
   test('submits selected live-table cards through the move API after room start', async () => {
     const moves: unknown[] = [];
     const moveApi: AppMoveApi = {
@@ -387,6 +439,42 @@ describe('App shell', () => {
       moveId: 'move-after-reload',
       command: { type: 'play', cards: [c('3')] },
     }]));
+  });
+
+  test('reclaims the saved player seat when a stored table session is reopened', async () => {
+    const reclaims: unknown[] = [];
+    localStorage.setItem('gdo:active-room-session:v1', JSON.stringify({
+      room: room({ status: 'playing' }),
+      hostToken: 'host-token',
+      playerToken: 'player-token-p1',
+      activePlayerId: 'p1',
+      view: 'table',
+    }));
+    const api = roomApi({
+      reclaimPlayer: async (input) => {
+        reclaims.push(input);
+        return {
+          ok: true,
+          reclaimed: true,
+          room: room({ status: 'playing' }),
+          phase: 'playing',
+          version: 12,
+          view: { ...playingView(), version: 12 },
+          events: ['player_reconnect'],
+        };
+      },
+    });
+
+    render(<App roomApi={api} playerHandle="fufu" />);
+
+    await waitFor(() => expect(reclaims).toEqual([{
+      code: 'K7M2P9',
+      playerId: 'p1',
+      token: 'player-token-p1',
+    }]));
+    expect(await screen.findByLabelText('Guandan table')).toBeInTheDocument();
+    expect(screen.getByText('已恢复座位')).toBeInTheDocument();
+    expect(screen.getByText('打 5')).toBeInTheDocument();
   });
 
   test('uses assistance APIs to sort and select a suggested move', async () => {

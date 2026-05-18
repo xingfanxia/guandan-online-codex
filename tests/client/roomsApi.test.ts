@@ -1,10 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
   createRoom,
+  getRoomStatus,
   joinRoom,
   kickPlayer,
   leaveRoom,
   listRooms,
+  reclaimPlayer,
   startRoom,
 } from '../../src/lib/api/rooms';
 
@@ -40,6 +42,12 @@ describe('room API client', () => {
       if (url === '/api/room/K7M2P9/kick') {
         return Response.json({ ok: true, room: { code: 'K7M2P9' } });
       }
+      if (url === '/api/room/K7M2P9/reclaim') {
+        return Response.json({ ok: true, reclaimed: true, room: { code: 'K7M2P9' }, phase: 'playing', version: 2 });
+      }
+      if (url === '/api/room/K7M2P9/status') {
+        return Response.json({ ok: true, room: { code: 'K7M2P9' } });
+      }
       if (url === '/api/room/K7M2P9/start') {
         return Response.json({ ok: true, phase: 'playing' });
       }
@@ -49,6 +57,8 @@ describe('room API client', () => {
     await expect(joinRoom({ code: 'K7M2P9', handle: '@Momo', token: 'join', fetcher })).resolves.toMatchObject({ ok: true });
     await expect(leaveRoom({ code: 'K7M2P9', handle: '@Momo', token: 'player-token', fetcher })).resolves.toEqual({ ok: true });
     await expect(kickPlayer({ code: 'K7M2P9', hostToken: 'host', playerId: 'p2', fetcher })).resolves.toMatchObject({ ok: true });
+    await expect(reclaimPlayer({ code: 'K7M2P9', playerId: 'p1', token: 'player-token', fetcher })).resolves.toMatchObject({ ok: true, reclaimed: true });
+    await expect(getRoomStatus({ code: 'K7M2P9', playerId: 'p1', token: 'player-token', fetcher })).resolves.toMatchObject({ ok: true, room: { code: 'K7M2P9' } });
     await expect(startRoom({ code: 'K7M2P9', hostToken: 'host', fillBots: true, botDifficulty: 'medium', fetcher })).resolves.toMatchObject({ ok: true });
 
     expect(fetcher).toHaveBeenCalledWith('/api/room/K7M2P9/join', expect.objectContaining({ method: 'POST' }));
@@ -59,6 +69,14 @@ describe('room API client', () => {
     expect(fetcher).toHaveBeenCalledWith('/api/room/K7M2P9/kick', expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ hostToken: 'host', playerId: 'p2' }),
+    }));
+    expect(fetcher).toHaveBeenCalledWith('/api/room/K7M2P9/reclaim', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ playerId: 'p1', token: 'player-token' }),
+    }));
+    expect(fetcher).toHaveBeenCalledWith('/api/room/K7M2P9/status', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ playerId: 'p1', token: 'player-token' }),
     }));
     expect(fetcher).toHaveBeenCalledWith('/api/room/K7M2P9/start', expect.objectContaining({ method: 'POST' }));
   });

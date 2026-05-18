@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cardKey, type Card } from '../lib/game/cards';
 import { sortHand } from '../lib/ai/assist';
 import { OrientationLock } from './components/OrientationLock';
@@ -9,9 +9,11 @@ import {
 } from './lib/api/assist';
 import {
   createRoom,
+  getRoomStatus,
   joinRoom,
   kickPlayer,
   listRooms,
+  reclaimPlayer,
   startRoom,
   type CreateRoomInput,
   type CreateRoomResult,
@@ -21,6 +23,10 @@ import {
   type KickPlayerResult,
   type ListRoomsResult,
   type PublicRoomDto,
+  type ReclaimPlayerInput,
+  type ReclaimPlayerResult,
+  type RoomStatusInput,
+  type RoomStatusResult,
   type StartRoomInput,
   type StartRoomResult,
 } from './lib/api/rooms';
@@ -88,8 +94,10 @@ const TRICK: Card[] = [
 
 export interface AppRoomApi {
   createRoom(input: CreateRoomInput): Promise<CreateRoomResult>;
+  getRoomStatus(input: RoomStatusInput): Promise<RoomStatusResult>;
   joinRoom(input: JoinRoomInput): Promise<JoinRoomResult>;
   kickPlayer(input: KickPlayerInput): Promise<KickPlayerResult>;
+  reclaimPlayer(input: ReclaimPlayerInput): Promise<ReclaimPlayerResult>;
   startRoom(input: StartRoomInput): Promise<StartRoomResult>;
   listRooms(): Promise<ListRoomsResult>;
 }
@@ -143,6 +151,7 @@ export interface AppProps {
   roundApi?: AppRoundApi;
   adminToken?: string;
   stream?: AppStreamOptions;
+  waitingRoomPollMs?: number;
   createMoveId?: () => string;
   createTransitionId?: () => string;
 }
@@ -176,8 +185,10 @@ interface StoredRoomSessionDraft {
 
 const defaultRoomApi: AppRoomApi = {
   createRoom,
+  getRoomStatus,
   joinRoom,
   kickPlayer,
+  reclaimPlayer,
   startRoom,
   listRooms,
 };
@@ -224,6 +235,7 @@ export function App({
   roundApi = defaultRoundApi,
   adminToken,
   stream,
+  waitingRoomPollMs = 2_000,
   createMoveId = defaultMoveId,
   createTransitionId = defaultTransitionId,
 }: AppProps): React.ReactElement {
@@ -244,6 +256,7 @@ export function App({
   const [latencyAggregates, setLatencyAggregates] = useState<LatencyAggregateDto[]>([]);
   const [hostToken, setHostToken] = useState<string | undefined>(() => storedSession?.hostToken);
   const [playerToken, setPlayerToken] = useState<string | undefined>(() => storedSession?.playerToken);
+  const reclaimAttemptKey = useRef<string | undefined>(undefined);
   const [notice, setNotice] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
@@ -286,6 +299,50 @@ export function App({
   useEffect(() => {
     setHandOrder(undefined);
   }, [activePlayerId, tableView?.version]);
+
+  useEffect(() => {
+    if (view !== 'waiting' || !currentRoom) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const result = await roomApi.getRoomStatus({
+        code: currentRoom.code,
+        ...(playerToken ? { playerId: activePlayerId, token: playerToken } : {}),
+      });
+      if (cancelled || !result.ok) return;
+      setCurrentRoom(result.room);
+      if (result.room.status === 'playing') {
+        setNotice('游戏已开始');
+        setView('table');
+      }
+    };
+    const interval = globalThis.setInterval(() => { void refresh(); }, waitingRoomPollMs);
+    return () => {
+      cancelled = true;
+      globalThis.clearInterval(interval);
+    };
+  }, [activePlayerId, currentRoom?.code, playerToken, roomApi, view, waitingRoomPollMs]);
+
+  useEffect(() => {
+    if (view !== 'table' || !currentRoom || !playerToken) return;
+    const key = `${currentRoom.code}:${activePlayerId}:${playerToken}`;
+    if (reclaimAttemptKey.current === key) return;
+    reclaimAttemptKey.current = key;
+    let cancelled = false;
+    void (async () => {
+      const result = await roomApi.reclaimPlayer({
+        code: currentRoom.code,
+        playerId: activePlayerId,
+        token: playerToken,
+      });
+      if (cancelled || !result.ok) return;
+      if (result.view) setServerGameView(viewWithResponseVersion(result.view, result.version));
+      setCurrentRoom(result.room);
+      if (result.reclaimed) setNotice('已恢复座位');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePlayerId, currentRoom, playerToken, roomApi, view]);
 
   async function handleCreate(input: Parameters<CreateRoomScreenProps['onCreate']>[0]): Promise<void> {
     setBusy(true);
@@ -499,6 +556,7 @@ export function App({
         return;
       }
       setServerGameView(viewWithResponseVersion(result.view, result.version));
+      setCurrentRoom((room) => room ? { ...room, status: 'playing' } : room);
       setNotice('游戏已开始');
       setView('table');
     } finally {

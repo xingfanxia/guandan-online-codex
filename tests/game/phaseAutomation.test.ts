@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import type { Card, Rank, Suit } from '../../lib/game/cards';
-import type { ExchangeVotePendingState, TributePendingState } from '../../lib/game/state';
+import type { ExchangeSelectPendingState, ExchangeVotePendingState, ReturnPendingState, TributePendingState } from '../../lib/game/state';
 import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation';
 import { DEFAULT_ROOM_RULES } from '../../lib/room/rules';
 
@@ -63,12 +63,66 @@ function exchangeVoteState(): ExchangeVotePendingState {
   };
 }
 
+function returnState(): ReturnPendingState {
+  return {
+    phase: 'return-pending',
+    mode: '4',
+    levelRank: '2',
+    players: [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'human' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'human' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'human' },
+    ],
+    hands: {
+      p1: [c('3')],
+      p2: [c('K')],
+      p3: [c('4')],
+      p4: [c('Q'), c('A')],
+    },
+    undealt: [],
+    exchanges: [{ from: 'p4', to: 'p1', tributeCard: c('A') }],
+    selectedReturns: {},
+    firstLeader: 'p1',
+    deadlineAt: '2026-05-18T00:00:15.000Z',
+    version: 30,
+  };
+}
+
+function exchangeSelectState(): ExchangeSelectPendingState {
+  return {
+    phase: 'exchange-select-pending',
+    mode: '4',
+    levelRank: '2',
+    players: [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'human' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'human' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'human' },
+    ],
+    hands: {
+      p1: [c('3'), c('4'), c('5')],
+      p2: [c('6'), c('7'), c('8')],
+      p3: [c('9'), c('10'), c('J')],
+      p4: [c('Q'), c('K'), c('A')],
+    },
+    undealt: [],
+    direction: 'clockwise',
+    cardCount: 3,
+    selections: {},
+    firstLeader: 'p1',
+    deadlineAt: '2026-05-18T00:00:15.000Z',
+    version: 40,
+  };
+}
+
 describe('automatic phase actions', () => {
   test('auto-picks default tribute cards and bot returns, then waits for the human return', () => {
     const result = runAutomaticPhaseActions(tributeState(), {
       rules: DEFAULT_ROOM_RULES,
       returnDeadlineAt: () => '2026-05-18T00:00:30.000Z',
       exchangeDeadlineAt: () => '2026-05-18T00:00:45.000Z',
+      nowMs: () => Date.parse('2026-05-18T00:00:10.000Z'),
     });
 
     expect(result.state).toMatchObject({
@@ -122,6 +176,72 @@ describe('automatic phase actions', () => {
       'exchange-select:p2',
       'exchange-select:p3',
       'exchange-select:p4',
+    ]);
+  });
+
+  test('auto-returns for a human after the return deadline expires', () => {
+    const result = runAutomaticPhaseActions(returnState(), {
+      rules: DEFAULT_ROOM_RULES,
+      returnDeadlineAt: () => '2026-05-18T00:00:30.000Z',
+      exchangeDeadlineAt: () => '2026-05-18T00:00:45.000Z',
+      nowMs: () => Date.parse('2026-05-18T00:00:16.000Z'),
+    });
+
+    expect(result.state).toMatchObject({
+      phase: 'playing',
+      hands: {
+        p1: [c('A')],
+        p4: [c('Q'), c('3')],
+      },
+      currentTurn: 'p1',
+    });
+    expect(result.actions).toEqual([{ phase: 'return-pending', playerId: 'p1', type: 'return-timeout' }]);
+    expect(result.events.map((event) => event.type)).toEqual(['tribute_resolved']);
+  });
+
+  test('resolves missing human exchange votes as no after deadline expiry', () => {
+    const result = runAutomaticPhaseActions({
+      ...exchangeVoteState(),
+      players: exchangeVoteState().players.map((player) => ({ ...player, kind: 'human' as const })),
+    }, {
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      returnDeadlineAt: () => '2026-05-18T00:00:30.000Z',
+      exchangeDeadlineAt: () => '2026-05-18T00:00:45.000Z',
+      nowMs: () => Date.parse('2026-05-18T00:00:16.000Z'),
+      exchangeDirection: () => 'clockwise',
+    });
+
+    expect(result.state).toMatchObject({ phase: 'playing', currentTurn: 'p1' });
+    expect(result.actions.map((action) => `${action.type}:${action.playerId}`)).toEqual([
+      'exchange-vote-timeout:p2',
+      'exchange-vote-timeout:p4',
+    ]);
+    expect(result.events.map((event) => event.type)).toEqual(['state_resync', 'exchange_vote_resolved']);
+  });
+
+  test('auto-selects exchange cards for humans after deadline expiry', () => {
+    const result = runAutomaticPhaseActions(exchangeSelectState(), {
+      rules: { ...DEFAULT_ROOM_RULES, cardExchange: true },
+      returnDeadlineAt: () => '2026-05-18T00:00:30.000Z',
+      exchangeDeadlineAt: () => '2026-05-18T00:00:45.000Z',
+      nowMs: () => Date.parse('2026-05-18T00:00:16.000Z'),
+    });
+
+    expect(result.state).toMatchObject({
+      phase: 'playing',
+      hands: {
+        p1: [c('Q'), c('K'), c('A')],
+        p2: [c('3'), c('4'), c('5')],
+        p3: [c('6'), c('7'), c('8')],
+        p4: [c('9'), c('10'), c('J')],
+      },
+      currentTurn: 'p1',
+    });
+    expect(result.actions.map((action) => `${action.type}:${action.playerId}`)).toEqual([
+      'exchange-select-timeout:p1',
+      'exchange-select-timeout:p2',
+      'exchange-select-timeout:p3',
+      'exchange-select-timeout:p4',
     ]);
   });
 });

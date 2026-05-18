@@ -1,10 +1,15 @@
 import { universalHandler } from './_node.js';
 import { runBotTurns } from '../lib/ai/chain.js';
+import { pickExchangeDirection, type ExchangeDirection } from '../lib/game/exchange.js';
+import { runAutomaticPhaseActions } from '../lib/game/phaseAutomation.js';
 import { defaultRealtimePersistence } from '../lib/realtime/defaults.js';
 import type { EventLog } from '../lib/realtime/eventLog.js';
 import { publishEventsToPlayers } from '../lib/realtime/publish.js';
 import type { GameStateStore } from '../lib/realtime/stateStore.js';
 import type { RealtimePublisher } from '../lib/realtime/upstash.js';
+import { defaultRoomStore } from '../lib/room/defaultStore.js';
+import type { RoomStore } from '../lib/room/lifecycle.js';
+import { DEFAULT_ROOM_RULES, normalizeRoomRules, type RoomRules } from '../lib/room/rules.js';
 
 export interface TickRequestBody {
   roomId: string;
@@ -15,11 +20,17 @@ export interface TickHandlerDeps {
   stateStore: GameStateStore;
   eventLog: EventLog;
   publisher: RealtimePublisher;
+  roomStore?: RoomStore;
+  rulesForRoom?: (roomId: string) => RoomRules | Promise<RoomRules>;
   internalSecret?: string;
   random?: () => number;
+  exchangeDirection?: () => ExchangeDirection;
+  nowMs?: () => number;
 }
 
 export function createTickHandler(deps: TickHandlerDeps): (request: Request) => Promise<Response> {
+  const nowMs = deps.nowMs ?? Date.now;
+
   return async function handleTick(request: Request): Promise<Response> {
     if (request.method !== 'POST') return json({ ok: false, error: 'ERR_METHOD_NOT_ALLOWED' }, 405);
     if (deps.internalSecret && request.headers.get('x-internal-secret') !== deps.internalSecret) {
@@ -39,14 +50,25 @@ export function createTickHandler(deps: TickHandlerDeps): (request: Request) => 
     const state = await deps.stateStore.get(body.roomId);
     if (!state) return json({ ok: false, error: 'ERR_ROOM_NOT_FOUND' }, 404);
 
-    const result = runBotTurns(state, {
+    const rules = await rulesForRoom(deps, body.roomId);
+    const phaseResult = runAutomaticPhaseActions(state, {
+      rules,
+      returnDeadlineAt: () => deadlineFromNow(nowMs(), rules.returnTimeLimitSeconds),
+      exchangeDeadlineAt: () => deadlineFromNow(nowMs(), rules.exchangeVoteDurationSeconds),
+      exchangeDirection: deps.exchangeDirection ?? (() => pickExchangeDirection(deps.random)),
+      nowMs,
+    });
+    const botResult = runBotTurns(phaseResult.state, {
       ...(body.maxMoves ? { maxMoves: body.maxMoves } : {}),
       ...(deps.random ? { random: deps.random } : {}),
     });
-    await deps.stateStore.set(body.roomId, result.state);
-    const logged = await publishEventsToPlayers(deps, body.roomId, result.state, result.events);
+    const finalState = botResult.state;
+    const events = [...phaseResult.events, ...botResult.events];
+
+    await deps.stateStore.set(body.roomId, finalState);
+    const logged = await publishEventsToPlayers(deps, body.roomId, finalState, events);
     const eventIds = Object.fromEntries(
-      result.state.players.map((player) => [
+      finalState.players.map((player) => [
         player.id,
         logged.filter((entry) => entry.playerId === player.id).map((entry) => entry.event.id),
       ]),
@@ -54,13 +76,24 @@ export function createTickHandler(deps: TickHandlerDeps): (request: Request) => 
 
     return json({
       ok: true,
-      phase: result.state.phase,
-      version: result.state.version,
-      events: result.events.map((event) => event.type),
-      ...(result.moves.length > 0 ? { botMoves: result.moves } : {}),
+      phase: finalState.phase,
+      version: finalState.version,
+      events: events.map((event) => event.type),
+      ...(phaseResult.actions.length > 0 ? { phaseActions: phaseResult.actions } : {}),
+      ...(botResult.moves.length > 0 ? { botMoves: botResult.moves } : {}),
       eventIds,
     }, 200);
   };
+}
+
+async function rulesForRoom(deps: TickHandlerDeps, roomId: string): Promise<RoomRules> {
+  if (deps.rulesForRoom) return normalizeRoomRules(await deps.rulesForRoom(roomId));
+  const room = await deps.roomStore?.get(roomId);
+  return normalizeRoomRules(room?.rules ?? DEFAULT_ROOM_RULES);
+}
+
+function deadlineFromNow(nowMs: number, seconds: number): string {
+  return new Date(nowMs + seconds * 1000).toISOString();
 }
 
 function json(payload: unknown, status: number): Response {
@@ -74,6 +107,7 @@ const defaultDeps: TickHandlerDeps = {
   stateStore: defaultRealtimePersistence.stateStore,
   eventLog: defaultRealtimePersistence.eventLog,
   publisher: defaultRealtimePersistence.publisher,
+  roomStore: defaultRoomStore,
   ...(process.env.INTERNAL_TICK_SECRET ? { internalSecret: process.env.INTERNAL_TICK_SECRET } : {}),
 };
 

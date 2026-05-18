@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createTickHandler } from '../../api/tick';
 import type { Card, Rank, Suit } from '../../lib/game/cards';
-import type { PlayingState } from '../../lib/game/state';
+import type { PlayingState, ReturnPendingState } from '../../lib/game/state';
 import { MemoryEventLog } from '../../lib/realtime/eventLog';
 import { MemoryGameStateStore } from '../../lib/realtime/stateStore';
 import type { RealtimePublisher } from '../../lib/realtime/upstash';
@@ -48,6 +48,32 @@ function state(): PlayingState {
       passes: [],
     },
     version: 2,
+  };
+}
+
+function returnPendingState(): ReturnPendingState {
+  return {
+    phase: 'return-pending',
+    mode: '4',
+    levelRank: '2',
+    players: [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'human' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'human' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'human' },
+    ],
+    hands: {
+      p1: [c('3')],
+      p2: [c('K')],
+      p3: [c('4')],
+      p4: [c('Q'), c('A')],
+    },
+    undealt: [],
+    exchanges: [{ from: 'p4', to: 'p1', tributeCard: c('A') }],
+    selectedReturns: {},
+    firstLeader: 'p1',
+    deadlineAt: '2026-05-18T00:00:15.000Z',
+    version: 30,
   };
 }
 
@@ -98,5 +124,43 @@ describe('api/tick handler', () => {
     });
     expect(published).toHaveLength(4);
     expect(eventLog.replayAfter('K7M2P9', 'p3').map((entry) => entry.payload.type)).toEqual(['move_played']);
+  });
+
+  test('resolves expired human phase actions before bot turns', async () => {
+    const stateStore = new MemoryGameStateStore([['K7M2P9', returnPendingState()]]);
+    const eventLog = new MemoryEventLog();
+    const published: Array<{ channel: string; payload: string }> = [];
+    const publisher: RealtimePublisher = {
+      async publish(channel, payload) {
+        published.push({ channel, payload });
+      },
+    };
+    const handler = createTickHandler({
+      stateStore,
+      eventLog,
+      publisher,
+      internalSecret: 'tick-secret',
+      nowMs: () => Date.parse('2026-05-18T00:00:16.000Z'),
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9' }));
+
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      phase: 'playing',
+      version: 31,
+      events: ['tribute_resolved'],
+      phaseActions: [{ phase: 'return-pending', playerId: 'p1', type: 'return-timeout' }],
+    });
+    expect(await stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'playing',
+      currentTurn: 'p1',
+      hands: {
+        p1: [c('A')],
+        p4: [c('Q'), c('3')],
+      },
+    });
+    expect(published).toHaveLength(4);
+    expect(eventLog.replayAfter('K7M2P9', 'p1').map((entry) => entry.payload.type)).toEqual(['tribute_resolved']);
   });
 });

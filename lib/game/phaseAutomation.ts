@@ -15,9 +15,13 @@ import type { RoomRules } from '../room/rules.js';
 
 export type AutomaticPhaseActionType =
   | 'tribute'
+  | 'tribute-timeout'
   | 'return'
+  | 'return-timeout'
   | 'exchange-vote'
-  | 'exchange-select';
+  | 'exchange-vote-timeout'
+  | 'exchange-select'
+  | 'exchange-select-timeout';
 
 export interface AutomaticPhaseAction {
   phase: GameState['phase'];
@@ -30,6 +34,7 @@ export interface AutomaticPhaseActionOptions {
   returnDeadlineAt: () => string;
   exchangeDeadlineAt: () => string;
   exchangeDirection?: () => ExchangeDirection;
+  nowMs?: () => number;
   maxActions?: number;
 }
 
@@ -46,6 +51,7 @@ export function runAutomaticPhaseActions(
     returnDeadlineAt,
     exchangeDeadlineAt,
     exchangeDirection = () => pickExchangeDirection(),
+    nowMs,
     maxActions = Math.max(16, initialState.players.length * 4),
   }: AutomaticPhaseActionOptions,
 ): AutomaticPhaseActionResult {
@@ -56,8 +62,9 @@ export function runAutomaticPhaseActions(
   for (let index = 0; index < maxActions; index++) {
     if (state.phase === 'tribute-pending') {
       const tributeState = state;
+      const expired = nowMs ? deadlineExpired(tributeState.deadlineAt, nowMs()) : false;
       const obligation = tributeState.obligations.find((candidate) => (
-        !tributeState.selectedTributes[candidate.from] && shouldAutoTribute(tributeState, candidate.from, rules)
+        !tributeState.selectedTributes[candidate.from] && shouldAutoTribute(tributeState, candidate.from, rules, expired)
       ));
       if (!obligation) break;
       const hand = tributeState.hands[obligation.from] ?? [];
@@ -68,7 +75,11 @@ export function runAutomaticPhaseActions(
         deadlineAt: returnDeadlineAt(),
       });
       if (!result.ok) break;
-      actions.push({ phase: state.phase, playerId: obligation.from, type: 'tribute' });
+      actions.push({
+        phase: state.phase,
+        playerId: obligation.from,
+        type: isBot(tributeState, obligation.from) || rules.tributeSelection === 'auto_pick' ? 'tribute' : 'tribute-timeout',
+      });
       events.push(...result.events);
       state = result.state;
       continue;
@@ -76,8 +87,9 @@ export function runAutomaticPhaseActions(
 
     if (state.phase === 'return-pending') {
       const returnState = state;
+      const expired = nowMs ? deadlineExpired(returnState.deadlineAt, nowMs()) : false;
       const exchange = returnState.exchanges.find((candidate) => (
-        !returnState.selectedReturns[candidate.to] && shouldAutoReturn(returnState, candidate.to, rules)
+        !returnState.selectedReturns[candidate.to] && shouldAutoReturn(returnState, candidate.to, rules, expired)
       ));
       if (!exchange) break;
       const hand = returnState.hands[exchange.to] ?? [];
@@ -88,7 +100,11 @@ export function runAutomaticPhaseActions(
         deadlineAt: exchangeDeadlineAt(),
       });
       if (!result.ok) break;
-      actions.push({ phase: state.phase, playerId: exchange.to, type: 'return' });
+      actions.push({
+        phase: state.phase,
+        playerId: exchange.to,
+        type: isBot(returnState, exchange.to) || rules.returnSelection === 'auto_pick_lowest' ? 'return' : 'return-timeout',
+      });
       events.push(...result.events);
       state = result.state;
       continue;
@@ -96,19 +112,21 @@ export function runAutomaticPhaseActions(
 
     if (state.phase === 'exchange-vote-pending') {
       const voteState = state;
+      const expired = nowMs ? deadlineExpired(voteState.deadlineAt, nowMs()) : false;
       const playerId = voteState.eligibleVoters.find((candidate) => (
-        !voteState.votes[candidate] && isBot(voteState, candidate)
+        !voteState.votes[candidate] && (isBot(voteState, candidate) || expired)
       ));
       if (!playerId) break;
+      const bot = isBot(voteState, playerId);
       const result = submitExchangeVote(voteState, {
         playerId,
-        choice: 'yes',
+        choice: bot ? 'yes' : 'no',
         rules,
         direction: exchangeDirection(),
         deadlineAt: exchangeDeadlineAt(),
       });
       if (!result.ok) break;
-      actions.push({ phase: state.phase, playerId, type: 'exchange-vote' });
+      actions.push({ phase: state.phase, playerId, type: bot ? 'exchange-vote' : 'exchange-vote-timeout' });
       events.push(...result.events);
       state = result.state;
       continue;
@@ -116,8 +134,10 @@ export function runAutomaticPhaseActions(
 
     if (state.phase === 'exchange-select-pending') {
       const selectState = state;
+      const expired = nowMs ? deadlineExpired(selectState.deadlineAt, nowMs()) : false;
       const player = selectState.players.find((candidate) => (
-        isBot(selectState, candidate.id) && (selectState.selections[candidate.id]?.length ?? 0) !== selectState.cardCount
+        (isBot(selectState, candidate.id) || expired)
+          && (selectState.selections[candidate.id]?.length ?? 0) !== selectState.cardCount
       ));
       if (!player) break;
       const hand = selectState.hands[player.id] ?? [];
@@ -126,7 +146,11 @@ export function runAutomaticPhaseActions(
         cards: autoPickExchangeCards(hand, selectState.cardCount),
       });
       if (!result.ok) break;
-      actions.push({ phase: state.phase, playerId: player.id, type: 'exchange-select' });
+      actions.push({
+        phase: state.phase,
+        playerId: player.id,
+        type: isBot(selectState, player.id) ? 'exchange-select' : 'exchange-select-timeout',
+      });
       events.push(...result.events);
       state = result.state;
       continue;
@@ -138,14 +162,19 @@ export function runAutomaticPhaseActions(
   return { state, events, actions };
 }
 
-function shouldAutoTribute(state: GameState, playerId: PlayerId, rules: RoomRules): boolean {
-  return rules.tributeSelection === 'auto_pick' || isBot(state, playerId);
+function shouldAutoTribute(state: GameState, playerId: PlayerId, rules: RoomRules, expired: boolean): boolean {
+  return rules.tributeSelection === 'auto_pick' || isBot(state, playerId) || expired;
 }
 
-function shouldAutoReturn(state: GameState, playerId: PlayerId, rules: RoomRules): boolean {
-  return rules.returnSelection === 'auto_pick_lowest' || isBot(state, playerId);
+function shouldAutoReturn(state: GameState, playerId: PlayerId, rules: RoomRules, expired: boolean): boolean {
+  return rules.returnSelection === 'auto_pick_lowest' || isBot(state, playerId) || expired;
 }
 
 function isBot(state: GameState, playerId: PlayerId): boolean {
   return state.players.find((player) => player.id === playerId)?.kind === 'bot';
+}
+
+function deadlineExpired(deadlineAt: string, nowMs: number): boolean {
+  const deadlineMs = Date.parse(deadlineAt);
+  return Number.isFinite(deadlineMs) && nowMs >= deadlineMs;
 }

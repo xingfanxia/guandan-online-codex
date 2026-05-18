@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createDcCheckHandler } from '../../api/cron/dcCheck';
 import type { Card } from '../../lib/game/cards';
-import type { PlayingState } from '../../lib/game/state';
+import type { PlayingState, ReturnPendingState } from '../../lib/game/state';
 import { MemoryEventLog } from '../../lib/realtime/eventLog';
 import { MemoryGameStateStore } from '../../lib/realtime/stateStore';
 import { MemoryRoomStore, type RoomRecord } from '../../lib/room/lifecycle';
@@ -16,6 +16,13 @@ function request(secret = 'tick-secret'): Request {
   return new Request('https://gdo.ax0x.ai/api/cron/dcCheck', {
     method: 'GET',
     headers: { 'x-internal-secret': secret },
+  });
+}
+
+function cronRequest(secret = 'cron-secret'): Request {
+  return new Request('https://gdo.ax0x.ai/api/cron/dcCheck', {
+    method: 'GET',
+    headers: { authorization: `Bearer ${secret}` },
   });
 }
 
@@ -68,6 +75,32 @@ function state(): PlayingState {
   };
 }
 
+function returnPendingState(): ReturnPendingState {
+  return {
+    phase: 'return-pending',
+    mode: '4',
+    levelRank: '2',
+    players: [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human', handle: 'fufu', displayName: '@fufu' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'human', handle: 'momo', displayName: '@momo' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'human', handle: 'doudou', displayName: '@doudou' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'human', handle: 'xiaoyu', displayName: '@xiaoyu' },
+    ],
+    hands: {
+      p1: [c('3')],
+      p2: [c('K')],
+      p3: [c('4')],
+      p4: [c('Q'), c('A')],
+    },
+    undealt: [],
+    exchanges: [{ from: 'p4', to: 'p1', tributeCard: c('A') }],
+    selectedReturns: {},
+    firstLeader: 'p1',
+    deadlineAt: '2026-05-18T00:00:15.000Z',
+    version: 30,
+  };
+}
+
 describe('api/cron/dcCheck handler', () => {
   test('requires the internal secret when configured', async () => {
     const handler = createDcCheckHandler({
@@ -81,6 +114,22 @@ describe('api/cron/dcCheck handler', () => {
     expect(await (await handler(request('wrong'))).json()).toEqual({
       ok: false,
       error: 'ERR_UNAUTHORIZED',
+    });
+  });
+
+  test('accepts Vercel cron authorization when configured', async () => {
+    const handler = createDcCheckHandler({
+      roomStore: new MemoryRoomStore(),
+      stateStore: new MemoryGameStateStore(),
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+      internalSecret: 'tick-secret',
+      cronSecret: 'cron-secret',
+    });
+
+    expect(await (await handler(cronRequest())).json()).toMatchObject({
+      ok: true,
+      roomsScanned: 0,
     });
   });
 
@@ -131,5 +180,47 @@ describe('api/cron/dcCheck handler', () => {
       'move_played',
     ]);
     expect(published.length).toBeGreaterThanOrEqual(12);
+  });
+
+  test('advances expired human phase actions for non-playing states', async () => {
+    const roomStore = new MemoryRoomStore();
+    await roomStore.set('K7M2P9', room());
+    const stateStore = new MemoryGameStateStore([['K7M2P9', returnPendingState()]]);
+    const eventLog = new MemoryEventLog();
+    const published: Array<{ channel: string; payload: string }> = [];
+    const publisher: RealtimePublisher = {
+      async publish(channel, payload) {
+        published.push({ channel, payload });
+      },
+    };
+    const handler = createDcCheckHandler({
+      roomStore,
+      stateStore,
+      eventLog,
+      publisher,
+      internalSecret: 'tick-secret',
+      nowIso: () => '2026-05-18T00:00:16.000Z',
+    });
+
+    const response = await handler(request());
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      roomsScanned: 1,
+      takeovers: [],
+      phaseActions: [{ roomId: 'K7M2P9', playerId: 'p1', type: 'return-timeout' }],
+      botMoves: [],
+    });
+    expect(await stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'playing',
+      currentTurn: 'p1',
+      hands: {
+        p1: [c('A')],
+        p4: [c('Q'), c('3')],
+      },
+    });
+    expect(eventLog.replayAfter('K7M2P9', 'p1').map((entry) => entry.payload.type)).toEqual(['tribute_resolved']);
+    expect(published).toHaveLength(4);
   });
 });

@@ -3,6 +3,7 @@ import defaultCreateRoomHandler, { createCreateRoomHandler } from '../../api/roo
 import defaultJoinRoomHandler, { createJoinRoomHandler } from '../../api/room/[code]/join';
 import { createKickRoomHandler } from '../../api/room/[code]/kick';
 import { createLeaveRoomHandler } from '../../api/room/[code]/leave';
+import { createRoomStatusHandler } from '../../api/room/[code]/status';
 import { createListRoomHandler } from '../../api/room/list';
 import { MemoryRoomStore } from '../../lib/room/lifecycle';
 
@@ -99,6 +100,48 @@ describe('room API handlers', () => {
 
     const allowed = await leave(request({ handle: '@Momo', token: joined.playerToken }), { code: created.room.code });
     expect(allowed.status).toBe(200);
+  });
+
+  test('returns current waiting-room status without exposing room tokens', async () => {
+    const store = new MemoryRoomStore();
+    const create = createCreateRoomHandler({ store, random: () => 0, nowIso: () => '2026-05-18T00:00:00.000Z' });
+    const join = createJoinRoomHandler({ store });
+    const status = createRoomStatusHandler({ store });
+
+    const created = await (await create(request({ hostHandle: '@Fufu' }))).json();
+    const joined = await (await join(request({ handle: '@Momo' }), { code: created.room.code })).json();
+    const response = await status(request({ playerId: joined.player.id, token: joined.playerToken }), { code: created.room.code });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      ok: true,
+      room: {
+        code: created.room.code,
+        players: [
+          { id: 'p1', handle: 'fufu' },
+          { id: 'p2', handle: 'momo' },
+        ],
+      },
+    });
+    expect(JSON.stringify(body)).not.toContain('joinToken');
+    expect(JSON.stringify(body)).not.toContain('hostToken');
+    expect(JSON.stringify(body)).not.toContain('playerToken');
+  });
+
+  test('requires membership to read non-public room status', async () => {
+    const store = new MemoryRoomStore();
+    const create = createCreateRoomHandler({ store, random: () => 0, nowIso: () => '2026-05-18T00:00:00.000Z' });
+    const status = createRoomStatusHandler({ store });
+
+    const created = await (await create(request({ hostHandle: '@Fufu', visibility: 'invite-only' }))).json();
+    const denied = await status(request({}), { code: created.room.code });
+    const allowed = await status(request({ playerId: 'p1', token: created.playerToken }), { code: created.room.code });
+
+    expect(denied.status).toBe(400);
+    expect(await denied.json()).toEqual({ ok: false, error: 'ERR_INVALID_REQUEST' });
+    expect(allowed.status).toBe(200);
+    expect(await allowed.json()).toMatchObject({ ok: true, room: { visibility: 'invite-only' } });
   });
 
   test('lets the host kick a non-host waiting-room player', async () => {

@@ -41,6 +41,17 @@ export type StartRoomResult = {
 } | RoomApiError;
 export type LeaveRoomResult = { ok: true } | RoomApiError;
 export type KickPlayerResult = { ok: true; room: PublicRoomDto } | RoomApiError;
+export type ReclaimPlayerResult = {
+  ok: true;
+  reclaimed: boolean;
+  room: PublicRoomDto;
+  phase: string;
+  version: number;
+  view?: ClientStateView;
+  events?: string[];
+  eventIds?: Record<string, string[]>;
+} | RoomApiError;
+export type RoomStatusResult = { ok: true; room: PublicRoomDto } | RoomApiError;
 export type ListRoomsResult = { ok: true; rooms: PublicRoomDto[] } | RoomApiError;
 
 export interface CreateRoomInput {
@@ -81,6 +92,22 @@ export interface KickPlayerInput {
   code: string;
   hostToken: string;
   playerId: string;
+  fetcher?: typeof fetch;
+  nowMs?: () => number;
+}
+
+export interface ReclaimPlayerInput {
+  code: string;
+  playerId: string;
+  token: string;
+  fetcher?: typeof fetch;
+  nowMs?: () => number;
+}
+
+export interface RoomStatusInput {
+  code: string;
+  playerId?: string;
+  token?: string;
   fetcher?: typeof fetch;
   nowMs?: () => number;
 }
@@ -162,6 +189,39 @@ export async function kickPlayer({
 }: KickPlayerInput): Promise<KickPlayerResult> {
   const response = await postWithLatencyBeacon(`/api/room/${code}/kick`, {
     body: { hostToken, playerId },
+    ...(fetcher ? { fetcher } : {}),
+    ...(nowMs ? { nowMs } : {}),
+  });
+  return response.json();
+}
+
+export async function reclaimPlayer({
+  code,
+  playerId,
+  token,
+  fetcher,
+  nowMs,
+}: ReclaimPlayerInput): Promise<ReclaimPlayerResult> {
+  const response = await postWithLatencyBeacon(`/api/room/${code}/reclaim`, {
+    body: { playerId, token },
+    ...(fetcher ? { fetcher } : {}),
+    ...(nowMs ? { nowMs } : {}),
+  });
+  return response.json();
+}
+
+export async function getRoomStatus({
+  code,
+  playerId,
+  token,
+  fetcher,
+  nowMs,
+}: RoomStatusInput): Promise<RoomStatusResult> {
+  const body: Record<string, unknown> = {};
+  if (playerId) body.playerId = playerId;
+  if (token) body.token = token;
+  const response = await postWithLatencyBeacon(`/api/room/${code}/status`, {
+    body,
     ...(fetcher ? { fetcher } : {}),
     ...(nowMs ? { nowMs } : {}),
   });
