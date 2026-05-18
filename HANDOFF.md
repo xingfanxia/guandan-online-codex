@@ -29,12 +29,13 @@ Implemented in this clone:
 - Bot continuation fix after live playability audit: `api/round/next`, tribute, and exchange phase endpoints now run the same immediate bot-turn continuation as `api/move` after they resolve back to `playing`, so human+bot rooms do not stall until cron when a bot becomes the next leader. `api/tick` uses the same shared continuation path.
 - Production live UI smoke: Playwright covers two real browser contexts on the deployed Vercel URL creating/joining a room, starting, playing a card, and observing the other browser sync through SSE/replay. The smoke uses the server's friendly automation user agent so BotID remains enabled for normal headless clients while the game path can be exercised in CI/manual ops.
 - Gameplay rule audit fixes: first-hand leader is now selected by a random revealed dealt-card index instead of always `p1`; `api/room/start` immediately continues bot play when that revealed leader is a bot; tribute resolution now gives first lead to the single tributer / largest tribute card, with same-rank ties going to head player's next seat; multi-player teammate wind now hands lead to the next active teammate instead of an arbitrary first teammate.
+- Replay contract audit fix: `/api/move` now returns `eventIds` as `Record<playerId, string[]>`, matching the other mutation routes and preserving every per-player event id when a human move chains bot events.
 
 Verification after the update:
 - `npm test` — 93 files / 407 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.75% statements / 93.58% lines
+- `npm run test:coverage` — 90.78% statements / 93.56% lines
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities

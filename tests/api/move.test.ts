@@ -204,6 +204,12 @@ describe('api/move handler', () => {
       version: 3,
       events: ['move_played', 'move_played'],
       botMoves: [{ playerId: 'p2', command: { type: 'play', cards: [c('4')] } }],
+      eventIds: {
+        p1: [expect.any(String), expect.any(String)],
+        p2: [expect.any(String), expect.any(String)],
+        p3: [expect.any(String), expect.any(String)],
+        p4: [expect.any(String), expect.any(String)],
+      },
     });
     expect(await stateStore.get('K7M2P9')).toMatchObject({
       phase: 'playing',

@@ -111,13 +111,19 @@ export function createMoveHandler(deps: MoveHandlerDeps): (request: Request) => 
 
     await deps.stateStore.set(body.roomId, finalState);
     const logged = await publishEventsToPlayers(deps, body.roomId, finalState, events);
+    const eventIds = Object.fromEntries(
+      finalState.players.map((player) => [
+        player.id,
+        logged.filter((entry) => entry.playerId === player.id).map((entry) => entry.event.id),
+      ]),
+    );
     const response = {
       ok: true,
       version: finalState.version,
       view: buildClientPayload(body.playerId, events[0]!, finalState).view,
       events: events.map((event) => event.type),
       ...(botTurns.moves.length > 0 ? { botMoves: botTurns.moves } : {}),
-      eventIds: Object.fromEntries(logged.map(({ playerId, event: loggedEvent }) => [playerId, loggedEvent.id])),
+      eventIds,
     };
     await completeIdempotentOperation(deps.idempotency, idempotencyKey, response, 300, nowMs());
     return json(response, 200);
