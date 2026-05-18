@@ -21,12 +21,13 @@ Implemented in this clone:
 - SEC foundation: shared memory / Upstash fixed-window rate limiter wired into core mutation routes with 429 coverage; `api/auth/createHandle` online profile creation with 5-per-IP daily throttle; same-room same-IP warning detection with public payload IP stripping; per-player room-token authorization on default SSE/move/round-next/leave/tribute/exchange/assist routes; report storage/dedupe, `api/report`, `api/admin/reports`, `api/admin/ban`, `api/admin/reset-stats`, ban enforcement on room join, official `botid` server verification plus header fallback on `api/move` / `api/report`, and browser-side BotID init for those protected POST routes
 - DEPLOY-2 telemetry foundation: `api/telemetry/latency`, `api/admin/latency`, latency sample validation, memory/Upstash telemetry store, p50/p95/p99 aggregation helper, client-side measured POST beacon helper, and admin latency panel
 - UI-1 / UI-2 / UI-3 / SEC-3 UI foundation: Vite/React app shell, first game-table screen, card/hand/trick/avatar primitives, locked token imports, CSS rotate orientation wrapper/prompt, typed room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens with 4P/6P/8P picker, waiting-room host kick controls, public-room tokenless join flow, report button, admin dashboard wiring, latency admin panel, tribute/exchange phase modals, round-end placement/next-round panel, filtered-view table + phase overlay adapters, active-room loading state, local active-room reconnect persistence, table-side `理牌` / `提示` controls, disconnect takeover badge, active-room play/pass/round/tribute/exchange/assist POST wiring, component tests, and production build script
+- Full-game API integration coverage for all-human and human+bot 4P/8P games from create/join/start through move, round-next, tribute return, and `game-end`, including player-token authorization and hidden-state replay checks
 
 Verification after the update:
-- `npm test` — 88 files / 348 tests passing
+- `npm test` — 89 files / 352 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.26% statements / 93.24% lines
+- `npm run test:coverage` — 90.35% statements / 93.36% lines
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
@@ -35,7 +36,7 @@ Still not complete:
 - AUTH-2 scorer key migration is superseded for this Codex build. The online game now owns an independent `go:player:*` namespace and must use a dedicated Redis/Upstash project.
 - Route defaults use Upstash-backed persistence when `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` or Vercel Marketplace `KV_REST_API_URL` / `KV_REST_API_TOKEN` are present; without env vars they intentionally fall back to process-local memory stores for local tests.
 - Dedicated Upstash KV env vars are configured on `panpanmao/guandan-online-codex` for Production and Preview through Vercel Marketplace. Do not copy scorer database credentials into this project.
-- Live Vercel SSE+POST validation with two browser tabs is not done in this local foundation pass.
+- Full-game route-handler integration is covered locally, but live Vercel SSE+POST validation with two browser tabs is not done in this local foundation pass.
 - SSE uses bounded polling over the per-player event log; tune `pollMs`/duration against real Upstash/Vercel latency before production.
 - `api/round/next` is the explicit server transition from `round-end` into the next hand; `api/move` still stops at `round-end` so the UI can show the round summary before advancing.
 - AI WASM solver, Elo-rated benchmark league, live BotID production verification, real-device orientation validation, live deployed table validation, and deployment milestones remain pending per `docs/plan/PLAN.md`.

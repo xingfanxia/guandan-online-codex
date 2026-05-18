@@ -23,7 +23,8 @@ Implementation should follow the P0 milestone order from `docs/plan/PLAN.md`, wi
 7. DEPLOY-2 telemetry foundation exists for latency beacon ingestion, p50/p95/p99 aggregation, a measured POST beacon helper, admin latency endpoint, and admin latency panel.
 8. UI-1 / UI-2 / UI-3 / SEC-3 UI foundation exists as a Vite/React app shell with card, hand, trick, avatar, first game-table screen, CSS rotate orientation wrapper, typed room/moderation/move/round/phase-action/assist API clients, create/waiting/browser screens with 4P/6P/8P picker, active-room loading state, waiting-room kick controls, tokenless public-room join, report button, admin dashboard wiring, tribute/exchange phase overlays, round-end placement/next-round panel, filtered SSE state consumption, local active-room reconnect persistence, disconnect takeover badge, table-side `理牌` / `提示` controls, and active-room move/round/phase/assist POST wiring. Real-device orientation validation and live deployed table validation are still pending.
 9. Validate the bounded SSE polling loop against real Upstash/Vercel latency before treating the realtime defaults as production-ready.
-10. Later phases remain gated by the acceptance criteria in `docs/plan/PLAN.md`.
+10. Full-game API integration coverage exists for all-human and human+bot 4P/8P games through create/join/start/move/round/tribute APIs to `game-end`; live browser production validation is still a separate gate.
+11. Later phases remain gated by the acceptance criteria in `docs/plan/PLAN.md`.
 
 ## Domain references
 
@@ -52,4 +53,4 @@ Follow the global file-organization rules from `~/.claude/CLAUDE.md`:
 
 ## Last updated
 
-2026-05-18 — P0/P1 foundation implementation in progress in the isolated `guandan-online-codex` clone; selectable 4P/6P/8P rooms, started-room locking, stable seat-id allocation, local active-room reconnect persistence, server-side tribute/exchange progression with default tribute auto-pick and bot phase automation, self-hydrating filtered mutation responses, Easy/Medium bot foundations, server-side assist suggestions, deterministic local self-play and benchmark CLI, disconnect bot takeover, backend anti-abuse controls, per-player room-token auth, telemetry backend/admin panel, room/admin UI wiring, S20-S23 phase overlays, round-end advance panel, filtered SSE hook, and active-room table actions are wired.
+2026-05-18 — P0/P1 foundation implementation in progress in the isolated `guandan-online-codex` clone; selectable 4P/6P/8P rooms, started-room locking, stable seat-id allocation, local active-room reconnect persistence, server-side tribute/exchange progression with default tribute auto-pick and bot phase automation, self-hydrating filtered mutation responses, Easy/Medium bot foundations, server-side assist suggestions, deterministic local self-play and benchmark CLI, full-game 4P/8P API integration tests, disconnect bot takeover, backend anti-abuse controls, per-player room-token auth, telemetry backend/admin panel, room/admin UI wiring, S20-S23 phase overlays, round-end advance panel, filtered SSE hook, and active-room table actions are wired.
