@@ -14,8 +14,9 @@ export function startRoomGame(room: RoomRecord, { deck, fillBots, botDifficulty 
   const seats = createPlayers(room.mode);
   if (!fillBots && room.players.length < seats.length) throw new Error('ERR_NOT_ENOUGH_PLAYERS');
 
+  const roomPlayersById = new Map(room.players.map((player) => [player.id, player]));
   const players: Player[] = seats.map((seatPlayer, index) => {
-    const roomPlayer = room.players[index];
+    const roomPlayer = roomPlayersById.get(seatPlayer.id);
     if (roomPlayer) {
       return {
         ...seatPlayer,

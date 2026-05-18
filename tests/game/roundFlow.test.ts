@@ -121,6 +121,32 @@ describe('post-round flow', () => {
     });
   });
 
+  test('preserves level progression when the next hand starts directly', () => {
+    const result = startNextRoundFlow({
+      roundEnd: roundEnd({
+        progression: {
+          levels: { t1: '7', t2: '5' },
+          aFails: { t1: 1, t2: 0 },
+          roundOwner: 't1',
+          strictA: true,
+        },
+      }),
+      deck: deck([c('A'), c('2'), c('3'), c('4')]),
+      rules: { ...DEFAULT_ROOM_RULES, tributeEnabled: false, cardExchange: false },
+      deadlineAt: '2026-05-18T00:00:15.000Z',
+    });
+
+    expect(result.state).toMatchObject({
+      phase: 'playing',
+      progression: {
+        levels: { t1: '7', t2: '5' },
+        aFails: { t1: 1, t2: 0 },
+        roundOwner: 't1',
+        strictA: true,
+      },
+    });
+  });
+
   test('6P sweep round opens multi-pair tribute pending', () => {
     const result = startNextRoundFlow({
       roundEnd: roundEnd({

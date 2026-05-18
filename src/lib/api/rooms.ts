@@ -16,6 +16,7 @@ export interface PublicRoomDto {
   mode: GameMode;
   maxPlayers: number;
   visibility: 'public' | 'unlisted' | 'invite-only';
+  status: 'waiting' | 'playing';
   updatedAt: string;
 }
 

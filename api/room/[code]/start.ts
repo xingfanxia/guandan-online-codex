@@ -7,7 +7,7 @@ import { publishEventsToPlayers } from '../../../lib/realtime/publish';
 import type { GameStateStore } from '../../../lib/realtime/stateStore';
 import type { RealtimePublisher } from '../../../lib/realtime/upstash';
 import { defaultRoomStore } from '../../../lib/room/defaultStore';
-import type { RoomStore } from '../../../lib/room/lifecycle';
+import { markRoomStarted, type RoomStore } from '../../../lib/room/lifecycle';
 import { startRoomGame } from '../../../lib/room/start';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../../lib/security/rateLimit';
 import type { RoomCodeParams } from './join';
@@ -38,6 +38,7 @@ export function createStartRoomHandler(deps: StartRoomDeps): (request: Request, 
     const room = await deps.roomStore.get(params.code);
     if (!room) return json({ ok: false, error: 'ERR_ROOM_NOT_FOUND' }, 404);
     if (body.hostToken !== room.hostToken) return json({ ok: false, error: 'ERR_INVALID_HOST_TOKEN' }, 403);
+    if (room.status === 'playing') return json({ ok: false, error: 'ERR_ROOM_STARTED' }, 409);
 
     try {
       const state = startRoomGame(room, {
@@ -46,6 +47,7 @@ export function createStartRoomHandler(deps: StartRoomDeps): (request: Request, 
         botDifficulty: body.botDifficulty ?? 'easy',
       });
       await deps.stateStore.set(params.code, state);
+      await markRoomStarted(deps.roomStore, params.code, { hostToken: body.hostToken });
       const events: ServerEvent[] = [{ type: MessageType.StateResync, reason: 'room-start' }];
       const logged = await publishEventsToPlayers(deps, params.code, state, events);
       const eventIds = Object.fromEntries(

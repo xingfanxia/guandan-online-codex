@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { App } from '../../src/App';
 import type { AppAssistApi, AppModerationApi, AppMoveApi, AppPhaseApi, AppRoomApi, AppRoundApi } from '../../src/App';
 import type { PublicRoomDto, RoomPlayerDto } from '../../src/lib/api/rooms';
@@ -25,6 +25,7 @@ function baseRoom(): PublicRoomDto {
     mode: '4',
     maxPlayers: 4,
     visibility: 'public' as const,
+    status: 'waiting' as const,
     updatedAt: '2026-05-18T00:00:00.000Z',
   };
 }
@@ -153,6 +154,10 @@ function roundEndView(): ClientStateView {
 }
 
 describe('App shell', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   test('renders the game table as the first screen and supports card selection', () => {
     render(<App />);
 
@@ -289,6 +294,43 @@ describe('App shell', () => {
       command: { type: 'play', cards: [c('3')] },
     }]));
     expect(screen.getByLabelText('Guandan table')).toBeInTheDocument();
+  });
+
+  test('restores an active room session and submits with the saved player token after reload', async () => {
+    const moves: unknown[] = [];
+    localStorage.setItem('gdo:active-room-session:v1', JSON.stringify({
+      room: room(),
+      hostToken: 'host-token',
+      playerToken: 'player-token-p1',
+      activePlayerId: 'p1',
+      view: 'table',
+    }));
+    const moveApi: AppMoveApi = {
+      submitMove: async (input) => {
+        moves.push(input);
+        return { ok: true, version: 10, view: playingView() };
+      },
+    };
+
+    render(
+      <App
+        roomApi={roomApi()}
+        moveApi={moveApi}
+        gameView={playingView()}
+        playerHandle="fufu"
+        createMoveId={() => 'move-after-reload'}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('3 of spades'));
+    fireEvent.click(screen.getByRole('button', { name: '出牌 · 1 张' }));
+
+    await waitFor(() => expect(moves).toEqual([{
+      roomId: 'K7M2P9',
+      playerId: 'p1',
+      token: 'player-token-p1',
+      moveId: 'move-after-reload',
+      command: { type: 'play', cards: [c('3')] },
+    }]));
   });
 
   test('uses assistance APIs to sort and select a suggested move', async () => {

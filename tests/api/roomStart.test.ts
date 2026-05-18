@@ -64,9 +64,25 @@ describe('room start API handler', () => {
     });
     expect(body.view.self.hand).toHaveLength(27);
     expect(await stateStore.get(created.room.code)).toMatchObject({ phase: 'playing', currentTurn: 'p1' });
+    expect(await roomStore.get(created.room.code)).toMatchObject({ status: 'playing' });
     expect(published).toHaveLength(4);
     expect(eventLog.replayAfter(created.room.code, 'p2').map((entry) => entry.payload.type)).toEqual(['state_resync']);
     expect(JSON.stringify(body)).not.toContain('hands');
+  });
+
+  test('started rooms reject late joins through the lifecycle store', async () => {
+    const roomStore = new MemoryRoomStore();
+    const created = await createRoom(roomStore, { hostHandle: '@Fufu', random: () => 0 });
+    const handler = createStartRoomHandler({
+      roomStore,
+      stateStore: new MemoryGameStateStore(),
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+      deckForRoom: () => generateDoubleDeck(),
+    });
+
+    expect((await handler(request({ hostToken: created.hostToken, fillBots: true }), { code: created.room.code })).status).toBe(200);
+    expect(await roomStore.get(created.room.code)).toMatchObject({ status: 'playing' });
   });
 
   test('starts selected 8P room mode and publishes to all seats', async () => {

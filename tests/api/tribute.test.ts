@@ -109,7 +109,7 @@ describe('tribute select API handler', () => {
       stateStore,
       eventLog,
       publisher,
-      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, cardExchange: false }),
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, tributeSelection: 'player_picks', cardExchange: false }),
       returnDeadlineAt: () => '2026-05-18T00:00:30.000Z',
       exchangeDeadlineAt: () => '2026-05-18T00:00:45.000Z',
     });
@@ -150,5 +150,43 @@ describe('tribute select API handler', () => {
     });
     expect(published.length).toBeGreaterThan(0);
     expect(JSON.stringify(eventLog.replayAfter('K7M2P9', 'p2'))).not.toContain('"p1":[{"rank"');
+  });
+
+  test('stateful handler lets bots finish pending tribute and return actions after a human selection', async () => {
+    const state = tributeState();
+    state.players = [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'human' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+    ];
+    const stateStore = new MemoryGameStateStore([['K7M2P9', state]]);
+    const handler = createTributeSelectHandler({
+      stateStore,
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, tributeSelection: 'player_picks', cardExchange: false }),
+      returnDeadlineAt: () => '2026-05-18T00:00:30.000Z',
+      exchangeDeadlineAt: () => '2026-05-18T00:00:45.000Z',
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9', playerId: 'p2', card: c('A') }));
+
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      phase: 'return-pending',
+      version: 13,
+      events: [
+        MessageType.StateResync,
+        MessageType.TributeCompleted,
+        MessageType.ReturnRequired,
+        MessageType.ReturnRequired,
+        MessageType.StateResync,
+      ],
+    });
+    expect(await stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'return-pending',
+      selectedReturns: { p3: c('7') },
+    });
   });
 });

@@ -1,6 +1,7 @@
 import type { Card } from '../../lib/game/cards';
 import { applyCardExchange, validateExchangeSelection, type ExchangeDirection } from '../../lib/game/exchange';
 import { submitExchangeSelection } from '../../lib/game/exchangeFlow';
+import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation';
 import type { PlayerId } from '../../lib/game/state';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
 import type { EventLog } from '../../lib/realtime/eventLog';
@@ -12,6 +13,7 @@ import type { RealtimePublisher } from '../../lib/realtime/upstash';
 import { defaultRoomStore } from '../../lib/room/defaultStore';
 import type { RoomStore } from '../../lib/room/lifecycle';
 import { authorizeRoomPlayer } from '../../lib/room/playerAuth';
+import { DEFAULT_ROOM_RULES } from '../../lib/room/rules';
 import { createDefaultRateLimiter, enforceRateLimit, type RequestRateLimiter } from '../../lib/security/rateLimit';
 
 export interface ExchangeSelectSession {
@@ -126,20 +128,28 @@ async function handleStatefulSelect(
   const result = submitExchangeSelection(state, { playerId, cards });
   if (!result.ok) return json({ ok: false, error: result.error }, statusForError(result.error));
 
-  await deps.stateStore.set(roomId, result.state);
-  const logged = await publishEventsToPlayers(deps, roomId, result.state, result.events);
+  const automated = runAutomaticPhaseActions(result.state, {
+    rules: DEFAULT_ROOM_RULES,
+    returnDeadlineAt: () => deadlineFromNow(DEFAULT_ROOM_RULES.returnTimeLimitSeconds),
+    exchangeDeadlineAt: () => deadlineFromNow(DEFAULT_ROOM_RULES.exchangeVoteDurationSeconds),
+  });
+  const finalState = automated.state;
+  const events = [...result.events, ...automated.events];
+
+  await deps.stateStore.set(roomId, finalState);
+  const logged = await publishEventsToPlayers(deps, roomId, finalState, events);
   const eventIds = Object.fromEntries(
-    result.state.players.map((player) => [
+    finalState.players.map((player) => [
       player.id,
       logged.filter((entry) => entry.playerId === player.id).map((entry) => entry.event.id),
     ]),
   );
   return json({
     ok: true,
-    phase: result.state.phase,
-    version: result.state.version,
-    view: buildClientPayload(playerId, firstEvent(result.events), result.state).view,
-    events: result.events.map((event) => event.type),
+    phase: finalState.phase,
+    version: finalState.version,
+    view: buildClientPayload(playerId, firstEvent(events), finalState).view,
+    events: events.map((event) => event.type),
     eventIds,
   }, 200);
 }
@@ -170,6 +180,10 @@ function json(payload: unknown, status: number): Response {
     status,
     headers: { 'content-type': 'application/json' },
   });
+}
+
+function deadlineFromNow(seconds: number): string {
+  return new Date(Date.now() + seconds * 1000).toISOString();
 }
 
 function statusForError(error: string): number {

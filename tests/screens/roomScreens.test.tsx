@@ -62,6 +62,7 @@ describe('room screens', () => {
           mode: '4',
           maxPlayers: 4,
           visibility: 'public',
+          status: 'waiting',
           updatedAt: '2026-05-18T00:00:00.000Z',
         }]}
         onJoin={onJoin}

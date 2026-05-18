@@ -118,6 +118,7 @@ function playingState({
   players,
   hands,
   undealt,
+  progression,
   version,
   leader,
 }: Omit<PlayingState, 'phase' | 'finished' | 'currentTurn' | 'currentTrick'> & { leader: string }): PlayingState {
@@ -131,6 +132,7 @@ function playingState({
     finished: [],
     currentTurn: leader,
     currentTrick: { leader, passes: [] },
+    ...(progression ? { progression } : {}),
     version,
   };
 }

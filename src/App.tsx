@@ -138,6 +138,25 @@ export interface AppProps {
 
 type AppView = 'table' | 'create' | 'browser' | 'waiting' | 'admin';
 
+const ACTIVE_ROOM_SESSION_KEY = 'gdo:active-room-session:v1';
+const restorableViews = new Set<AppView>(['table', 'waiting']);
+
+interface StoredRoomSession {
+  room: PublicRoomDto;
+  hostToken?: string;
+  playerToken?: string;
+  activePlayerId: string;
+  view: AppView;
+}
+
+interface StoredRoomSessionDraft {
+  room?: PublicRoomDto | undefined;
+  hostToken?: string | undefined;
+  playerToken?: string | undefined;
+  activePlayerId: string;
+  view: AppView;
+}
+
 const defaultRoomApi: AppRoomApi = {
   createRoom,
   joinRoom,
@@ -186,17 +205,18 @@ export function App({
   createMoveId = defaultMoveId,
   createTransitionId = defaultTransitionId,
 }: AppProps): React.ReactElement {
+  const [storedSession] = useState<StoredRoomSession | undefined>(() => readStoredRoomSession());
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [view, setView] = useState<AppView>('table');
-  const [activePlayerId, setActivePlayerId] = useState(currentPlayerId);
+  const [view, setView] = useState<AppView>(() => storedSession?.view ?? 'table');
+  const [activePlayerId, setActivePlayerId] = useState(() => storedSession?.activePlayerId ?? currentPlayerId);
   const [handOrder, setHandOrder] = useState<Card[] | undefined>();
-  const [currentRoom, setCurrentRoom] = useState<PublicRoomDto | undefined>();
+  const [currentRoom, setCurrentRoom] = useState<PublicRoomDto | undefined>(() => storedSession?.room);
   const [serverGameView, setServerGameView] = useState<ClientStateView | undefined>();
   const [rooms, setRooms] = useState<PublicRoomDto[]>([]);
   const [reports, setReports] = useState<ReportRecordDto[]>([]);
   const [latencyAggregates, setLatencyAggregates] = useState<LatencyAggregateDto[]>([]);
-  const [hostToken, setHostToken] = useState<string | undefined>();
-  const [playerToken, setPlayerToken] = useState<string | undefined>();
+  const [hostToken, setHostToken] = useState<string | undefined>(() => storedSession?.hostToken);
+  const [playerToken, setPlayerToken] = useState<string | undefined>(() => storedSession?.playerToken);
   const [notice, setNotice] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
@@ -220,8 +240,20 @@ export function App({
   const selectedCards = orderedTableView ? cardsFromSelection(orderedTableView, activePlayerId, selected) : [];
 
   useEffect(() => {
-    setActivePlayerId(currentPlayerId);
-  }, [currentPlayerId]);
+    if (!currentRoom) {
+      setActivePlayerId(currentPlayerId);
+    }
+  }, [currentPlayerId, currentRoom]);
+
+  useEffect(() => {
+    writeStoredRoomSession({
+      room: currentRoom,
+      hostToken,
+      playerToken,
+      activePlayerId,
+      view,
+    });
+  }, [currentRoom, hostToken, playerToken, activePlayerId, view]);
 
   useEffect(() => {
     setHandOrder(undefined);
@@ -766,6 +798,65 @@ function defaultMoveId(): string {
 function defaultTransitionId(): string {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `round_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+function readStoredRoomSession(): StoredRoomSession | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return parseStoredRoomSession(window.localStorage.getItem(ACTIVE_ROOM_SESSION_KEY));
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredRoomSession(session: StoredRoomSessionDraft): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!session.room) {
+      window.localStorage.removeItem(ACTIVE_ROOM_SESSION_KEY);
+      return;
+    }
+    window.localStorage.setItem(ACTIVE_ROOM_SESSION_KEY, JSON.stringify(session));
+  } catch {
+    // Storage is best-effort; active room commands still work for the current tab.
+  }
+}
+
+function parseStoredRoomSession(value: string | null): StoredRoomSession | undefined {
+  if (!value) return undefined;
+  const parsed: unknown = JSON.parse(value);
+  if (!isRecord(parsed)) return undefined;
+  const room = parsed.room;
+  const activePlayerId = parsed.activePlayerId;
+  const view = parsed.view;
+  if (!isPublicRoomDto(room)) return undefined;
+  if (typeof activePlayerId !== 'string' || activePlayerId.length === 0) return undefined;
+  if (typeof view !== 'string' || !restorableViews.has(view as AppView)) return undefined;
+  return {
+    room,
+    activePlayerId,
+    view: view as AppView,
+    ...(typeof parsed.hostToken === 'string' ? { hostToken: parsed.hostToken } : {}),
+    ...(typeof parsed.playerToken === 'string' ? { playerToken: parsed.playerToken } : {}),
+  };
+}
+
+function isPublicRoomDto(value: unknown): value is PublicRoomDto {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.code === 'string' &&
+    typeof value.hostHandle === 'string' &&
+    Array.isArray(value.players) &&
+    typeof value.mode === 'string' &&
+    typeof value.maxPlayers === 'number' &&
+    typeof value.visibility === 'string' &&
+    typeof value.status === 'string' &&
+    typeof value.updatedAt === 'string'
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function navClass(active: boolean): string {

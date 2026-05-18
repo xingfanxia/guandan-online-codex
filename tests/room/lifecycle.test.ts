@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createRoom, joinRoom, leaveRoom, listPublicRooms, MemoryRoomStore } from '../../lib/room/lifecycle';
+import { createRoom, joinRoom, kickRoomPlayer, leaveRoom, listPublicRooms, markRoomStarted, MemoryRoomStore } from '../../lib/room/lifecycle';
 
 describe('room lifecycle', () => {
   test('creates, joins, and leaves a room', async () => {
@@ -123,5 +123,39 @@ describe('room lifecycle', () => {
     expect(rooms[0]).not.toHaveProperty('hostToken');
     expect(rooms[0]).not.toHaveProperty('joinToken');
     expect(JSON.stringify(rooms[0])).not.toContain('playerToken');
+  });
+
+  test('locks started rooms against late joins and public browser listing', async () => {
+    const store = new MemoryRoomStore();
+    const created = await createRoom(store, {
+      hostHandle: 'fufu',
+      random: () => 0,
+      nowIso: () => '2026-05-18T00:00:00.000Z',
+    });
+
+    await expect(markRoomStarted(store, created.room.code, { hostToken: created.hostToken })).resolves.toMatchObject({
+      ok: true,
+      room: { status: 'playing' },
+    });
+    await expect(joinRoom(store, created.room.code, { handle: 'late1' })).resolves.toEqual({
+      ok: false,
+      error: 'ERR_ROOM_STARTED',
+    });
+    await expect(listPublicRooms(store)).resolves.toEqual([]);
+  });
+
+  test('fills the lowest open player id after a waiting-room kick', async () => {
+    const store = new MemoryRoomStore();
+    const created = await createRoom(store, { hostHandle: 'fufu', random: () => 0 });
+
+    await joinRoom(store, created.room.code, { handle: 'momo' });
+    await joinRoom(store, created.room.code, { handle: 'doudou' });
+    const kicked = await kickRoomPlayer(store, created.room.code, { hostToken: created.hostToken, playerId: 'p2' });
+    expect(kicked).toMatchObject({ ok: true });
+
+    const joined = await joinRoom(store, created.room.code, { handle: 'xiaoyu' });
+
+    expect(joined).toMatchObject({ ok: true, player: { id: 'p2', handle: 'xiaoyu' } });
+    expect(store.get(created.room.code)?.players.map((player) => player.id)).toEqual(['p1', 'p3', 'p2']);
   });
 });

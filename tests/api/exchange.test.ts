@@ -184,6 +184,53 @@ describe('exchange API handlers', () => {
     expect(JSON.stringify(eventLog.replayAfter('K7M2P9', 'p1'))).not.toContain('"p2":[{"rank"');
   });
 
+  test('stateful vote handler lets bot voters and selectors finish the exchange', async () => {
+    const state = voteState();
+    state.players = state.players.map((player) => ({
+      ...player,
+      kind: 'bot' as const,
+      botDifficulty: 'easy' as const,
+    }));
+    const stateStore = new MemoryGameStateStore([['K7M2P9', state]]);
+    const handler = createExchangeVoteHandler({
+      stateStore,
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, cardExchange: true }),
+      direction: () => 'clockwise',
+      deadlineAt: () => '2026-05-18T00:00:30.000Z',
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9', playerId: 'p2', choice: 'yes' }));
+
+    expect(await response.json()).toMatchObject({
+      ok: true,
+      phase: 'playing',
+      version: 26,
+      events: [
+        MessageType.StateResync,
+        MessageType.ExchangeVoteResolved,
+        MessageType.ExchangeSelectRequired,
+        MessageType.ExchangeSelectRequired,
+        MessageType.ExchangeSelectRequired,
+        MessageType.ExchangeSelectRequired,
+        MessageType.StateResync,
+        MessageType.StateResync,
+        MessageType.StateResync,
+        MessageType.ExchangeCompleted,
+      ],
+    });
+    expect(await stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'playing',
+      hands: {
+        p1: [c('Q'), c('K'), c('A')],
+        p2: [c('3'), c('4'), c('5')],
+        p3: [c('6'), c('7'), c('8')],
+        p4: [c('9'), c('10'), c('J')],
+      },
+    });
+  });
+
   test('stateful select handler transitions stored exchange selection into playing', async () => {
     const stateStore = new MemoryGameStateStore([['K7M2P9', selectState()]]);
     const handler = createExchangeSelectHandler({

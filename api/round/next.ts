@@ -1,7 +1,9 @@
 import { generateDoubleDeck, shuffleDeck, type Card } from '../../lib/game/cards';
+import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation';
 import { startNextRoundFlow } from '../../lib/game/roundFlow';
 import type { RoundEndState } from '../../lib/game/state';
 import type { TeamStructure } from '../../lib/game/tribute';
+import type { ExchangeDirection } from '../../lib/game/exchange';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
 import type { EventLog } from '../../lib/realtime/eventLog';
 import {
@@ -36,6 +38,7 @@ export interface NextRoundHandlerDeps {
   deckForRoom?: (roomId: string, roundEnd: RoundEndState) => readonly Card[];
   rulesForRoom?: (roomId: string, roundEnd: RoundEndState) => RoomRules | Promise<RoomRules>;
   teamStructureForRoom?: (roomId: string, roundEnd: RoundEndState) => TeamStructure;
+  exchangeDirectionForRoom?: (roomId: string, roundEnd: RoundEndState) => ExchangeDirection;
   deadlineAt?: (roundEnd: RoundEndState, rules: RoomRules) => string;
   exchangeDeadlineAt?: (roundEnd: RoundEndState, rules: RoomRules) => string;
   nowMs?: () => number;
@@ -101,22 +104,31 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
       teamStructure: deps.teamStructureForRoom?.(body.roomId, state) ?? '2-teams-of-n',
     });
 
-    await deps.stateStore.set(body.roomId, flow.state);
-    const events: ServerEvent[] = flow.events.length > 0
-      ? flow.events
+    const automated = runAutomaticPhaseActions(flow.state, {
+      rules,
+      returnDeadlineAt: () => deps.deadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.returnTimeLimitSeconds),
+      exchangeDeadlineAt: () => deps.exchangeDeadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.exchangeVoteDurationSeconds),
+      ...(deps.exchangeDirectionForRoom ? { exchangeDirection: () => deps.exchangeDirectionForRoom!(body.roomId, state) } : {}),
+    });
+    const finalState = automated.state;
+    const emittedEvents = [...flow.events, ...automated.events];
+
+    await deps.stateStore.set(body.roomId, finalState);
+    const events: ServerEvent[] = emittedEvents.length > 0
+      ? emittedEvents
       : [{ type: MessageType.StateResync, reason: 'next-round' }];
-    const logged = await publishEventsToPlayers(deps, body.roomId, flow.state, events);
+    const logged = await publishEventsToPlayers(deps, body.roomId, finalState, events);
     const eventIds = Object.fromEntries(
-      flow.state.players.map((player) => [
+      finalState.players.map((player) => [
         player.id,
         logged.filter((entry) => entry.playerId === player.id).map((entry) => entry.event.id),
       ]),
     );
     const response = {
       ok: true,
-      phase: flow.state.phase,
-      version: flow.state.version,
-      view: buildClientPayload(body.playerId ?? flow.state.players[0]!.id, events[0]!, flow.state).view,
+      phase: finalState.phase,
+      version: finalState.version,
+      view: buildClientPayload(body.playerId ?? finalState.players[0]!.id, events[0]!, finalState).view,
       events: events.map((event) => event.type),
       eventIds,
     };

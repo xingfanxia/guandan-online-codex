@@ -22,6 +22,8 @@ export interface RoomPlayer {
   reclaimUntil?: string;
 }
 
+export type RoomStatus = 'waiting' | 'playing';
+
 export interface RoomRecord {
   code: string;
   hostHandle: string;
@@ -31,6 +33,7 @@ export interface RoomRecord {
   rules: RoomRules;
   mode: GameMode;
   visibility: RoomVisibility;
+  status: RoomStatus;
   createdAt: string;
   updatedAt: string;
   maxPlayers: number;
@@ -120,6 +123,7 @@ export async function createRoom(
     rules: normalizeRoomRules(rules),
     mode: roomMode,
     visibility: normalizeRoomVisibility(visibility),
+    status: 'waiting',
     createdAt: now,
     updatedAt: now,
     maxPlayers: Number(roomMode),
@@ -131,14 +135,14 @@ export async function createRoom(
 export async function listPublicRooms(store: RoomStore): Promise<PublicRoom[]> {
   const rooms = await store.list();
   return rooms
-    .filter((room) => room.visibility === 'public')
+    .filter((room) => room.visibility === 'public' && room.status === 'waiting')
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .map(publicRoom);
 }
 
 export type JoinRoomResult =
   | { ok: true; room: RoomRecord; player: RoomPlayer; playerToken: string; warnings?: SameRoomIpWarning[] }
-  | { ok: false; error: 'ERR_ROOM_NOT_FOUND' | 'ERR_INVALID_JOIN_TOKEN' | 'ERR_INVALID_HANDLE' | 'ERR_ROOM_FULL' };
+  | { ok: false; error: 'ERR_ROOM_NOT_FOUND' | 'ERR_INVALID_JOIN_TOKEN' | 'ERR_INVALID_HANDLE' | 'ERR_ROOM_FULL' | 'ERR_ROOM_STARTED' };
 
 export async function joinRoom(
   store: RoomStore,
@@ -147,6 +151,7 @@ export async function joinRoom(
 ): Promise<JoinRoomResult> {
   const room = await store.get(code);
   if (!room) return { ok: false, error: 'ERR_ROOM_NOT_FOUND' };
+  if (room.status === 'playing') return { ok: false, error: 'ERR_ROOM_STARTED' };
   if (token && token !== room.joinToken) return { ok: false, error: 'ERR_INVALID_JOIN_TOKEN' };
   if (!token && room.visibility !== 'public') return { ok: false, error: 'ERR_INVALID_JOIN_TOKEN' };
 
@@ -168,7 +173,7 @@ export async function joinRoom(
 
   const warning = clientIp ? sameRoomIpWarning(room, clientIp) : undefined;
   const player: RoomPlayer = {
-    id: `p${room.players.length + 1}`,
+    id: nextOpenPlayerId(room),
     handle: normalized,
     role: 'player',
     playerToken: makeRoomToken('player', code),
@@ -220,6 +225,25 @@ export type KickRoomPlayerResult =
         | 'ERR_PLAYER_NOT_IN_ROOM'
         | 'ERR_CANNOT_KICK_HOST';
     };
+
+export type MarkRoomStartedResult =
+  | { ok: true; room: RoomRecord }
+  | { ok: false; error: 'ERR_ROOM_NOT_FOUND' | 'ERR_INVALID_HOST_TOKEN' };
+
+export async function markRoomStarted(
+  store: RoomStore,
+  code: string,
+  { hostToken, nowIso = () => new Date().toISOString() }: { hostToken: string; nowIso?: () => string },
+): Promise<MarkRoomStartedResult> {
+  const room = await store.get(code);
+  if (!room) return { ok: false, error: 'ERR_ROOM_NOT_FOUND' };
+  if (hostToken !== room.hostToken) return { ok: false, error: 'ERR_INVALID_HOST_TOKEN' };
+
+  room.status = 'playing';
+  room.updatedAt = nowIso();
+  await store.set(code, room);
+  return { ok: true, room: cloneRoom(room) };
+}
 
 export async function kickRoomPlayer(
   store: RoomStore,
@@ -278,6 +302,15 @@ function normalizeRoomMode(mode: unknown): GameMode {
   if (mode === undefined) return '4';
   if (mode === '4' || mode === '6' || mode === '8') return mode;
   throw new Error('ERR_INVALID_ROOM_MODE');
+}
+
+function nextOpenPlayerId(room: RoomRecord): string {
+  const used = new Set(room.players.map((player) => player.id));
+  for (let index = 1; index <= room.maxPlayers; index++) {
+    const id = `p${index}`;
+    if (!used.has(id)) return id;
+  }
+  return `p${room.players.length + 1}`;
 }
 
 function cloneRoom(room: RoomRecord): RoomRecord {

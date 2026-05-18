@@ -6,6 +6,7 @@ import {
   type ExchangeVoteThreshold,
 } from '../../lib/game/exchange';
 import { submitExchangeVote } from '../../lib/game/exchangeFlow';
+import { runAutomaticPhaseActions } from '../../lib/game/phaseAutomation';
 import type { PlayerId } from '../../lib/game/state';
 import { defaultRealtimePersistence } from '../../lib/realtime/defaults';
 import type { EventLog } from '../../lib/realtime/eventLog';
@@ -155,20 +156,29 @@ async function handleStatefulVote(
   });
   if (!result.ok) return json({ ok: false, error: result.error }, statusForError(result.error));
 
-  await deps.stateStore.set(roomId, result.state);
-  const logged = await publishEventsToPlayers(deps, roomId, result.state, result.events);
+  const automated = runAutomaticPhaseActions(result.state, {
+    rules,
+    returnDeadlineAt: () => deps.deadlineAt?.(rules) ?? deadlineFromNow(rules.returnTimeLimitSeconds),
+    exchangeDeadlineAt: () => deps.deadlineAt?.(rules) ?? deadlineFromNow(rules.exchangeVoteDurationSeconds),
+    exchangeDirection: () => deps.direction?.(roomId) ?? pickExchangeDirection(deps.random),
+  });
+  const finalState = automated.state;
+  const events = [...result.events, ...automated.events];
+
+  await deps.stateStore.set(roomId, finalState);
+  const logged = await publishEventsToPlayers(deps, roomId, finalState, events);
   const eventIds = Object.fromEntries(
-    result.state.players.map((player) => [
+    finalState.players.map((player) => [
       player.id,
       logged.filter((entry) => entry.playerId === player.id).map((entry) => entry.event.id),
     ]),
   );
   return json({
     ok: true,
-    phase: result.state.phase,
-    version: result.state.version,
-    view: buildClientPayload(playerId, firstEvent(result.events), result.state).view,
-    events: result.events.map((event) => event.type),
+    phase: finalState.phase,
+    version: finalState.version,
+    view: buildClientPayload(playerId, firstEvent(events), finalState).view,
+    events: events.map((event) => event.type),
     eventIds,
   }, 200);
 }

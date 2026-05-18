@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { generateDoubleDeck } from '../../lib/game/cards';
-import { createRoom, MemoryRoomStore } from '../../lib/room/lifecycle';
+import { createRoom, joinRoom, kickRoomPlayer, MemoryRoomStore } from '../../lib/room/lifecycle';
 import { startRoomGame } from '../../lib/room/start';
 
 describe('room start', () => {
@@ -68,6 +68,29 @@ describe('room start', () => {
     expect(Object.values(eightResult.hands).map((hand) => hand.length)).toEqual([13, 13, 13, 13, 13, 13, 13, 13]);
     expect(eightResult.undealt).toHaveLength(4);
     expect(eightResult.players[7]).toMatchObject({ id: 'p8', kind: 'bot', botDifficulty: 'easy' });
+  });
+
+  test('keeps human room ids aligned with their game seats after a kicked seat is refilled', async () => {
+    const store = new MemoryRoomStore();
+    const created = await createRoom(store, { hostHandle: '@Fufu', random: () => 0 });
+    await joinRoom(store, created.room.code, { handle: '@Momo' });
+    await joinRoom(store, created.room.code, { handle: '@Doudou' });
+    await kickRoomPlayer(store, created.room.code, { hostToken: created.hostToken, playerId: 'p2' });
+    await joinRoom(store, created.room.code, { handle: '@Xiaoyu' });
+    const room = await store.get(created.room.code);
+
+    const result = startRoomGame(room!, {
+      deck: generateDoubleDeck(),
+      fillBots: true,
+      botDifficulty: 'easy',
+    });
+
+    expect(result.players).toMatchObject([
+      { id: 'p1', kind: 'human', handle: 'fufu' },
+      { id: 'p2', kind: 'human', handle: 'xiaoyu' },
+      { id: 'p3', kind: 'human', handle: 'doudou' },
+      { id: 'p4', kind: 'bot' },
+    ]);
   });
 
   test('rejects starting without enough humans when bot fill is disabled', async () => {

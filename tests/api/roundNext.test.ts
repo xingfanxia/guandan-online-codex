@@ -70,7 +70,7 @@ describe('api/round/next handler', () => {
     const handler = createNextRoundHandler({
       ...d,
       deckForRoom: () => d.deck,
-      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, antiTributeCondition: 'disabled' }),
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, antiTributeCondition: 'disabled', tributeSelection: 'player_picks' }),
       deadlineAt: () => '2026-05-18T00:00:15.000Z',
       nowMs: () => 1_000,
     });
@@ -97,6 +97,48 @@ describe('api/round/next handler', () => {
     expect(d.published).toHaveLength(8);
     expect(d.eventLog.replayAfter('K7M2P9', 'p2')).toHaveLength(2);
     expect(JSON.stringify(d.eventLog.replayAfter('K7M2P9', 'p1'))).not.toContain('RJ');
+  });
+
+  test('auto-resolves default tribute picks and bot returns after advancing a bot-filled round', async () => {
+    const state = roundEnd();
+    state.players = [
+      { id: 'p1', seat: 'east', team: 't1', kind: 'human' },
+      { id: 'p2', seat: 'south', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+      { id: 'p3', seat: 'west', team: 't1', kind: 'bot', botDifficulty: 'easy' },
+      { id: 'p4', seat: 'north', team: 't2', kind: 'bot', botDifficulty: 'easy' },
+    ];
+    const d = deps(state, plainDeck());
+    const handler = createNextRoundHandler({
+      ...d,
+      deckForRoom: () => d.deck,
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, antiTributeCondition: 'disabled' }),
+      deadlineAt: () => '2026-05-18T00:00:15.000Z',
+      exchangeDeadlineAt: () => '2026-05-18T00:00:30.000Z',
+      nowMs: () => 1_000,
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9', transitionId: 'round-auto' }));
+    const body = await response.json();
+
+    expect(body).toMatchObject({
+      ok: true,
+      phase: 'return-pending',
+      version: 13,
+      view: { phase: 'return-pending', self: { playerId: 'p1' } },
+      events: [
+        MessageType.TributePending,
+        MessageType.TributePending,
+        MessageType.StateResync,
+        MessageType.TributeCompleted,
+        MessageType.ReturnRequired,
+        MessageType.ReturnRequired,
+        MessageType.StateResync,
+      ],
+    });
+    expect(await d.stateStore.get('K7M2P9')).toMatchObject({
+      phase: 'return-pending',
+      selectedReturns: { p3: expect.any(Object) },
+    });
   });
 
   test('anti-tribute skips tribute and opens exchange voting when the rule is enabled', async () => {
