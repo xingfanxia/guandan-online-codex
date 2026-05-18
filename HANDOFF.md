@@ -34,6 +34,7 @@ Verification after the update:
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 8 300` — 1/1 8P Easy self-play round completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities
+- Vercel production deploy `dpl_6XF3CNcHn2FCUiacebHZfvoo1MkW` (`https://guandan-online-codex.vercel.app`) smoke passed: 6P teams-of-2 created as `t1,t2,t3,t1,t2,t3`; 8P teams-of-2 created as `t1,t2,t3,t4,t1,t2,t3,t4`; SSE first chunk used named `state_resync`; 8P move returned 7 bot moves and stayed `playing`
 - `vercel build --prod --scope panpanmao` — passing; generated `api/auth/createHandle`, `api/room/create`, `api/poll/[roomId]`, `api/sse/[roomId]`, and `api/move` functions import under Node ESM
 - Production deploy `cc478eb` is live on `https://guandan-online-codex.vercel.app` via `guandan-online-codex-mgxcv0q7u-panpanmao.vercel.app`
 - Production API smoke passed: create handle, create room, list room, start 4P with bots, long-poll replay, SSE first chunk, and authenticated move POST
