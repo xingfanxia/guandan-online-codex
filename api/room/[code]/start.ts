@@ -1,5 +1,5 @@
 import { universalHandler, roomCodeParams } from '../../_node.js';
-import { generateDoubleDeck, shuffleDeck, type Card } from '../../../lib/game/cards.js';
+import { generateDeckForMode, shuffleDeck, type Card } from '../../../lib/game/cards.js';
 import { defaultRealtimePersistence } from '../../../lib/realtime/defaults.js';
 import type { EventLog } from '../../../lib/realtime/eventLog.js';
 import { MessageType, type ServerEvent } from '../../../lib/realtime/messages.js';
@@ -43,7 +43,7 @@ export function createStartRoomHandler(deps: StartRoomDeps): (request: Request, 
 
     try {
       const state = startRoomGame(room, {
-        deck: deps.deckForRoom?.(params.code) ?? shuffleDeck(generateDoubleDeck()),
+        deck: deps.deckForRoom?.(params.code) ?? shuffleDeck(generateDeckForMode(room.mode)),
         fillBots: body.fillBots ?? true,
         botDifficulty: body.botDifficulty ?? 'easy',
       });

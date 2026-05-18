@@ -1,15 +1,24 @@
 import { describe, expect, test } from 'vitest';
-import type { Card, Rank, Suit } from '../../lib/game/cards';
+import { type Card, type Rank, type Suit } from '../../lib/game/cards';
+import type { GameMode } from '../../lib/game/mode';
 import type { RoundEndState } from '../../lib/game/state';
 import { startNextRoundFlow } from '../../lib/game/roundFlow';
 import { DEFAULT_ROOM_RULES } from '../../lib/room/rules';
 
 function c(rank: Rank, suit: Suit = 'spades', deck = 1): Card {
-  return { rank, suit, deck: deck as 1 | 2 };
+  return { rank, suit, deck };
 }
 
-function deck(cards: Card[]): Card[] {
-  return cards;
+function deck(cards: Card[], mode: GameMode = '4'): Card[] {
+  const fillerRanks: Rank[] = ['8', '9', '10', 'J', 'Q', 'K'];
+  const targetLength = Number(mode) * 27;
+  return [
+    ...cards,
+    ...Array.from(
+      { length: Math.max(0, targetLength - cards.length) },
+      (_, index) => c(fillerRanks[index % fillerRanks.length]!, 'clubs', 1_000 + index),
+    ),
+  ];
 }
 
 function roundEnd(overrides: Partial<RoundEndState> = {}): RoundEndState {
@@ -165,7 +174,7 @@ describe('post-round flow', () => {
           { playerId: 'p6', position: 6, team: 't2' },
         ],
       }),
-      deck: deck([c('A'), c('2'), c('3'), c('4'), c('5'), c('6')]),
+      deck: deck([c('A'), c('2'), c('3'), c('4'), c('5'), c('6')], '6'),
       rules: DEFAULT_ROOM_RULES,
       deadlineAt: '2026-05-18T00:00:15.000Z',
     });
@@ -199,7 +208,7 @@ describe('post-round flow', () => {
           { playerId: 'p6', position: 6, team: 't3' },
         ],
       }),
-      deck: deck([c('A'), c('2'), c('3'), c('4'), c('5'), c('6')]),
+      deck: deck([c('A'), c('2'), c('3'), c('4'), c('5'), c('6')], '6'),
       rules: { ...DEFAULT_ROOM_RULES, teamStructure: 'teams-of-2' },
       deadlineAt: '2026-05-18T00:00:15.000Z',
     });

@@ -12,7 +12,7 @@ import { createRoom, MemoryRoomStore } from '../../lib/room/lifecycle';
 import { DEFAULT_ROOM_RULES } from '../../lib/room/rules';
 
 function c(rank: Rank, suit: Suit = 'spades', deck = 1): Card {
-  return { rank, suit, deck: deck as 1 | 2 };
+  return { rank, suit, deck };
 }
 
 function request(body: unknown, method = 'POST'): Request {
@@ -190,6 +190,42 @@ describe('api/round/next handler', () => {
       events: [MessageType.StateResync],
     });
     expect(d.eventLog.replayAfter('K7M2P9', 'p1').map((entry) => entry.payload.type)).toEqual([MessageType.StateResync]);
+  });
+
+  test('uses a mode-sized default deck when advancing an 8P round', async () => {
+    const eightRoundEnd = roundEnd();
+    eightRoundEnd.mode = '8';
+    eightRoundEnd.players = Array.from({ length: 8 }, (_, index) => ({
+      id: `p${index + 1}`,
+      seat: `seat${index + 1}` as const,
+      team: index % 2 === 0 ? 't1' : 't2',
+    }));
+    eightRoundEnd.placements = [
+      { playerId: 'p1', position: 1, team: 't1' },
+      { playerId: 'p3', position: 2, team: 't1' },
+      { playerId: 'p5', position: 3, team: 't1' },
+      { playerId: 'p7', position: 4, team: 't1' },
+      { playerId: 'p2', position: 5, team: 't2' },
+      { playerId: 'p4', position: 6, team: 't2' },
+      { playerId: 'p6', position: 7, team: 't2' },
+      { playerId: 'p8', position: 8, team: 't2' },
+    ];
+    const d = deps(eightRoundEnd);
+    const handler = createNextRoundHandler({
+      ...d,
+      rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, tributeEnabled: false, cardExchange: false }),
+      nowMs: () => 1_000,
+    });
+
+    const response = await handler(request({ roomId: 'K7M2P9', transitionId: 'round-8p-default-deck' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.view).toMatchObject({
+      phase: 'playing',
+      mode: '8',
+      handCounts: { p1: 27, p2: 27, p3: 27, p4: 27, p5: 27, p6: 27, p7: 27, p8: 27 },
+    });
   });
 
   test('continues bot play immediately when the next-round leader is a bot', async () => {

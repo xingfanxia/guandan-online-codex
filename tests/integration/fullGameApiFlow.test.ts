@@ -5,7 +5,7 @@ import { createCreateRoomHandler } from '../../api/room/create';
 import { createMoveHandler } from '../../api/move';
 import { createNextRoundHandler } from '../../api/round/next';
 import { createTributeSelectHandler } from '../../api/tribute/select';
-import { generateDoubleDeck, type Card, type Rank, type Suit } from '../../lib/game/cards';
+import { generateDeckForMode, generateDoubleDeck, type Card, type Rank, type Suit } from '../../lib/game/cards';
 import { autoPickReturnCard } from '../../lib/game/tribute';
 import type { GameState, Player, PlayerId, PlayingState, ReturnPendingState } from '../../lib/game/state';
 import { MemoryEventLog } from '../../lib/realtime/eventLog';
@@ -17,7 +17,7 @@ import { MemoryRoomStore } from '../../lib/room/lifecycle';
 import { DEFAULT_ROOM_RULES } from '../../lib/room/rules';
 
 function c(rank: Rank, suit: Suit = 'spades', deck = 1): Card {
-  return { rank, suit, deck: deck as 1 | 2 };
+  return { rank, suit, deck };
 }
 
 function jsonRequest(url: string, body: unknown, method = 'POST'): Request {
@@ -53,7 +53,7 @@ describe('full game API flow', () => {
       stateStore,
       eventLog,
       publisher,
-      deckForRoom: () => generateDoubleDeck(),
+      deckForRoom: () => generateDeckForMode('8'),
     });
     const move = createMoveHandler({
       stateStore,
@@ -70,7 +70,7 @@ describe('full game API flow', () => {
       eventLog,
       publisher,
       roomStore,
-      deckForRoom: () => plainDeck(),
+      deckForRoom: () => plainDeck('8'),
       rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, antiTributeCondition: 'disabled' }),
       deadlineAt: () => '2026-05-18T00:00:15.000Z',
       exchangeDeadlineAt: () => '2026-05-18T00:00:30.000Z',
@@ -157,7 +157,7 @@ describe('full game API flow', () => {
       stateStore,
       eventLog,
       publisher,
-      deckForRoom: () => generateDoubleDeck(),
+      deckForRoom: () => generateDeckForMode('8'),
     });
     const move = createMoveHandler({
       stateStore,
@@ -174,7 +174,7 @@ describe('full game API flow', () => {
       eventLog,
       publisher,
       roomStore,
-      deckForRoom: () => plainDeck(),
+      deckForRoom: () => plainDeck('8'),
       rulesForRoom: () => ({ ...DEFAULT_ROOM_RULES, antiTributeCondition: 'disabled' }),
       deadlineAt: () => '2026-05-18T00:00:15.000Z',
       exchangeDeadlineAt: () => '2026-05-18T00:00:30.000Z',
@@ -636,7 +636,7 @@ function clonePlayer(player: Player): Player {
   return { ...player };
 }
 
-function plainDeck(): Card[] {
+function plainDeck(mode: '4' | '6' | '8' = '4'): Card[] {
   const ranks: Rank[] = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-  return Array.from({ length: 108 }, (_, index) => c(ranks[index % ranks.length]!, 'spades', index % 2 === 0 ? 1 : 2));
+  return Array.from({ length: Number(mode) * 27 }, (_, index) => c(ranks[index % ranks.length]!, 'spades', index + 1));
 }

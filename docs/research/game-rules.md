@@ -10,17 +10,17 @@
 
 | Property | Value |
 |---|---|
-| Decks | 2 × standard 54-card deck (including jokers) |
-| Total cards | 108 |
+| Decks | 4P: 2 × standard 54-card deck; 6P: 3 ×; 8P: 4 × |
+| Total cards | 4P: 108; 6P: 162; 8P: 216 |
 | Per player (4-player) | 27 |
-| Per player (6-player) | 18 |
-| Per player (8-player) | 13 (108 ÷ 8 = 13.5 — see note) |
+| Per player (6-player) | 27 |
+| Per player (8-player) | 27 |
 | Suits | ♠ Spades (黑桃), ♥ Hearts (红桃), ♦ Diamonds (方片), ♣ Clubs (梅花) |
 | Rank range | 2 (lowest natural) through A (highest natural), then Small Joker (小王/BJ), Big Joker (大王/RJ) |
 
-**Jokers.** Each deck contains one Small Joker (black/white printed, 小王) and one Red Joker (colored, 大王). With 2 decks there are exactly 2 of each.
+**Jokers.** Each deck contains one Small Joker (black/white printed, 小王) and one Red Joker (colored, 大王). The implemented online modes use one 54-card deck per two players, so every player starts with 27 cards in 4P, 6P, and 8P rooms.
 
-**8-player hand size note.** 108 / 8 = 13.5, which is not an integer. In practice, 8-player mode distributes 13 cards to all 8 players (104 cards dealt) and either burns the remaining 4 cards face-down or uses a house rule variant. The `guandan-scorer` codebase does not deal cards itself — it only records finishing positions — so this detail is unconfirmed from that source. Competitive rulesets typically specify 108 cards among 8 players with 13 per player and 4 cards left aside. **Implement as configurable.**
+**Implementation note.** Earlier research assumed a fixed two-deck shoe for every player count, which produced 18-card 6P hands and 13-card 8P hands. That is not the rule selected for this product. The product rule is `deckCount = playerCount / 2`, with no undealt cards in 4P/6P/8P.
 
 **Deck representation** (from `guandan-guide/src/rules/cards.ts`):
 
@@ -30,7 +30,7 @@ type Rank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | '
 type JokerRank = 'BJ' | 'RJ';  // BJ = Small Joker, RJ = Big Joker (Red)
 ```
 
-Each card carries a `deck: 1 | 2` field to distinguish the two copies of identical cards.
+Each card carries a numeric `deck` field to distinguish identical-card copies across 2, 3, or 4 decks.
 
 ---
 
@@ -436,7 +436,7 @@ Lose/win on opponent's round → no aFail change
 |---|---|---|---|
 | Teams | 2 (2 players each) | 2 (3 players each) | 2 (4 players each) |
 | Total players | 4 | 6 | 8 |
-| Cards per player | 27 | 18 | 13 (4 cards aside) |
+| Cards per player | 27 | 27 | 27 |
 | Finishing positions | 4 | 6 | 8 |
 | Upgrade formula | Fixed table by partner position | Point-score differential (t6/p6) | Point-score differential (t8/p8) + sweep bonus |
 | Sweep bonus | None | None | Positions 1-2-3-4 all same team → +4 levels |
@@ -466,9 +466,9 @@ export const TEAM_BY_SEAT: Record<Seat, Team> = {
 
 ### Hand size — 6-player and 8-player
 
-**6-player:** 108 / 6 = 18 cards per player exactly.
+**6-player:** 3 decks × 54 cards = 162 cards; 162 / 6 = 27 cards per player.
 
-**8-player:** 108 / 8 = 13.5 — not divisible. Standard practice: 13 cards dealt to all 8 players (104 dealt), 4 remain undealt (burned or placed face-down). The scorer does not deal cards; confirm hand-size policy with your game variant.
+**8-player:** 4 decks × 54 cards = 216 cards; 216 / 8 = 27 cards per player.
 
 ---
 
@@ -583,13 +583,13 @@ For each major rule, the corresponding implementation status in `../guandan-scor
 
 For a server-authoritative engine, these are the components absent from both codebases:
 
-1. **Deck deal & shuffle** — generate 108 cards, shuffle, deal 27/18/13 per player.
+1. **Deck deal & shuffle** — generate player-count-sized decks (108/162/216), shuffle, deal 27 cards per player.
 2. **First-hand leader selection** — flip/reveal mechanism to determine who leads the first trick.
 3. **Trick engine** — track current trick leader, accept plays, validate each play (type match + rank beat or bomb), handle pass, detect trick end, award next lead.
 4. **接风 (teammate wind) inheritance** — detect when a going-out player's last card goes unchallenged and award lead to their partner.
 5. **Tribute orchestration** — determine tribute mode (none/single/double/resist), collect tribute card from loser, return card from winner, handle 抗贡, determine post-tribute leader.
 6. **报牌 (card-count declaration)** — track each player's hand size; emit mandatory declaration event when ≤10 cards remain after a play.
-7. **8-player hand size edge case** — decide policy for the 4 undealt cards.
+7. **Deck-count policy** — keep one 54-card deck per two players so all modes deal 27 cards per player.
 8. **6/8-player tribute direction** — which loser tributes to which winner in multi-team configurations.
 
 Items 1–4 are core game engine. Items 5–8 are pre-round and post-round ceremonies.

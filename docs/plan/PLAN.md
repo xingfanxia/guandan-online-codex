@@ -141,7 +141,7 @@ Goal: ship the rules engine, transport layer, auth bridge, and hidden-state filt
 - `lib/game/state.ts` — `GameState` discriminated union (waiting / dealing / playing / round-end)
 - `lib/game/turn.ts` — turn order management (north → east → south → west, or 6P / 8P equivalents)
 - `lib/game/trick.ts` — trick orchestration (current leader, pass tracking, when trick completes)
-- `lib/game/deal.ts` — shuffle + deal cards (108 total, 27 each in 4P, 18 in 6P, 13 in 8P)
+- `lib/game/deal.ts` — shuffle + deal cards (108/162/216 total for 4P/6P/8P, 27 each in every mode)
 - `lib/game/move.ts` — `applyMove(state, move)` pure function returning new state or validation error
 - `tests/game/state.test.ts` — state transitions tested
 - `tests/game/move.test.ts` — `applyMove` rejects illegal moves with specific error codes

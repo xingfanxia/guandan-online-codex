@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { createStartRoomHandler } from '../../api/room/[code]/start';
-import { generateDoubleDeck } from '../../lib/game/cards';
+import { generateDeckForMode, generateDoubleDeck } from '../../lib/game/cards';
 import { MemoryEventLog } from '../../lib/realtime/eventLog';
 import { MemoryGameStateStore } from '../../lib/realtime/stateStore';
 import type { RealtimePublisher } from '../../lib/realtime/upstash';
@@ -104,7 +104,7 @@ describe('room start API handler', () => {
           published.push({ channel, payload });
         },
       },
-      deckForRoom: () => generateDoubleDeck(),
+      deckForRoom: () => generateDeckForMode('8'),
     });
 
     const response = await handler(request({
@@ -116,10 +116,44 @@ describe('room start API handler', () => {
 
     expect(response.status).toBe(200);
     expect(body).toMatchObject({ ok: true, phase: 'playing', mode: '8', version: 1 });
-    expect(body.view).toMatchObject({ phase: 'playing', mode: '8', self: { playerId: 'p1' } });
+    expect(body.view).toMatchObject({
+      phase: 'playing',
+      mode: '8',
+      self: { playerId: 'p1' },
+      handCounts: { p1: 27, p2: 27, p3: 27, p4: 27, p5: 27, p6: 27, p7: 27, p8: 27 },
+    });
+    expect(body.view.self.hand).toHaveLength(27);
     expect(body.players).toHaveLength(8);
     expect(await stateStore.get(created.room.code)).toMatchObject({ phase: 'playing', mode: '8' });
     expect(published).toHaveLength(8);
+  });
+
+  test('uses a mode-sized deck by default for 8P starts', async () => {
+    const roomStore = new MemoryRoomStore();
+    const created = await createRoom(roomStore, {
+      hostHandle: '@Fufu',
+      random: () => 0,
+      mode: '8',
+    });
+    const handler = createStartRoomHandler({
+      roomStore,
+      stateStore: new MemoryGameStateStore(),
+      eventLog: new MemoryEventLog(),
+      publisher: { async publish() {} },
+    });
+
+    const response = await handler(request({
+      hostToken: created.hostToken,
+      fillBots: true,
+      botDifficulty: 'easy',
+    }), { code: created.room.code });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.view).toMatchObject({
+      mode: '8',
+      handCounts: { p1: 27, p2: 27, p3: 27, p4: 27, p5: 27, p6: 27, p7: 27, p8: 27 },
+    });
   });
 
   test('rejects bad host token and malformed requests', async () => {

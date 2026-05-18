@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { generateDoubleDeck } from '../../lib/game/cards';
+import { generateDeckForMode, generateDoubleDeck } from '../../lib/game/cards';
 import { createRoom, joinRoom, kickRoomPlayer, MemoryRoomStore } from '../../lib/room/lifecycle';
 import { startRoomGame } from '../../lib/room/start';
 
@@ -48,25 +48,25 @@ describe('room start', () => {
     });
 
     const sixResult = startRoomGame(six.room, {
-      deck: generateDoubleDeck(),
+      deck: generateDeckForMode('6'),
       fillBots: true,
       botDifficulty: 'medium',
     });
     const eightResult = startRoomGame(eight.room, {
-      deck: generateDoubleDeck(),
+      deck: generateDeckForMode('8'),
       fillBots: true,
       botDifficulty: 'easy',
     });
 
     expect(sixResult.mode).toBe('6');
     expect(sixResult.players).toHaveLength(6);
-    expect(Object.values(sixResult.hands).map((hand) => hand.length)).toEqual([18, 18, 18, 18, 18, 18]);
+    expect(Object.values(sixResult.hands).map((hand) => hand.length)).toEqual([27, 27, 27, 27, 27, 27]);
     expect(sixResult.players[5]).toMatchObject({ id: 'p6', kind: 'bot', botDifficulty: 'medium' });
 
     expect(eightResult.mode).toBe('8');
     expect(eightResult.players).toHaveLength(8);
-    expect(Object.values(eightResult.hands).map((hand) => hand.length)).toEqual([13, 13, 13, 13, 13, 13, 13, 13]);
-    expect(eightResult.undealt).toHaveLength(4);
+    expect(Object.values(eightResult.hands).map((hand) => hand.length)).toEqual([27, 27, 27, 27, 27, 27, 27, 27]);
+    expect(eightResult.undealt).toHaveLength(0);
     expect(eightResult.players[7]).toMatchObject({ id: 'p8', kind: 'bot', botDifficulty: 'easy' });
   });
 
@@ -86,12 +86,12 @@ describe('room start', () => {
     });
 
     const sixResult = startRoomGame(six.room, {
-      deck: generateDoubleDeck(),
+      deck: generateDeckForMode('6'),
       fillBots: true,
       botDifficulty: 'easy',
     });
     const eightResult = startRoomGame(eight.room, {
-      deck: generateDoubleDeck(),
+      deck: generateDeckForMode('8'),
       fillBots: true,
       botDifficulty: 'easy',
     });

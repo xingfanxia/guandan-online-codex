@@ -6,6 +6,7 @@ import {
   isHeartLevelWildcard,
   rankValue,
   shuffleDeck,
+  generateDeckForMode,
 } from '../../lib/game/cards';
 
 describe('card model', () => {
@@ -21,6 +22,15 @@ describe('card model', () => {
 
     const fivesOfHearts = deck.filter((card) => card.rank === '5' && card.suit === 'hearts');
     expect(fivesOfHearts).toHaveLength(2);
+  });
+
+  test('builds mode-sized Guandan decks for 6P and 8P rooms', () => {
+    expect(generateDeckForMode('4')).toHaveLength(108);
+    expect(generateDeckForMode('6')).toHaveLength(162);
+    expect(generateDeckForMode('8')).toHaveLength(216);
+
+    expect(new Set(generateDeckForMode('6').map(cardKey)).size).toBe(162);
+    expect(new Set(generateDeckForMode('8').map(cardKey)).size).toBe(216);
   });
 
   test('detects only heart current-level cards as wildcards', () => {

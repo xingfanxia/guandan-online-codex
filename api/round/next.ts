@@ -1,5 +1,5 @@
 import { universalHandler } from '../_node.js';
-import { generateDoubleDeck, shuffleDeck, type Card } from '../../lib/game/cards.js';
+import { generateDeckForMode, shuffleDeck, type Card } from '../../lib/game/cards.js';
 import { runGameplayContinuation } from '../../lib/game/continuation.js';
 import { startNextRoundFlow } from '../../lib/game/roundFlow.js';
 import type { RoundEndState } from '../../lib/game/state.js';
@@ -100,7 +100,7 @@ export function createNextRoundHandler(deps: NextRoundHandlerDeps): (request: Re
     const rules = await rulesForRoom(deps, body.roomId, state);
     const flow = startNextRoundFlow({
       roundEnd: state,
-      deck: deps.deckForRoom?.(body.roomId, state) ?? shuffleDeck(generateDoubleDeck()),
+      deck: deps.deckForRoom?.(body.roomId, state) ?? shuffleDeck(generateDeckForMode(state.mode)),
       rules,
       deadlineAt: deps.deadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.returnTimeLimitSeconds),
       exchangeDeadlineAt: deps.exchangeDeadlineAt?.(state, rules) ?? deadlineFromNow(nowMs(), rules.exchangeVoteDurationSeconds),

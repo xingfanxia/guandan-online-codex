@@ -10,7 +10,7 @@ export type LevelRank = NaturalRank;
 export interface Card {
   rank: Rank;
   suit: Suit;
-  deck: 1 | 2;
+  deck: number;
 }
 
 const BASE_RANK_VALUE: Record<NaturalRank, number> = {
@@ -33,9 +33,10 @@ export function isNaturalRank(rank: Rank): rank is NaturalRank {
   return rank !== 'BJ' && rank !== 'RJ';
 }
 
-export function generateDoubleDeck(): Card[] {
+export function generateDecks(deckCount: number): Card[] {
+  if (!Number.isInteger(deckCount) || deckCount < 1) throw new Error('ERR_INVALID_DECK_COUNT');
   const deck: Card[] = [];
-  for (const deckNo of [1, 2] as const) {
+  for (let deckNo = 1; deckNo <= deckCount; deckNo++) {
     for (const suit of SUITS) {
       for (const rank of NATURAL_RANKS) {
         deck.push({ rank, suit, deck: deckNo });
@@ -45,6 +46,18 @@ export function generateDoubleDeck(): Card[] {
     deck.push({ rank: 'RJ', suit: 'joker', deck: deckNo });
   }
   return deck;
+}
+
+export function generateDoubleDeck(): Card[] {
+  return generateDecks(2);
+}
+
+export function deckCountForMode(mode: import('./mode.js').GameMode): number {
+  return Number(mode) / 2;
+}
+
+export function generateDeckForMode(mode: import('./mode.js').GameMode): Card[] {
+  return generateDecks(deckCountForMode(mode));
 }
 
 export function cardKey(card: Card): string {

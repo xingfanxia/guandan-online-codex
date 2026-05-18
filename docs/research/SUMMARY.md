@@ -133,7 +133,7 @@ Visual style: technical + premium (Linear / Vercel / Bloomberg / Anthropic). 10 
 
 5. **CSS rotate edge cases on iOS**. WebKit rotation bugs surface on specific device/OS combos. Mitigation: 3-5 days test matrix (iPhone SE / 14 Pro / iPad / Pixel) before launch. Rotate-prompt fallback for any device that fails.
 
-6. **8-player hand size policy** (108 ÷ 8 = 13.5). Regional variation. Mitigation: room-configurable (13 or 14 cards; 4 leftover cards go to host / discard pile / random).
+6. **6P/8P deck-count policy**. The product rule is one 54-card deck per two players, so 4P/6P/8P all start with 27 cards per player. Mitigation: keep deal tests locked to 108/162/216-card shoes and reject short decks.
 
 7. **27-card hand on small landscape phones** (iPhone SE / older Android < 5.5"). Mitigation: two-row hand fallback when `vw < 600px`.
 
