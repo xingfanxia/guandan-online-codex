@@ -31,12 +31,13 @@ Implemented in this clone:
 - Gameplay rule audit fixes: first-hand leader is now selected by a random revealed dealt-card index instead of always `p1`; `api/room/start` immediately continues bot play when that revealed leader is a bot; tribute resolution now gives first lead to the single tributer / largest tribute card, with same-rank ties going to head player's next seat; multi-player teammate wind now hands lead to the next active teammate instead of an arbitrary first teammate.
 - Replay contract audit fix: `/api/move` now returns `eventIds` as `Record<playerId, string[]>`, matching the other mutation routes and preserving every per-player event id when a human move chains bot events.
 - Exchange-order audit fix: optional 换牌 now follows the locked S22/S23 flow: the losing team votes immediately after the round advances to the next hand; if tribute is owed, the vote result is carried through 进贡/还贡, and only a passed vote opens 3-card exchange selection after returns complete.
+- Client realtime fallback audit fix: `useGameStream` now wires the existing `/api/poll` replay client into the React hook. Missing `EventSource` falls back immediately; ordinary one-off SSE rotation errors do not, and repeated SSE failures within the fallback window close SSE and switch to long-poll replay with cursor preservation.
 
 Verification after the update:
-- `npm test` — 93 files / 411 tests passing
+- `npm test` — 93 files / 415 tests passing
 - `npm run typecheck` — passing
 - `npm run build` — passing
-- `npm run test:coverage` — 90.88% statements / 93.64% lines
+- `npm run test:coverage` — 90.88% statements / 93.76% lines
 - `npm run security:no-leak` — passing
 - `npm run bench:ai -- 1 4 300 && npm run bench:ai -- 1 6 300 && npm run bench:ai -- 1 8 300` — 4P/6P/8P Easy self-play rounds completed
 - `npm audit --audit-level=moderate` — 0 vulnerabilities

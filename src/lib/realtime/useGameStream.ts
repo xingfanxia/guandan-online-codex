@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ClientStateView } from '../../../lib/realtime/payload';
 import {
   connectGameStream,
+  pollGameEvents,
   type GameEventSourceCtor,
   type GameStreamConnection,
   type GameStreamError,
@@ -15,6 +16,10 @@ export interface UseGameStreamInput {
   lastEventId?: string | undefined;
   enabled?: boolean;
   EventSourceCtor?: GameEventSourceCtor | undefined;
+  fetcher?: typeof fetch | undefined;
+  pollIntervalMs?: number | undefined;
+  sseFallbackFailureThreshold?: number | undefined;
+  sseFallbackWindowMs?: number | undefined;
 }
 
 export interface GameStreamState {
@@ -32,6 +37,10 @@ export function useGameStream({
   lastEventId,
   enabled = true,
   EventSourceCtor,
+  fetcher,
+  pollIntervalMs = 1_000,
+  sseFallbackFailureThreshold = 2,
+  sseFallbackWindowMs = 60_000,
 }: UseGameStreamInput): GameStreamState {
   const [state, setState] = useState<GameStreamState>({ connected: false });
   const cursorRef = useRef<string | undefined>(lastEventId);
@@ -48,6 +57,68 @@ export function useGameStream({
 
     let active = true;
     let connection: GameStreamConnection | undefined;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+    let polling = false;
+    let sseFailureTimes: number[] = [];
+
+    const stopPolling = () => {
+      if (pollTimer) globalThis.clearTimeout(pollTimer);
+      pollTimer = undefined;
+      polling = false;
+    };
+
+    const startPolling = () => {
+      if (polling) return;
+      polling = true;
+      const poll = async () => {
+        if (!active) return;
+        try {
+          const result = await pollGameEvents({
+            baseUrl,
+            roomId,
+            playerId,
+            ...(token ? { token } : {}),
+            ...(cursorRef.current ? { lastEventId: cursorRef.current } : {}),
+            ...(fetcher ? { fetcher } : {}),
+          });
+          if (!active) return;
+          if (result.ok) {
+            if (result.cursor) cursorRef.current = result.cursor;
+            const latest = result.payloads.at(-1);
+            setState((current) => ({
+              ...current,
+              ...(latest ? { view: latest.view } : {}),
+              lastEventId: cursorRef.current,
+              error: undefined,
+              connected: true,
+            }));
+          } else {
+            setState((current) => ({
+              ...current,
+              error: { type: 'connection' },
+              connected: false,
+            }));
+          }
+        } catch {
+          if (!active) return;
+          setState((current) => ({
+            ...current,
+            error: { type: 'connection' },
+            connected: false,
+          }));
+        }
+        pollTimer = globalThis.setTimeout(() => { void poll(); }, pollIntervalMs);
+      };
+      void poll();
+    };
+
+    const shouldFallBackToPolling = () => {
+      const now = Date.now();
+      const threshold = Math.max(1, sseFallbackFailureThreshold);
+      sseFailureTimes = [...sseFailureTimes, now]
+        .filter((failureAt) => now - failureAt <= sseFallbackWindowMs);
+      return sseFailureTimes.length >= threshold;
+    };
 
     try {
       connection = connectGameStream({
@@ -61,6 +132,7 @@ export function useGameStream({
           if (!active) return;
           const latestId = connection?.lastEventId();
           cursorRef.current = latestId;
+          sseFailureTimes = [];
           setState({
             view: payload.view,
             lastEventId: latestId,
@@ -74,6 +146,10 @@ export function useGameStream({
             error,
             connected: error.type === 'connection' ? false : current.connected,
           }));
+          if (error.type === 'connection' && shouldFallBackToPolling()) {
+            connection?.close();
+            startPolling();
+          }
         },
       });
       setState((current) => ({ ...current, error: undefined, connected: true }));
@@ -83,13 +159,26 @@ export function useGameStream({
         error: { type: 'connection' },
         connected: false,
       }));
+      startPolling();
     }
 
     return () => {
       active = false;
+      stopPolling();
       connection?.close();
     };
-  }, [baseUrl, enabled, roomId, playerId, token, EventSourceCtor]);
+  }, [
+    baseUrl,
+    enabled,
+    roomId,
+    playerId,
+    token,
+    EventSourceCtor,
+    fetcher,
+    pollIntervalMs,
+    sseFallbackFailureThreshold,
+    sseFallbackWindowMs,
+  ]);
 
   return state;
 }

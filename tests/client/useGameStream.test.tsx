@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { act, render, screen } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { MessageType } from '../../lib/realtime/messages';
 import type { ClientPayload } from '../../lib/realtime/payload';
 import { type GameEventSource } from '../../src/lib/realtime/gameStream';
@@ -78,7 +78,48 @@ function Harness({
   );
 }
 
+function PollingHarness({ fetcher }: { fetcher: typeof fetch }): React.ReactElement {
+  const stream = useGameStream({
+    baseUrl: 'https://gdo.ax0x.ai',
+    roomId: 'K7M2P9',
+    playerId: 'p1',
+    fetcher,
+    pollIntervalMs: 60_000,
+  });
+  return (
+    <div>
+      <span data-testid="phase">{stream.view?.phase ?? 'none'}</span>
+      <span data-testid="last-event-id">{stream.lastEventId ?? 'none'}</span>
+      {stream.error ? <span role="alert">{stream.error.type}</span> : null}
+    </div>
+  );
+}
+
+function FallbackHarness({ fetcher }: { fetcher: typeof fetch }): React.ReactElement {
+  const stream = useGameStream({
+    baseUrl: 'https://gdo.ax0x.ai',
+    roomId: 'K7M2P9',
+    playerId: 'p1',
+    EventSourceCtor: FakeEventSource,
+    fetcher,
+    pollIntervalMs: 60_000,
+    sseFallbackFailureThreshold: 2,
+    sseFallbackWindowMs: 60_000,
+  });
+  return (
+    <div>
+      <span data-testid="phase">{stream.view?.phase ?? 'none'}</span>
+      <span data-testid="last-event-id">{stream.lastEventId ?? 'none'}</span>
+      {stream.error ? <span role="alert">{stream.error.type}</span> : null}
+    </div>
+  );
+}
+
 describe('useGameStream', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test('connects to the SSE stream and exposes the latest filtered view', () => {
     FakeEventSource.instances = [];
     render(<Harness />);
@@ -116,5 +157,73 @@ describe('useGameStream', () => {
 
     rerender(<Harness enabled={false} />);
     expect(FakeEventSource.instances[0]?.closed).toBe(true);
+  });
+
+  test('keeps SSE active after a single rotation error', () => {
+    FakeEventSource.instances = [];
+    const fetcher = vi.fn(async () => Response.json({ ok: true, events: [] })) as unknown as typeof fetch;
+    render(<FallbackHarness fetcher={fetcher} />);
+
+    act(() => {
+      FakeEventSource.instances[0]!.onerror?.(new Event('error'));
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('connection');
+    expect(FakeEventSource.instances[0]?.closed).toBe(false);
+    expect(fetcher).not.toHaveBeenCalled();
+
+    act(() => {
+      FakeEventSource.instances[0]!.emit(payload(9), '9-0');
+    });
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByTestId('last-event-id')).toHaveTextContent('9-0');
+  });
+
+  test('falls back to long-poll replay after repeated SSE failures', async () => {
+    FakeEventSource.instances = [];
+    const fetcher = vi.fn(async () => Response.json({
+      ok: true,
+      cursor: '10-0',
+      events: [{ id: '10-0', payload: payload(10) }],
+    })) as unknown as typeof fetch;
+    render(<FallbackHarness fetcher={fetcher} />);
+
+    act(() => {
+      FakeEventSource.instances[0]!.onerror?.(new Event('error'));
+      FakeEventSource.instances[0]!.onerror?.(new Event('error'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('playing'));
+    expect(FakeEventSource.instances[0]?.closed).toBe(true);
+    expect(screen.getByTestId('last-event-id')).toHaveTextContent('10-0');
+    expect(fetcher).toHaveBeenCalledWith('https://gdo.ax0x.ai/api/poll/K7M2P9?playerId=p1');
+  });
+
+  test('falls back to long-poll replay when EventSource is unavailable', async () => {
+    vi.stubGlobal('EventSource', undefined);
+    const fetcher = vi.fn(async () => Response.json({
+      ok: true,
+      cursor: '9-0',
+      events: [{ id: '9-0', payload: payload(9) }],
+    })) as unknown as typeof fetch;
+
+    render(<PollingHarness fetcher={fetcher} />);
+
+    await waitFor(() => expect(screen.getByTestId('phase')).toHaveTextContent('playing'));
+    expect(screen.getByTestId('last-event-id')).toHaveTextContent('9-0');
+    expect(fetcher).toHaveBeenCalledWith('https://gdo.ax0x.ai/api/poll/K7M2P9?playerId=p1');
+  });
+
+  test('reports connection errors from the long-poll fallback', async () => {
+    vi.stubGlobal('EventSource', undefined);
+    const fetcher = vi.fn(async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+
+    render(<PollingHarness fetcher={fetcher} />);
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('connection'));
+    expect(screen.getByTestId('phase')).toHaveTextContent('none');
   });
 });
