@@ -1,6 +1,13 @@
-# CLAUDE.md
+# guandan-online-codex — agent guide
 
-Guidance for Claude Code (and other AI assistants) working on **guandan-online**.
+## Project scale and verification
+
+**Profile: hobby multiplayer game.** Independent Codex Guandan implementation with its own rooms and backend. Use targeted rule/replay tests and affected UI checks. Preserve hidden-hand filtering, room tokens and server-owned moves; keep the existing security CI job without expanding every task into a security review.
+
+- The requested behavior/questions define completion. Reviews are read-only unless fixes are requested; report unrelated findings briefly without adding tasks or test backfill.
+- Use the smallest existing check that proves the change. Add tests for a concrete regression or consequential boundary; do not impose blanket TDD, new coverage targets, full suites, plans or reviewers. Preserve configured CI and actual release gates; reuse still-valid results.
+- Keep the existing structure. Internal contract errors should be clear; add retries, fallbacks or compatibility layers only for an observed external failure or supported contract. Keep secrets private and inspect security only at boundaries changed by this task.
+- This section owns task scope and local verification effort; historical goals and broad test lists below do not automatically activate a workflow.
 
 ## Project overview
 
